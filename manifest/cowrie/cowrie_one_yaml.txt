@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cowrie-pv-1
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/"
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - server1    
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cowrie-pvc-1
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cowrie-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cowrie-1
+  template:
+    metadata:
+      labels:
+        app: cowrie-1
+    spec:
+      volumes:
+      - name: cowrie-data
+        persistentVolumeClaim:
+          claimName: cowrie-pvc-1
+      containers:
+      - name: cowrie
+        image: cowrie/cowrie:latest
+        volumeMounts:
+        - name: cowrie-data
+          mountPath: "/cowrie/cowrie-git/var/log/cowrie"
+      nodeName: server1
+
+---
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cowrie-1
+spec:
+  selector:
+    app: cowrie-1
+  ports:
+    - protocol: TCP
+      port: 2222
+      targetPort: 2222
+  externalIPs:
+    - 192.168.142.39
