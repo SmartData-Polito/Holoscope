@@ -1,18 +1,18 @@
 #!/bin/bash
 
+# Set the WireGuard IP address
+WG_IP="10.0.0.3"
+
 # Install WireGuard
 sudo apt-get install -y wireguard
 
 # Generate WireGuard keys
 wg genkey | tee privatekey | wg pubkey > publickey
 
-# Cat public key and display email
-echo send an email to hiabpolito@gmail.com with the your public key: $(cat publickey)
-
 # Create WireGuard configuration file
 sudo bash -c "cat > /etc/wireguard/wg0.conf << EOF
 [Interface]
-Address = 10.0.0.5/24
+Address = $WG_IP/24
 PrivateKey = $(cat privatekey)
 
 [Peer]
@@ -40,5 +40,4 @@ sudo systemctl daemon-reload
 sudo systemctl enable wireguard-up.service
 sudo systemctl start wireguard-up.service
 
-# Install K3s with WireGuard
-curl -sfL https://get.k3s.io | K3S_URL=https://10.0.0.1:6443 K3S_TOKEN=K1047421038c1a6b28861b8d4ac1e001f0ce65c8201606732dc444c47c837c3864f::server:ca4392a1e9d257daeaf4ab0d57237226 sh - 
+unset WG_IP

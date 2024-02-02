@@ -42,3 +42,16 @@ if the host restart the vpn interface has to be up again (Solved)
 We need to assing ip to each peer
 Send the public ip of each peer to centralize server
 Nodes can't have the same name
+
+Add a new peer:
+wg set wg0 peer "K30I8eIxuBL3OA43Xl34x0Tc60wqyDBx4msVm8VLkAE=" allowed-ips 10.101.1.2/32
+ip -4 route add 10.101.1.2/32 dev wg0
+Remove a peer:
+wg set wg0 peer "K30I8eIxuBL3OA43Xl34x0Tc60wqyDBx4msVm8VLkAE=" remove
+ip -4 route delete 10.101.1.2/32 dev wg0
+
+# save to config
+wg-quick save wg0
+
+ExecStart=/usr/local/bin/k3s server --advertise-address 10.0.0.1 --flannel-iface=wg0
+sudo cat /var/lib/rancher/k3s/server/node-token
