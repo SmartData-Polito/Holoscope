@@ -1,0 +1,40 @@
+---
+
+
+  - name: "PART 1 - Create a master node installing WireGuard + K3s"
+    hosts: master
+    gather_facts: false
+    become: true
+    become_user: root
+    become_method: sudo
+    tasks:
+        - include: playbook_part1.yml 
+
+  - name: "PART 2 - Define some worker nodes installing WireGuard + K3s"
+    hosts: worker
+    #serial: 1     # run 1 connection at time, takes more time but require less resources
+    gather_facts: true
+    become: true
+    become_user: root
+    become_method: sudo
+    tasks:
+        - include: playbook_part2.yml
+
+  - name: "PART 3 - Wireguard, adding peers to master node"
+    hosts: master
+    gather_facts: false
+    become: true
+    become_user: root
+    become_method: sudo
+    tasks:   
+        - include: playbook_part3.yml
+
+  - name: "PART 4 - Join workers to K3s cluster"
+    hosts: worker
+    #serial: 1
+    gather_facts: true
+    become: true
+    become_user: root
+    become_method: sudo
+    tasks:
+        - include: playbook_part4.yml
