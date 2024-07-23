@@ -1,0 +1,133 @@
+    - name: Check if K3s is already installed
+      command : k3s
+      register: result
+        #Installed rc==0, not installed rc ==2
+      changed_when: false   
+      failed_when: false
+
+    - name: Install and configure K3s
+      block:
+        - name: Download K3s
+          get_url:
+            url: "https://get.k3s.io"
+            dest: "/tmp/install_k3s.sh"
+            mode: '0755'
+            validate_certs: no 
+      
+        - name: Run K3s installer script
+          command: "/tmp/install_k3s.sh"
+          environment:
+                K3S_NODE_NAME: "master"
+      when: result.rc != 0
+
+  #WIREGUARD
+
+      
+    - name: Install WireGuard
+      apt:
+          name: wireguard
+          state: present
+          update_cache: true
+
+    - name: Generate private key
+      command: "wg genkey"
+      register: genkey_private
+      
+    - name: Generate public key
+      shell: "echo {{genkey_private.stdout}} | wg pubkey"
+      register: genkey_public
+        
+
+    - ansible.posix.sysctl:
+            name: net.ipv4.ip_forward
+            value: '1'
+            sysctl_set: true
+            state: present
+            reload: true
+
+    - name: "Create WireGuard configuration file"
+      copy:
+        dest: "/etc/wireguard/wg0.conf"
+        content: |
+              [Interface]
+              Address = {{hostvars[ inventory_hostname ].ip_vpn}}
+              ListenPort = 51820
+              PrivateKey = {{genkey_private.stdout}}
+              PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{hostvars[ inventory_hostname ].interface}} -j MASQUERADE
+              PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{hostvars[ inventory_hostname ].interface}}  -j MASQUERADE
+      
+    - name: Reload WireGuard 
+      block:
+      - command: wg-quick  {{ item }} wg0 
+        with_items:
+            - down
+            - up
+        failed_when: false
+      
+    - name: Activate Wireguard at boot
+      command: "{{ item }}"
+      loop:
+        - systemctl enable wg-quick@wg0.service
+        - systemctl daemon-reload
+ 
+
+
+    - name: "Edit K3s service "
+      copy:
+        dest: "/etc/systemd/system/k3s.service"
+        content: |  
+            [Unit]
+            Description=Lightweight Kubernetes
+            Documentation=https://k3s.io
+            Wants=network-online.target
+            After=network-online.target
+            [Install]
+            WantedBy=multi-user.target
+            [Service]
+            Type=notify
+            EnvironmentFile=-/etc/default/%N
+            EnvironmentFile=-/etc/sysconfig/%N
+            EnvironmentFile=-/etc/systemd/system/k3s.service.env
+            KillMode=process
+            Delegate=yes
+            # Having non-zero Limit*s causes performance problems due to accounting overhead
+            # in the kernel. We recommend using cgroups to do container-local accounting.
+            LimitNOFILE=1048576
+            LimitNPROC=infinity
+            LimitCORE=infinity
+            TasksMax=infinity
+            TimeoutStartSec=0
+            Restart=always
+            RestartSec=5s
+            ExecStartPre=/bin/sh -xc '! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service 2>/dev/null'
+            ExecStartPre=-/sbin/modprobe br_netfilter
+            ExecStartPre=-/sbin/modprobe overlay
+            ExecStart=/usr/local/bin/k3s \
+                server \
+            ExecStart=/usr/local/bin/k3s server --advertise-address {{hostvars[ inventory_hostname ].ip_vpn}}  --flannel-iface=wg0
+
+
+   # - name: Add string to k3s service
+   #   shell: "sed -i '/^$/d' /etc/systemd/system/k3s.service;echo 'ExecStart=/usr/local/bin/k3s server --advertise-address 50.0.0.1 --flannel-iface=wg0' | sudo tee -a /etc/systemd/system/k3s.service"
+    
+    - name: Reload systemd and restart K3S service
+      systemd:
+          daemon_reload: yes
+          name: k3s
+          enabled: yes
+          state: restarted 
+   
+    - name: Retrive K3S token for adding future node   
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: token_cluster
+   
+    - name: Remove need of sudo for kubectl
+      command: chmod 644 /etc/rancher/k3s/k3s.yaml
+     
+    - set_fact:
+        genkey_public_master : "{{genkey_public.stdout}}"
+        genkey_private_master : "{{genkey_private.stdout}}"
+        k3s_token : "{{ token_cluster['content'] | b64decode | replace('\n', '')}}"
+    
+

@@ -1,0 +1,77 @@
+    
+  #WIREGUARD
+    - ansible.posix.sysctl:
+            name: net.ipv4.ip_forward
+            value: '1'
+            sysctl_set: true
+            state: present
+            reload: true
+   
+
+    - name: Install WireGuard
+      apt:
+         name: wireguard
+         state: present
+         update_cache: yes
+
+
+    - name: Generate private key
+          #wg genkey | tee privatekey | wg pubkey > publickey
+      command: "wg genkey"
+      register: genkey_private_worker
+
+    - name: Generate public key
+      shell: "echo {{genkey_private_worker.stdout}} | wg pubkey"
+      register: genkey_public_worker
+    
+      
+    - name: "Create WireGuard configuration file"
+      copy:
+        dest: "/etc/wireguard/wg0.conf"
+        content: |
+                # /etc/wireguard/wg0.conf
+                [Interface]
+                
+                # The IP address of the Raspberry Pi in the wireguard network
+                Address = {{hostvars[ inventory_hostname ].ip_vpn}}/32 
+                # Private key of the Raspberry Pi
+                PrivateKey = {{genkey_private_worker.stdout}} 
+                ListenPort = 51820
+                PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{hostvars[ inventory_hostname ].interface}}  -j MASQUERADE
+                PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{hostvars[ inventory_hostname ].interface}}  -j MASQUERADE
+                [Peer]
+                
+                # Public Key of the cloud VM
+                PublicKey = {{hostvars['node1'].genkey_public_master}} 
+                
+                # Public IP of the cloud VM
+                
+                Endpoint = {{hostvars[ "node1" ].ip_host}} :51820
+                
+                # All traffic for the wireguard network should be routed to our cloud VM
+                
+                AllowedIPs = {{hostvars[ "node1" ].ip_vpn}}/32
+                PersistentKeepalive = 20
+
+
+
+
+    - name: Reload WireGuard 
+      block:
+        - command: wg-quick  {{ item }} wg0 
+          with_items:
+           - down
+           - up
+          failed_when: false
+    - name: Activate Wireguard at boot
+      command: "{{ item }}"
+      loop:
+        - systemctl enable wg-quick@wg0.service
+        - systemctl daemon-reload 
+
+    - set_fact:
+            genkey_public_worker_{{inventory_hostname}} : "{{genkey_public_worker.stdout}}"
+            ip_address_wireguard_{{inventory_hostname}}  : "{{hostvars[ inventory_hostname ].ip_vpn}}" #"{{ansible_facts['wg0']['ipv4']['address']}}"
+            genkey_private_worker_{{inventory_hostname}} : "{{genkey_private_worker.stdout}}"
+       
+   

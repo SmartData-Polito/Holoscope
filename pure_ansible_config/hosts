@@ -1,0 +1,20 @@
+worker:
+  hosts:
+    node2:
+      ansible_host: [IP_ADDRESS] 
+      ansible_connection: ssh 
+      ansible_port: [SSH_PORT]
+      ansible_user: [REMOTE USER_NAME] 
+      ansible_ssh_private_key_file: [PATH_TO_LOCAL_KEY]
+      ansible_become_password: [PASSWORD_FOR_REMOTE_USER] 
+      ip_vpn: 10.0.0.2 
+      interface: [INTERFACE_NAME]
+
+master:
+  hosts:
+    node1:
+      ansible_host: [IP_ADDRESS_FOR_ANSIBLE_TO_CONNECT] 
+      ansible_connection: local 
+      ip_vpn: 10.0.0.1 
+      ip_host: [IP_ADDRESS_FOR_OTHERS_TO_JOIN]
+      interface: [INTERFACE_NAME]

@@ -1,0 +1,28 @@
+
+    - name: Retrive already joined peers 
+      command : wg show wg0 endpoints
+      register: peers
+
+
+    - name: Append peer info in wg0.conf
+      loop: "{{ groups['worker'] }}"
+      when: not (hostvars[item]['genkey_public_worker_' + item] in peers.stdout)
+      lineinfile:
+            path: "/etc/wireguard/wg0.conf"
+            line: |
+              [Peer]
+
+              PublicKey = {{hostvars[item]['genkey_public_worker_' + item]}}
+              AllowedIPs = {{hostvars[item]['ip_address_wireguard_' + item]}}/32
+
+            insertafter: EOF
+          
+     
+    - name: Reload WireGuard 
+      block:
+          - command: wg-quick  {{ item }} wg0 
+            with_items:
+            - down
+            - up
+            failed_when: false
+
