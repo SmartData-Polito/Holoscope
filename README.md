@@ -49,7 +49,6 @@ This project aims to set up a K3s cluster using WireGuard for secure communicati
 5. Send the wireguard public key to the master to be join.
 
 
-
 ## Honeypots Deployment
 1. Join Nodes to the Cluster:
    - Ensure all nodes (master and agents) are successfully joined to the K3s cluster.

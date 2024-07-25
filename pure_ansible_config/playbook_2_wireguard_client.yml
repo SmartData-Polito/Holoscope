@@ -1,19 +1,26 @@
     
+  #WORKER NODE
+    
   #WIREGUARD
-    - ansible.posix.sysctl:
-            name: net.ipv4.ip_forward
-            value: '1'
-            sysctl_set: true
-            state: present
-            reload: true
-   
+    - name: stop WireGuard 
+      command: wg-quick  down wg0 
+      failed_when: false
+    - name: Remove previous installation of Wireguard
+      shell: apt remove -y wireguard
+      failed_when: false
+      
+    - name: Remove wg0.conf file - if exist
+      shell: rm /etc/wireguard/wg0.conf
+      failed_when: false
 
     - name: Install WireGuard
       apt:
          name: wireguard
          state: present
          update_cache: yes
-
+    - name: "create /etc/wireguard"
+      shell: mkdir /etc/wireguard/
+      failed_when: false 
 
     - name: Generate private key
           #wg genkey | tee privatekey | wg pubkey > publickey
@@ -53,7 +60,11 @@
                 AllowedIPs = {{hostvars[ "node1" ].ip_vpn}}/32
                 PersistentKeepalive = 20
 
-
+    - name: Activate Wireguard at boot
+      command: "{{ item }}"
+      loop:
+        - systemctl enable wg-quick@wg0.service
+        - systemctl daemon-reload      
 
 
     - name: Reload WireGuard 
@@ -63,11 +74,7 @@
            - down
            - up
           failed_when: false
-    - name: Activate Wireguard at boot
-      command: "{{ item }}"
-      loop:
-        - systemctl enable wg-quick@wg0.service
-        - systemctl daemon-reload 
+ 
 
     - set_fact:
             genkey_public_worker_{{inventory_hostname}} : "{{genkey_public_worker.stdout}}"

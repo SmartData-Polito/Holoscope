@@ -1,20 +1,37 @@
-worker:
-  hosts:
-    node2:
-      ansible_host: [IP_ADDRESS] 
-      ansible_connection: ssh 
-      ansible_port: [SSH_PORT]
-      ansible_user: [REMOTE USER_NAME] 
-      ansible_ssh_private_key_file: [PATH_TO_LOCAL_KEY]
-      ansible_become_password: [PASSWORD_FOR_REMOTE_USER] 
-      ip_vpn: 10.0.0.2 
-      interface: [INTERFACE_NAME]
-
 master:
   hosts:
     node1:
-      ansible_host: [IP_ADDRESS_FOR_ANSIBLE_TO_CONNECT] 
-      ansible_connection: local 
+      ansible_host: 130.192.95.215 
+      ansible_connection: ssh 
+      ansible_port: 44404 
+      ansible_user: ansible 
+      ansible_ssh_private_key_file: /home/sordello/.ssh/id_rsa_ansible_vm1_bigdata 
+      ansible_become_password: ansible 
       ip_vpn: 10.0.0.1 
-      ip_host: [IP_ADDRESS_FOR_OTHERS_TO_JOIN]
-      interface: [INTERFACE_NAME]
+      ip_host: 130.192.95.215
+      interface: ens2
+
+worker:
+  hosts:
+    node2:
+      hostname: worker-pc
+      ansible_host: localhost 
+      ansible_connection: local 
+      ip_vpn: 10.0.0.2 
+      ip_host: 192.168.1.218
+      interface: wlan0
+    node3:
+      hostname: worker-vm1
+      ansible_host: 192.168.56.11
+      ansible_connection: ssh 
+      ansible_port: 22 
+      ansible_user: vagrant 
+      ansible_ssh_private_key_file: /home/sordello/.ssh/id_rsa_macchina_virtuale_vagrant
+      ansible_become_password: vagrant 
+      ip_vpn: 10.0.0.3 
+      ip_host: 192.168.56.11 
+      interface: enp0s8
+ 
+      
+      
+ 

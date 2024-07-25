@@ -1,0 +1,28 @@
+---
+# https://dev.to/tangramvision/exploring-ansible-via-setting-up-a-wireguard-vpn-3389
+- name: Install WireGuard
+  apt:
+    name: wireguard
+    state: present
+  become: yes
+
+- name: Create WireGuard server configuration file
+  template:
+    src: wg0-server.conf.j2
+    dest: /etc/wireguard/wg0.conf
+  become: yes
+
+- name: enable and persist ip forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    sysctl_set: yes
+    reload: yes
+
+- name: Enable and start WireGuard service
+  systemd:
+    name: wg-quick@wg0
+    state: started
+    enabled: yes
+  become: yes

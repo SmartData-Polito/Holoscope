@@ -1,0 +1,22 @@
+---
+- hosts: agents
+  become: yes
+  roles:
+    - common
+    - wireguard-client
+
+- hosts: master
+  become: yes
+  roles:
+    - common
+    - wireguard-server
+
+- hosts: master
+  become: yes
+  roles:
+    - k3s-server
+
+- hosts: agents
+  become: yes
+  roles:
+    - k3s-agent

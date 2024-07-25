@@ -1,0 +1,47 @@
+---
+- name: Install WireGuard
+  apt:
+    name: wireguard
+    state: present
+  become: yes
+
+- name: Generate WireGuard keys
+  shell: |
+    umask 077 && wg genkey | tee privatekey | wg pubkey > publickey
+  args:
+    chdir: /etc/wireguard
+    creates: /etc/wireguard/publickey
+  become: yes
+
+- name: Get public key
+  command: cat /etc/wireguard/publickey
+  register: publickey_contents
+  changed_when: False
+  become: yes
+
+- name: Get private key
+  command: cat /etc/wireguard/privatekey
+  register: privatekey_contents
+  changed_when: False
+  become: yes
+
+- name: Set WireGuard public key fact for current host
+  set_fact:
+    wireguard_public_key: "{{ publickey_contents.stdout }}"
+
+- name: Set WireGuard private key fact for current host
+  set_fact:
+    wireguard_private_key: "{{ privatekey_contents.stdout }}"
+
+- name: Create WireGuard client configuration file
+  template:
+    src: wg0-client.conf.j2
+    dest: /etc/wireguard/wg0.conf
+  become: yes
+
+- name: Enable and start WireGuard service
+  systemd:
+    name: wg-quick@wg0
+    state: started
+    enabled: yes
+  become: yes

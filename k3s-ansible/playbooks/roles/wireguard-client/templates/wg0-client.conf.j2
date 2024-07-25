@@ -1,0 +1,12 @@
+[Interface]
+Address = {{ hostvars[inventory_hostname]['wireguard_ip'] }}/32
+PrivateKey = {{ hostvars[inventory_hostname]['wireguard_private_key'] }}
+ListenPort = {{ hostvars['master1']['wireguard_listen_port'] }}
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }}  -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }}  -j MASQUERADE
+
+[Peer]
+PublicKey = {{ hostvars['master1']['wireguard_public_key'] }}
+Endpoint = {{ hostvars['master1']['wireguard_endpoint'] }}
+AllowedIPs = {{ hostvars['master1']['wireguard_ip'] }}/32
+PersistentKeepalive = 20

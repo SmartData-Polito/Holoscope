@@ -1,0 +1,61 @@
+  #MASTER NODE
+  
+  #WIREGUARD
+
+    - name: stop WireGuard 
+      command: wg-quick  down wg0 
+      failed_when: false
+      
+    - name: Remove previous installation of Wireguard
+      shell: apt remove -y wireguard
+      failed_when: false
+      
+    - name: Remove wg0.conf file - if exist
+      shell: rm /etc/wireguard/ -r
+      failed_when: false
+      
+    - name: Install WireGuard
+      apt:
+          name: wireguard
+          state: present
+          update_cache: true
+
+    - name: Generate private key
+      command: "wg genkey"
+      register: genkey_private
+      
+    - name: Generate public key
+      shell: "echo {{genkey_private.stdout}} | wg pubkey"
+      register: genkey_public
+        
+
+    - ansible.posix.sysctl:
+            name: net.ipv4.ip_forward
+            value: '1'
+            sysctl_set: true
+            state: present
+            reload: true
+    - name: "create /etc/wireguard"
+      shell: mkdir /etc/wireguard/
+      failed_when: false 
+      
+    - name: "Create WireGuard configuration file"
+      copy:
+        dest: "/etc/wireguard/wg0.conf"
+        content: |
+              [Interface]
+              Address = {{hostvars[ inventory_hostname ].ip_vpn}}
+              ListenPort = 51820
+              PrivateKey = {{genkey_private.stdout}}
+              PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{hostvars[ inventory_hostname ].interface}} -j MASQUERADE
+              PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{hostvars[ inventory_hostname ].interface}}  -j MASQUERADE
+      
+      
+ 
+     
+    - set_fact:
+        genkey_public_master : "{{genkey_public.stdout}}"
+        genkey_private_master : "{{genkey_private.stdout}}"
+        
+    
+

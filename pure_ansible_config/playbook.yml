@@ -1,16 +1,16 @@
 ---
 
 
-  - name: "PART 1 - Create a master node installing WireGuard + K3s"
+  - name: "PART 1 - Create a master node installing WireGuard "
     hosts: master
     gather_facts: false
     become: true
     become_user: root
     become_method: sudo
     tasks:
-        - include: playbook_part1.yml 
+        - include: playbook_1_wireguard_server_1.yml 
 
-  - name: "PART 2 - Define some worker nodes installing WireGuard + K3s"
+  - name: "PART 2 - Define some worker nodes installing WireGuard"
     hosts: worker
     #serial: 1     # run 1 connection at time, takes more time but require less resources
     gather_facts: true
@@ -18,7 +18,8 @@
     become_user: root
     become_method: sudo
     tasks:
-        - include: playbook_part2.yml
+        - include: playbook_2_wireguard_client.yml 
+        
 
   - name: "PART 3 - Wireguard, adding peers to master node"
     hosts: master
@@ -27,14 +28,39 @@
     become_user: root
     become_method: sudo
     tasks:   
-        - include: playbook_part3.yml
-
-  - name: "PART 4 - Join workers to K3s cluster"
+        - include: playbook_3_wireguard_server_2.yml 
+        
+  - name: "PART 4 - Connectivity check using the VPN"
     hosts: worker
-    #serial: 1
-    gather_facts: true
+    gather_facts: false
+    tasks:   
+        - name: wait 20 seconds
+          ansible.builtin.pause:
+           seconds: 20
+           
+        - name: Ping 
+          command: ping -c 4 10.0.0.1
+          # Because it is an reporting task
+          register: result
+          changed_when: false 
+          check_mode: false
+          failed_when: result.rc == 1 or result.rc > 2 # will result into success for rc 0 and rc 2
+          
+  - name: "PART 5 - K3S, installing on the master node"
+    hosts: master
+    gather_facts: false
     become: true
     become_user: root
     become_method: sudo
-    tasks:
-        - include: playbook_part4.yml
+    tasks:   
+        - include: playbook_5_k3s_server.yml 
+  - name: "PART 6 - K3S, installing on the worker nodes"
+    hosts: worker
+    gather_facts: false
+    become: true
+    become_user: root
+    become_method: sudo
+    tasks:   
+        - include: playbook_6_k3s_client.yml 
+        
+ 

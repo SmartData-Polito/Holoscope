@@ -1,0 +1,17 @@
+    - name: Stop k3s from the agent node
+      shell: /usr/local/bin/k3s-killall.sh
+      failed_when: false
+      
+    - name: Remove k3s from the agent node
+      shell: /usr/local/bin/k3s-agent-uninstall.sh
+      failed_when: false
+
+    - name: Install and configure K3s
+      shell: |
+           curl -sfL https://get.k3s.io | K3S_NODE_NAME="{{hostvars[inventory_hostname].hostname}}" K3S_URL="https://{{hostvars["node1"].ip_vpn}}:6443" K3S_TOKEN="{{hostvars["node1"].k3s_token}}" sh -s - agent  --flannel-iface=wg0 --node-ip={{hostvars[ inventory_hostname ].ip_vpn}}
+      
+        
+   
+  
+
+#curl -sfL https://get.k3s.io | K3S_URL=https://10.0.0.1:6443 K3S_TOKEN=K1047421038c1a6b28861b8d4ac1e001f0ce65c8201606732dc444c47c837c3864f::server:ca4392a1e9d257daeaf4ab0d57237226 K3S_NODE_NAME=name-node sh - 
