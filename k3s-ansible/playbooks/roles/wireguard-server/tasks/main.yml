@@ -6,6 +6,10 @@
     state: present
   become: yes
 
+- name: Create WireGuard folder
+  shell: mkdir /etc/wireguard/
+  failed_when: false 
+
 - name: Create WireGuard server configuration file
   template:
     src: wg0-server.conf.j2
@@ -20,9 +24,11 @@
     sysctl_set: yes
     reload: yes
 
-- name: Enable and start WireGuard service
-  systemd:
-    name: wg-quick@wg0
-    state: started
-    enabled: yes
-  become: yes
+- name: Activate Wireguard at boot
+  command: "{{ item }}"
+  loop:
+    - systemctl enable wg-quick@wg0.service
+    - systemctl daemon-reload      
+
+- name: Include post-installation tasks
+  include_tasks: post_install.yml

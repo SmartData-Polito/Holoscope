@@ -1,0 +1,9 @@
+---
+
+- name: Reload WireGuard 
+  block:
+    - command: wg-quick  {{ item }} wg0 
+      with_items:
+        - down
+        - up
+      failed_when: false

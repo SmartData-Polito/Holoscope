@@ -1,0 +1,9 @@
+---
+
+- name: Retrive K3S token for adding future node   
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: token_cluster
+
+- set_fact:
+    k3s_token : "{{ token_cluster['content'] | b64decode | replace('\n', '')}}"
