@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  arp4:
+    build: .
+    network_mode: "host"
+    restart: always
+    entrypoint: "/usr/src/arpd/farpd2"    
+    command: "-d -i eth0 10.0.0.0/24" # change to the interface and subnet you want

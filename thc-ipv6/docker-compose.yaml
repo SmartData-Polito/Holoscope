@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  arp6:
+    build: .
+    network_mode: "host"
+    restart: always
+    entrypoint: "/usr/src/arpv6/parasite6"    
+    command: "eth0" # change to the interface and subnet you want
+
+    # this is the master of thc-ipv6 at July, 23 2024. Try update if you are in the future.
