@@ -1,5 +1,5 @@
 FROM gcc:bookworm
-COPY . /usr/src/arpv6
+COPY ./thc-ipv6 /usr/src/arpv6
 WORKDIR /usr/src/arpv6
 
 # Install Dependencies
