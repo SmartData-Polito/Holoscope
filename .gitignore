@@ -2,3 +2,4 @@
 /.vscode
 k3s-ansible/.python-version
 /k3s-ansible/.vagrant
+/.vagrant
