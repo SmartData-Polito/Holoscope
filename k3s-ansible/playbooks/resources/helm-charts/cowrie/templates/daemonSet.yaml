@@ -1,0 +1,46 @@
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hpot-cowrie
+  namespace: hpot
+  labels:
+    app.kubernetes.io/name: hpot-cowrie
+spec:
+  selector:
+    matchLabels:
+     app.kubernetes.io/name: hpot-cowrie
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hpot-cowrie
+    spec:
+      containers:
+        - name: container-cowrie
+          image: cowrie/cowrie:latest
+  
+        - name: container-netshoot
+          image: nicolaka/netshoot
+          command: ["/bin/bash"]
+          args: ["-c", "tcpdump -i any -G {{ .Values.tcp_dump_parameters.G }} -w {{ .Values.features.cowrie.folder_container }}/trace_dionaea_%Y%m%d_%H:%M:%S.pcap"]
+          volumeMounts:
+          - mountPath:  {{ .Values.features.cowrie.folder_container }}
+            name: pv-storage-1
+      volumes:
+      - name: pv-storage-1
+        persistentVolumeClaim:
+          claimName: pvc-tcpdump-cowrie
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname 
+                operator: In
+                values:  
+                  {{- range $v := required "Empty" .Values.features.cowrie.hosts }}
+                  - {{ $v }}
+                  {{- end }}
+
+
+

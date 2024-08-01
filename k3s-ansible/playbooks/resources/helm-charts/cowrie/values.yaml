@@ -1,0 +1,19 @@
+features:
+  darknet:
+    folder_container: "/root/tcpdump/"
+    hosts:
+      - "vm1-bigdata"
+      - "worker-pc"
+  cowrie:
+    folder_container: "/root/tcpdump/"
+    hosts:
+      - "worker-pc"
+  dionaea:
+    folder_container: "/root/tcpdump/"
+    hosts:
+      - "worker-pc"
+
+tcp_dump_parameters:
+  G: 5
+  W: 1024
+

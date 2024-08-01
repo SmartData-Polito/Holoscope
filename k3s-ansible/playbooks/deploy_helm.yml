@@ -1,0 +1,41 @@
+---
+- name: Copy and modify file from remote host
+  hosts: localhost
+  become: yes
+  vars:
+    arp4_interface: "eth0"
+    arp6_interface: "eth0"
+  tasks:
+    - name: Fetch Kubeconfig from the remote host
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/kubeconfig.yaml
+        flat: yes
+      delegate_to: "{{ groups['master'][0] }}"
+      register: fetch_result
+
+    - name: Ensure yq is installed on localhost
+      become: true
+      apt:
+        name: yq
+        state: present
+      run_once: true
+
+    - name: Modify the server URL in the YAML file using yq
+      # shell: |
+      #   yq -yi '.clusters[0].cluster.server = "{{ k3s_url }}"' {{ fetch_result.dest }}
+      shell: |
+        yq -yi '.clusters[0].cluster.server = "https://10.10.10.100:6443"' {{ fetch_result.dest }}
+      run_once: true
+
+    - name: Ensure Helm is installed
+      command: helm version
+      register: helm_version
+      changed_when: False
+      failed_when: "'version' not in helm_version.stdout"
+
+    - name: Install Helm chart with dynamic interfaces
+      command: >
+        KUBECONFIG={{ fetch_result.dest }} helm install my-release {{ playbook_dir }}/resources/helm-charts/arp-responder
+        --set arp4.interface={{ arp4_interface }}
+        --set arp6.interface={{ arp6_interface }}

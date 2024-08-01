@@ -1,0 +1,35 @@
+---
+# ansible-playbook -i inventory build_and_push_images.yml
+- name: Build Docker images
+  become: yes
+  hosts: all
+  vars:
+    dockerfiles:
+      - name: ipv4
+        path: "{{ playbook_dir }}/resources/docker-images/arp-responder/ipv4/"
+        author: "rvalentim"
+      - name: ipv6
+        path: "{{ playbook_dir }}/resources/docker-images/arp-responder/ipv6/"
+        author: "rvalentim"
+    image_tag: latest
+
+  tasks:
+    - name: Ensure Docker is installed
+      ansible.builtin.package:
+        name: docker
+        state: present
+
+    - name: Copy Docker files to target host
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "/tmp/{{ item.name }}"
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Build Docker images
+      ansible.builtin.command:
+        cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/{{ item.name }}/Dockerfile /tmp/{{ item.name }}
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"

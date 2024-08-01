@@ -1,0 +1,17 @@
+apiVersion: v1
+name: arp-responder
+description: A Helm chart for the arp responder application, which includes arp4 and arp6 services.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - arp
+  - network
+  - ipv4
+  - ipv6
+maintainers:
+  - name: Rodolfo Valentim
+    email: rodolfo.vieira@polito.it
+dependencies: []
+
+# helm install my-release ./my-chart --namespace my-namespace --create-namespace -f values.yaml

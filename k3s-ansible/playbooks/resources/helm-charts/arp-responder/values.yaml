@@ -1,0 +1,27 @@
+namespace: my-namespace
+daemonsetName: default-cowrie
+appName: default-cowrie
+hostNetwork: true
+
+containers:
+  arp4:
+    image: rvalentim/ipv4
+    imagePullPolicy: IfNotPresent
+    command:
+      - "/usr/src/arpd/farpd2"
+      - "-d"
+      - "-i"
+      - "eth1"
+      - "20.0.0.0/24"
+  arp6:
+    image: rvalentim/ipv6
+    imagePullPolicy: IfNotPresent
+    command:
+      - "/usr/src/arpv6/parasite6"
+      - "eth1"
+
+nodeAffinity:
+  hostname:
+    values:
+      - polito-1
+      - brescia-1

@@ -20,7 +20,7 @@ Copy the output lines and add them to a vars/main.yml. Here's what mine looks li
 # K3s variables
 k3s_version: "v1.20.0+k3s2"
 k3s_token: "your_k3s_token"
-k3s_url: "https://{{ groups['master'][0] }}:6443"
+k3s_url: "https://{{ hostvars[groups['master'][0]] }}:6443"
 
 # WireGuard server variables
 server_ip: "10.0.0.1"

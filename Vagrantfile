@@ -18,31 +18,6 @@ def provision(vm, role, node_num)
   # An expanded netmask is required to allow VM<-->VM communication, virtualbox defaults to /32
   vm.network "private_network", ip: node_ip, netmask: "255.255.255.0"
   vm.network "forwarded_port", guest: 22, host: PORTS[node_num], id: "ssh"
-
-  # vm.provision "ansible", run: 'once' do |ansible|
-  #   ansible.compatibility_mode = "2.0"
-  #   ansible.playbook = "playbooks/site.yml"
-  #   ansible.groups = {
-  #     "server" => NODE_ROLES.grep(/^server/),
-  #     "agent" => NODE_ROLES.grep(/^agent/),
-  #     "k3s_cluster:children" => ["server", "agent"],
-  #   }
-  #   ansible.extra_vars = {
-  #     k3s_version: "v1.26.9+k3s1",
-  #     api_endpoint: "#{NETWORK_PREFIX}.100",
-  #     token: "myvagrant",
-  #     # Required to use the private network configured above
-  #     extra_server_args: "--node-external-ip #{node_ip} --flannel-iface eth1", 
-  #     extra_agent_args: "--node-external-ip #{node_ip} --flannel-iface eth1",
-  #     # Optional, left as reference for ruby-ansible syntax
-  #     # extra_service_envs: [ "NO_PROXY='localhost'" ],
-  #     # server_config_yaml: <<~YAML
-  #     #   write-kubeconfig-mode: 644
-  #     #   kube-apiserver-arg:
-  #     #     - advertise-port=1234
-  #     # YAML
-  #   }
-  # end
 end
 
 Vagrant.configure("2") do |config|
