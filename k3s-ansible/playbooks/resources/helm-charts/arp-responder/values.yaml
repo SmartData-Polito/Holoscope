@@ -1,29 +1,27 @@
-daemonsetName: default-cowrie
-appName: default-cowrie
+deploymentName: arp-responder
+appName: arp-responder
 hostNetwork: true
 
 containers:
   arp4:
     image: rvalentim/ipv4
     imagePullPolicy: IfNotPresent
-    interface: eth0  # Define the interface as a variable
-    network: "10.0.0.0/24"  # Define the network as a variable
     command:
       - "/usr/src/arpd/farpd2"
       - "-d"
       - "-i"
-      - "{{ .Values.containers.arp4.interface }}"  # Use the variable
-      - "{{ .Values.containers.arp4.network }}"  # Use the variable
+    args:
+      - "eth1" # Use the variable
+      - "20.0.0.0/24" # Use the variable
   arp6:
     image: rvalentim/ipv6
     imagePullPolicy: IfNotPresent
-    interface: eth0  # Define the interface as a variable
     command:
       - "/usr/src/arpv6/parasite6"
-      - "{{ .Values.containers.arp6.interface }}"  # Use the variable
+    args:
+      - "eth1" # Use the variable
 
 nodeAffinity:
   hostname:
     values:
       - polito-1
-      - brescia-1

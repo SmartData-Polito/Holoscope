@@ -1,10 +1,8 @@
 ---
 # ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/deploy_applications.yml  --ask-become-pass
+#jinja2: trim_blocks:True
 - name: Copy and modify file from remote host
-  hosts: localhost
-  vars:
-    arp4_interface: "eth0"
-    arp6_interface: "eth0"
+  hosts: deployment
   tasks:
     - name: Fetch Kubeconfig from the remote host
       fetch:
@@ -37,14 +35,31 @@
       changed_when: False
       failed_when: "'version' not in helm_version.stdout"
 
-    - name: Install Helm chart for ARP Responder with dynamic interfaces
+    - name: Deploy Helm chart for ARP Responder in each required node
       command: >
-        helm upgrade -i arp-ansible {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace my-namespace --create-namespace \
-        --set containers.arp4.interface=eth1 \
-        --set containers.arp4.network="20.0.0.0/24" \
-        --set containers.arp6.interface=eth1 \
-        {% for host in groups['agents'] %}
-          --set nodeAffinity.hostname.values[{{ loop.index - 1}}]={{ host }}
-        {% endfor %}
+        helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace {{ applications_namespace }} --create-namespace
+        --set name=arp-responder-{{ item }}
+        --set appName=arp-responder-{{ item }}
+        --set "containers.arp4.args={"{{ hostvars[item].arp4_interface }}","{{ hostvars[item].arp4_network }}"}"
+        --set "containers.arp6.args={"{{hostvars[item].arp6_interface}}"}"
+        --set nodeAffinity.hostname.values[0]={{ item }}
       environment:
         KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['arp_responder'] }}"
+
+    - name: Deploy Helm chart for Darknet TCPDump in each required node
+      command: >
+        helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ applications_namespace }} --create-namespace
+        --set name=darknet-{{ item }}
+        --set appName=darknet-{{ item }}
+        --set volumes.pv.name=darknet-pv-{{ item }}
+        --set volumes.pvc.name=darknet-pvc-{{ item }}
+        --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
+        --set containers.tcpdump.filter="{{ hostvars[item].tcpdump_filter }}"
+        --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
+        --set containers.tcpdump.outputPath="{{hostvars[item].monthPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
+        --set nodeAffinity.hostname.values[0]="{{ item }}"
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['darknet'] }}"

@@ -1,19 +1,39 @@
-features:
-  darknet:
-    folder_container: "/root/tcpdump/"
-    hosts:
-      - "vm1-bigdata"
-      - "worker-pc"
-  cowrie:
-    folder_container: "/root/tcpdump/"
-    hosts:
-      - "worker-pc"
-  dionaea:
-    folder_container: "/root/tcpdump/"
-    hosts:
-      - "worker-pc"
+deploymentName: darknet
+appName: darknet
+hostNetwork: true
 
-tcp_dump_parameters:
-  G: 5
-  W: 1024
+containers:
+  tcpdump:
+    image: nicolaka/netshoot
+    imagePullPolicy: IfNotPresent
+    monthPath: /etc/tcpdump
+    command:
+      - "/bin/bash"
+      - "-c"
+    interface: eth1
+    rotate_seconds: 3600
+    filter: "ip and (net 130.192.167.0/24)"
+    outputPath: "/etc/tcpdump/trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
+nodeAffinity:
+  hostname:
+    values:
+      - polito-1
+
+volumes:
+  pv:
+    name: pv-volume-tcpdump-darknet
+    storageClassName: manual
+    capacity: 5Gi
+    accessModes:
+      - ReadWriteOnce
+    hostPath:
+      path: "/mnt/data/tcpdump"
+  pvc:
+    name: pvc-tcpdump-darknet
+    storageClassName: manual
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 5Gi

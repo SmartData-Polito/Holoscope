@@ -1,7 +1,7 @@
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
-  name: {{ .Values.daemonsetName }}
+  name: {{ .Values.appName }}
   namespace: {{ .Values.namespace }}
   labels:
     app.kubernetes.io/name: {{ .Values.appName }}
@@ -20,10 +20,26 @@ spec:
           image: {{ .Values.containers.arp4.image }}
           imagePullPolicy: {{ .Values.containers.arp4.imagePullPolicy }}
           command: {{ .Values.containers.arp4.command | toJson}}
+          args: {{ .Values.containers.arp4.args | toJson }}
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
         - name: arp6-responder
           image: {{ .Values.containers.arp6.image }}
           imagePullPolicy: {{ .Values.containers.arp6.imagePullPolicy }}
           command: {{ .Values.containers.arp6.command | toJson }}
+          args: {{ .Values.containers.arp6.args | toJson }}
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
