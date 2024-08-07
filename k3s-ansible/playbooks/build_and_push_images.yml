@@ -1,7 +1,7 @@
 ---
 # ansible-playbook -i inventory build_and_push_images.yml
 - name: Build Docker images
-  become: yes
+  become: true
   hosts: all:!localhost
   vars:
     dockerfiles:

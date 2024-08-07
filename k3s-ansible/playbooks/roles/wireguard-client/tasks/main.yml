@@ -3,7 +3,7 @@
   apt:
     name: wireguard
     state: present
-  become: yes
+  become: true
 
 - name: Create WireGuard folder
   shell: mkdir /etc/wireguard/
@@ -15,19 +15,19 @@
   args:
     chdir: /etc/wireguard
     creates: /etc/wireguard/publickey
-  become: yes
+  become: true
 
 - name: Get public key
   command: cat /etc/wireguard/publickey
   register: publickey_contents
   changed_when: False
-  become: yes
+  become: true
 
 - name: Get private key
   command: cat /etc/wireguard/privatekey
   register: privatekey_contents
   changed_when: False
-  become: yes
+  become: true
 
 - name: Set WireGuard public key fact for current host
   set_fact:
@@ -41,7 +41,7 @@
   template:
     src: wg0-client.conf.j2
     dest: /etc/wireguard/wg0.conf
-  become: yes
+  become: true
 
 - name: Activate Wireguard at boot
   command: "{{ item }}"

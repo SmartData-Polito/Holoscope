@@ -1,7 +1,7 @@
 ---
 - name: Post-installation steps
   hosts: "{{ hostvars[groups['master'][0]] }}"
-  become: yes
+  become: true
   roles:
     - role: k3s-server
       tasks_from: post_install
@@ -9,7 +9,7 @@
 # ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/add_node.yml -e "agents_group=brescia"
 - name: Configure agents
   hosts: "{{ agents_group }}"
-  become: yes
+  become: true
   roles:
     - common
     - wireguard-client
@@ -17,7 +17,7 @@
 
 - name: Post-installation steps on WireGuard server
   hosts: "{{ hostvars[groups['master'][0]] }}"
-  become: yes
+  become: true
   roles:
     - role: wireguard-server
       tasks_from: post_install
