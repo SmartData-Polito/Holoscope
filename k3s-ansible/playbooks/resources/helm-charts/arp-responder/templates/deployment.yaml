@@ -48,7 +48,7 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values: 
-                    {{ - range .Values.nodeAffinity.hostname.values }}
-                        - {{ . }}
+                    {{- range .Values.nodeAffinity.hostname.values }}
+                    - {{ . }}
                     {{- end }}
 

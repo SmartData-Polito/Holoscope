@@ -2,7 +2,7 @@
 # ansible-playbook -i inventory build_and_push_images.yml
 - name: Build Docker images
   become: yes
-  hosts: all
+  hosts: all:!localhost
   vars:
     dockerfiles:
       - name: ipv4
@@ -19,14 +19,25 @@
         name: docker
         state: present
 
-    - name: Copy Docker files to target host [local -> remote]
-      ansible.builtin.copy:
-        src: "{{ item.path }}"
+    - name: Archive Docker files [local]
+      ansible.builtin.archive:
+        path: "{{ item.path }}"
+        dest: "/tmp/{{ item.name }}.gz"
+        format: gz
+      delegate_to: localhost
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"
+      become: false
+
+    - name: Unarchive Docker files on target host
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ item.name }}.gz"
         dest: "/tmp/{{ item.name }}"
       loop: "{{ dockerfiles }}"
       loop_control:
         label: "{{ item.name }}"
-      
+
     - name: Build Docker images
       ansible.builtin.command:
         cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/{{ item.name }}/Dockerfile /tmp/{{ item.name }}
