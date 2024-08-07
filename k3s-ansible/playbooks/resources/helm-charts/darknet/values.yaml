@@ -1,6 +1,7 @@
 deploymentName: darknet
 appName: darknet
 hostNetwork: true
+namespace: ansible-managed
 
 containers:
   tcpdump:

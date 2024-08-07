@@ -64,7 +64,11 @@ spec:
               - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: In
-                    values: {{ .Values.nodeAffinity.hostname.values | toYaml | nindent 22 }}
+                    values: 
+                    {{ - range .Values.nodeAffinity.hostname.values }}
+                        - {{ . }}
+                    {{- end }}
+
 
 
 

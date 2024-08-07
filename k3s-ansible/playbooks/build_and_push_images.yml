@@ -19,14 +19,14 @@
         name: docker
         state: present
 
-    - name: Copy Docker files to target host
+    - name: Copy Docker files to target host [local -> remote]
       ansible.builtin.copy:
         src: "{{ item.path }}"
         dest: "/tmp/{{ item.name }}"
       loop: "{{ dockerfiles }}"
       loop_control:
         label: "{{ item.name }}"
-
+      
     - name: Build Docker images
       ansible.builtin.command:
         cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/{{ item.name }}/Dockerfile /tmp/{{ item.name }}

@@ -1,5 +1,6 @@
 deploymentName: arp-responder
 appName: arp-responder
+namespace: ansible-managed
 hostNetwork: true
 
 containers:

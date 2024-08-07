@@ -20,4 +20,3 @@ spec:
     {{- range .Values.service.externalIPs }}
     - {{ . }}
     {{- end }}
-    

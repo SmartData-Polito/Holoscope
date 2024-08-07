@@ -1,3 +1,11 @@
+# K3s Ansible
+
+ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/site.yml  --ask-become-pass
+
+ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/build_and_push_images.yml  --ask-become-pass
+
+ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/deploy_applications.yml  --ask-become-pass
+
 # K3s Cluster with WireGuard for Honeypots Deployment
 
 ## Overview
