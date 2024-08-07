@@ -35,6 +35,27 @@
       changed_when: False
       failed_when: "'version' not in helm_version.stdout"
 
+    - name: Add kubernetes-dashboard repository
+      ansible.builtin.command:
+        cmd: helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+      register: add_repo
+      changed_when: "'Kubernetes Dashboard has been added' in add_repo.stdout"
+      
+    - name: Update helm repositories
+      ansible.builtin.command:
+        cmd: helm repo update
+      when: add_repo is changed
+
+    - name: Deploy Kubernetes Dashboard
+      kubernetes.core.helm:
+        name: kubernetes-dashboard
+        chart_ref: kubernetes-dashboard/kubernetes-dashboard
+        release_namespace: kubernetes-dashboard
+        create_namespace: true
+        state: present
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+
     - name: Deploy Helm chart for ARP Responder in each required node
       command: >
         helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace {{ applications_namespace }} --create-namespace
@@ -49,13 +70,19 @@
 
     - name: Deploy Helm chart for Darknet TCPDump in each required node
       command: >
+        {% set used_listening_ips = hostvars[item].darknet_exclude_ips %}
+        {% set server_ip = [] %}
+        {% for ip in used_listening_ips %}
+          {% set _ = server_ip.append("host " + ip) %}
+        {% endfor %}
+
         helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ applications_namespace }} --create-namespace
         --set name=darknet-{{ item }}
         --set appName=darknet-{{ item }}
         --set volumes.pv.name=darknet-pv-{{ item }}
         --set volumes.pvc.name=darknet-pvc-{{ item }}
         --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
-        --set containers.tcpdump.filter="{{ hostvars[item].tcpdump_filter }}"
+        --set containers.tcpdump.filter="ip and (net {{ hostvars[item].darknet_range }} and not ( {{ server_ip | join(' or ') }} ))"
         --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
         --set containers.tcpdump.outputPath="{{hostvars[item].monthPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
         --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
@@ -63,3 +90,25 @@
       environment:
         KUBECONFIG: "{{ fetch_result.dest }}"
       with_items: "{{ groups['darknet'] }}"
+
+    - name: Deploy Helm chart for Cowrie with TCPDump in each required node
+      command: >
+        {% set listening_ips = hostvars[item].darknet_exclude_ips %}
+        {% set filter_ips = [] %}
+        {% for ip in listening_ips %}
+          {% set _ = filter_ips.append("host " + ip) %}
+        {% endfor %}
+
+        helm upgrade -i cowrie-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/cowrie --namespace {{ applications_namespace }} --create-namespace
+        --set name=cowrie-{{ item }}
+        --set appName=cowrie-{{ item }}
+        --set volumes.pv.name=cowrie-pv-{{ item }}
+        --set volumes.pvc.name=cowrie-pvc-{{ item }}
+        --set containers.tcpdump.filter="(port {{ hostvars[item].sshPort.port }} or port {{ hostvars[item].telnetPort.port }}) and ( {{ filter_ips | join(' or ')  }} )"
+        --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
+        --set containers.tcpdump.outputPath="{{hostvars[item].monthPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
+        --set nodeAffinity.hostname.values[0]="{{ item }}"
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['cowrie'] }}"

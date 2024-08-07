@@ -1,6 +1,6 @@
 # ENV['VAGRANT_NO_PARALLEL'] = 'no'
 NODE_ROLES = ["server-0", "agent-0"]
-NODE_BOXES = ['generic/ubuntu2004', 'generic/ubuntu2004']
+NODE_BOXES = ['bento/ubuntu-20.04', 'bento/ubuntu-20.04']
 PORTS = [2222, 2223]
 NODE_CPUS = 2
 NODE_MEMORY = 2048
@@ -30,6 +30,12 @@ Vagrant.configure("2") do |config|
     v.cpus = NODE_CPUS
     v.memory = NODE_MEMORY
     v.linked_clone = true
+    v.customize [
+      "modifyvm", :id,
+      "--paravirtprovider", "minimal",
+      "--cpus", "2",
+      "--cableconnected1", "on"
+    ]
   end
   
   NODE_ROLES.each_with_index do |name, i|
