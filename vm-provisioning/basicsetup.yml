@@ -1,0 +1,60 @@
+---
+- name: Prepare the VM
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    
+  tasks:
+    - name: Generate random Vagrant password
+      set_fact:
+        random_vagrant_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+
+    - name: Change Vagrant password
+      ansible.builtin.user:
+        name: vagrant
+        password: "{{ random_vagrant_password | password_hash('sha512', lookup('password', '/dev/null length=8 chars=ascii_letters,digits')) }}"
+      become_user: root
+
+    - name: Change root password      
+      ansible.builtin.user:
+        name: root
+        password: "{{ random_vagrant_password | password_hash('sha512', lookup('password', '/dev/null length=8 chars=ascii_letters,digits')) }}"
+      become_user: root
+
+    - name: Print Vagrant password to log
+      ansible.builtin.debug:
+        msg: "Vagrant Password: {{ random_vagrant_password }}"
+
+    - name: Clean the network configuration
+      ansible.builtin.shell:
+        cmd: rm -f /etc/netplan/*
+      become: true
+
+    - name: Create network configuration file if not exists
+      copy:
+        dest: /etc/netplan/01-netcfg.yaml
+        content: |
+          network:
+            ethernets:
+              eth0:
+                dhcp4: true
+                dhcp6: false
+            version: 2
+      become: true
+
+    - name: Apply the new network configuration
+      command: netplan apply
+      become: true
+
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: yes      
+
+    - name: Install basic packages in the vm
+      ansible.builtin.apt:
+        name:
+          - net-tools
+        state: present
+      become: true
