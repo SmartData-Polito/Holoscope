@@ -2,7 +2,7 @@
 # ansible-playbook -i inventory build_and_push_images.yml
 - name: Build Docker images
   become: true
-  hosts: all:!localhost
+  hosts: docker-registry
   vars:
     dockerfiles:
       - name: ipv4
@@ -12,7 +12,8 @@
         path: "{{ playbook_dir }}/resources/docker-images/arp-responder/ipv6/"
         author: "rvalentim"
     image_tag: latest
-
+    local_registry: "registry.local:30007"
+  
   tasks:
     - name: Ensure Docker is installed
       ansible.builtin.package:
@@ -30,6 +31,14 @@
         label: "{{ item.name }}"
       become: false
 
+    - name: Create /tmp/{{ item.name }} directory for unarchiving
+      ansible.builtin.file:
+        path: "/tmp/{{item.name}}"
+        state: directory
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"
+
     - name: Unarchive Docker files on target host
       ansible.builtin.unarchive:
         src: "/tmp/{{ item.name }}.gz"
@@ -41,6 +50,20 @@
     - name: Build Docker images
       ansible.builtin.command:
         cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/{{ item.name }}/Dockerfile /tmp/{{ item.name }}
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Tag Docker images for local registry
+      ansible.builtin.command:
+        cmd: docker tag {{ item.author }}/{{ item.name }}:{{ image_tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
+      loop: "{{ dockerfiles }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Push Docker images to local registry
+      ansible.builtin.command:
+        cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
       loop: "{{ dockerfiles }}"
       loop_control:
         label: "{{ item.name }}"

@@ -1,0 +1,113 @@
+all:
+  hosts:
+    host1:
+      ansible_host: <IP_ADDRESS>
+      ansible_user: <SSH_USERNAME>
+      # Uncomment and set the path to your SSH private key if needed
+      # ansible_ssh_private_key: <PATH_TO_PRIVATE_KEY>
+
+      # WireGuard server variables
+      wireguard_ip: "<WIREGUARD_IP>"
+      wireguard_interface: "<NETWORK_INTERFACE>"
+      # WireGuard keys should be securely stored, consider using Ansible Vault
+      wireguard_private_key: "<WIREGUARD_PRIVATE_KEY>"
+      wireguard_public_key: "<WIREGUARD_PUBLIC_KEY>"
+      wireguard_listen_port: "<PORT_NUMBER>"
+      wireguard_endpoint: "<IP_ADDRESS>:<PORT_NUMBER>"
+
+    host2:
+      ansible_host: <IP_ADDRESS>
+      ansible_user: <SSH_USERNAME>
+      # Uncomment and set the path to your SSH private key if needed
+      # ansible_ssh_private_key: <PATH_TO_PRIVATE_KEY>
+      wireguard_ip: "<WIREGUARD_IP>"
+      wireguard_interface: "<NETWORK_INTERFACE>"
+
+  children:
+    # Group for local deployment tasks
+    deployment:
+      hosts:
+        localhost:
+          ansible_connection: local
+
+    # K3s master node
+    master:
+      hosts:
+        host1:
+
+    # K3s agent nodes
+    agents:
+      hosts:
+        host2:
+
+    # Darknet traffic capture configuration
+    darknet:
+      hosts:
+        host1:
+          # IP range for Darknet traffic capture
+          darknet_range: "<IP_RANGE>"
+          # IPs to exclude from Darknet capture
+          darknet_exclude_ips: 
+            - <IP_ADDRESS_1>
+            - <IP_ADDRESS_2>
+          # Paths for storing captured traffic
+          hostPath: "<HOST_PATH>"
+          monthPath: "<MONTH_PATH>"
+          # Network interface to capture traffic on
+          tcpdump_interface: "<NETWORK_INTERFACE>"
+          # Rotation interval for capture files (in seconds)
+          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
+          # File naming pattern for captured traffic
+          tcpdump_file_pattern: "<FILE_PATTERN>"
+
+    # Flower (distributed machine learning) nodes
+    flower:
+      hosts:
+        host1:
+        host2:
+
+    # Cowrie honeypot configuration
+    cowrie:
+      hosts:
+        host1:
+          # IPs on which Cowrie will listen
+          listening_ips:
+            - <IP_ADDRESS_1>
+            - <IP_ADDRESS_2>
+          # SSH port configuration
+          sshPort: 
+            port: <SSH_PORT>
+            targetPort: <TARGET_SSH_PORT>
+          # Telnet port configuration
+          telnetPort: 
+            port: <TELNET_PORT>
+            targetPort: <TARGET_TELNET_PORT>
+          # Paths for storing captured traffic
+          hostPath: "<HOST_PATH>"
+          monthPath: "<MONTH_PATH>"
+          # Network interface to capture traffic on
+          tcpdump_interface: "<NETWORK_INTERFACE>"
+          # Rotation interval for capture files (in seconds)
+          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
+          # File naming pattern for captured traffic
+          tcpdump_file_pattern: "<FILE_PATTERN>"
+
+    # ARP responder configuration
+    arp_responder:
+      hosts:
+        host2:
+          # Network interface and range for IPv4 ARP responses
+          arp4_interface: "<NETWORK_INTERFACE>"
+          arp4_network: "<IP_RANGE>"
+          # Network interface for IPv6 ARP responses
+          arp6_interface: "<NETWORK_INTERFACE>"
+        host1:
+          arp4_interface: "<NETWORK_INTERFACE>"
+          arp4_network: "<IP_RANGE>"
+          arp6_interface: "<NETWORK_INTERFACE>"
+
+  vars:
+    # K3s cluster configuration
+    k3s_version: "<K3S_VERSION>"
+    k3s_url: "https://<MASTER_IP>:<API_PORT>"
+    applications_namespace: "<NAMESPACE>"

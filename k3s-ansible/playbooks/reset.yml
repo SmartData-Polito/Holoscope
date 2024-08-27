@@ -1,6 +1,6 @@
 ---
 - name: Undo cluster setup
-  hosts: all
+  hosts: all:!localhost
   become: true
   tasks:
     - name: Stop WireGuard 
@@ -31,3 +31,65 @@
       ansible.builtin.file:
         path: /usr/local/bin/k3s-install.sh
         state: absent
+
+    - name: Stop the Docker service
+      ignore_errors: true
+      service:
+        name: docker
+        state: stopped
+    
+    - name: Remove the docker-ee package (enterprise)
+      ignore_errors: true
+      ansible.builtin.apt:
+        name: docker-ee
+        state: absent
+
+    - name: Remove the docker-ce package (community edition)
+      ignore_errors: true
+      ansible.builtin.apt:
+        name: docker-ce
+        state: absent
+
+    - name: Remove the base docker package
+      ignore_errors: true
+      ansible.builtin.apt:
+        name: docker
+        state: absent
+
+    - name: Delete the /var/lib/docker directory
+      ignore_errors: true
+      file: 
+        path: /var/lib/docker
+        state: absent
+
+    - name: Stop Docker service
+      ansible.builtin.service:
+        name: docker
+        state: stopped
+
+    - name: Disable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: no
+        masked: yes
+
+    - name: Remove Docker package
+      ansible.builtin.package:
+        name: docker-ce
+        state: absent
+
+    - name: Remove Docker systemd unit file (if exists)
+      ansible.builtin.file:
+        path: /etc/systemd/system/docker.service
+        state: absent
+
+    - name: Remove Docker systemd drop-in directory (if exists)
+      ansible.builtin.file:
+        path: /etc/systemd/system/docker.service.d
+        state: absent
+        recurse: yes
+      ignore_errors: true
+
+    - name: Reload systemd to apply changes
+      ansible.builtin.systemd:
+        daemon_reload: yes

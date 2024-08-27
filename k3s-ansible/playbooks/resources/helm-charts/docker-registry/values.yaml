@@ -1,0 +1,37 @@
+deploymentName: docker-registry
+appName: docker-registry
+namespace: docker-registry
+
+containers:
+  registry:
+    image: registry:2
+    imagePullPolicy: IfNotPresent
+    monthPath: /var/lib/registry
+    
+nodeAffinity:
+  hostname:
+    values:
+      - polito-1
+
+volumes:
+  pv:
+    name: pv-volume-docker-registry
+    storageClassName: manual
+    capacity: 15Gi
+    accessModes:
+      - ReadWriteOnce
+    hostPath:
+      path: "/mnt/data/registry"
+  pvc:
+    name: pvc-docker-registry
+    storageClassName: manual
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 5Gi
+
+service:
+  type: NodePort
+  port: 5000
+  nodePort: 30007

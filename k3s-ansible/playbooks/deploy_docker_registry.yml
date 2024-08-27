@@ -1,0 +1,59 @@
+---
+# ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/deploy_docker_registry.yml  --ask-become-pass
+#jinja2: trim_blocks:True
+- name: Copy and modify file from remote host
+  hosts: deployment
+  tasks:
+    - name: Fetch Kubeconfig from the remote host
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/kubeconfig.yaml
+        flat: yes
+      delegate_to: "{{ groups['master'][0] }}"
+      register: fetch_result
+
+    - name: Change Kubeconfig permissions
+      ansible.builtin.file:
+        path: "{{ fetch_result.dest }}"
+        mode: "go-r"
+
+    - name: Ensure yq is installed on localhost
+      become: true
+      apt:
+        name: yq
+        state: present
+      run_once: true
+
+    - name: Modify the server URL in the YAML file using yq
+      shell: |
+        yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
+      run_once: true
+
+    - name: Ensure Helm is installed
+      command: helm version
+      register: helm_version
+      changed_when: False
+      failed_when: "'version' not in helm_version.stdout"
+
+    - name: Deploy Helm chart for Docker Registry on specific node
+      command: >
+        helm upgrade -i docker-registry-{{ item }} {{ playbook_dir }}/resources/helm-charts/docker-registry --namespace docker-registry --create-namespace
+        --set name=docker-registry-{{ item }}
+        --set appName=docker-registry-{{ item }}
+        --set nodeAffinity.hostname.values[0]={{ item }}
+        --set service.loadBalancerIP={{hostvars[groups['docker-registry'][0]]['wireguard_ip']}}
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['docker-registry'] }}"
+
+- name: Append to /etc/hosts file on all machines in a group
+  hosts: master:agents
+  become: true
+  tasks:
+    - name: Append entry to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^.*\sregistry\.local\s*$'
+        line: "{{hostvars[groups['docker-registry'][0]]['wireguard_ip']}} registry registry.local"
+        state: present
+        insertafter: EOF

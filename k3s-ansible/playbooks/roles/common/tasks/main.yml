@@ -36,6 +36,21 @@
     state: present
   when: ansible_os_family == "RedHat"
 
+- name: Create Docker daemon configuration directory
+  file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: Configure Docker daemon options
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "insecure-registries" : ["registry.local:30007"]
+      }
+    mode: '0644'
+
 - name: Ensure Docker service is started and enabled
   ansible.builtin.service:
     name: docker

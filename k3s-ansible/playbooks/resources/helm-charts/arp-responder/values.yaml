@@ -5,7 +5,7 @@ hostNetwork: true
 
 containers:
   arp4:
-    image: rvalentim/ipv4
+    image: registry.local:30007/rvalentim/ipv4
     imagePullPolicy: IfNotPresent
     command:
       - "/usr/src/arpd/farpd2"
@@ -15,7 +15,7 @@ containers:
       - "eth1" # Use the variable
       - "20.0.0.0/24" # Use the variable
   arp6:
-    image: rvalentim/ipv6
+    image: registry.local:30007/rvalentim/ipv6
     imagePullPolicy: IfNotPresent
     command:
       - "/usr/src/arpv6/parasite6"
