@@ -13,6 +13,6 @@ spec:
   - from:
     - ipBlock:
         cidr: 10.0.0.0/24
-  ports:
-  - protocol: TCP
-    port: {{ .Values.service.port }}  # Matches the service port
+    ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}  # Matches the service port

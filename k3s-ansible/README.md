@@ -7,7 +7,7 @@ $ ansible-galaxy collection install ansible.posix
 ### Deploy the basic wireguard and k3s installation 
 
 ```bash
-$ ansible-playbook playbooks/site.yml
+$ ansible-playbook playbooks/site.yml --ask-vault-password
 ```
 
 The wireguard server need a fixed public and private key, which should not be regenerated every deploy, for this reason execute the procedure below:
@@ -17,8 +17,8 @@ The wireguard server need a fixed public and private key, which should not be re
 ```sh
 
 privkey=$(wg genkey) sh -c 'echo "
-    server_private_key: $privkey
-    server_public_key: $(echo $privkey | wg pubkey)"'
+    wireguard_private_key: $privkey
+    wireguard_public_key: $(echo $privkey | wg pubkey)"'
 
 ```
 
@@ -33,15 +33,15 @@ k3s_url: "https://{{ hostvars[groups['master'][0]] }}:6443"
 # WireGuard server variables
 server_ip: "10.0.0.1"
 listen_port: "51820"
-server_private_key: !vault |
-  $ANSIBLE_VAULT;1.1;AES256
-  66633530373637636637333065363864616339313262623361393132326564386661393935323865
-  3964663130373962333333653931376334356338313231310a366562343233636166376634376631
-  31353534396666336230326464333064343337383463343035383333326162373666383363313538
-  3261353731313330310a356261626630306263653537656238333536313134323465353163316633
-  32343632383539356530366531646562353335313739663436366666663965343663663163396132
-  6631326264396663313935373037383230333833636665323464
-server_public_key: /SPUC+mZEcY0ChebN97MhEExlWh/LJR0NbLs8eg27Uk=
+wireguard_private_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          66363663316337643535666635613466303466623039376335333561643536613334306339626233
+          6337613835623662323164303461316336363962633831630a366365386635376262396563313134
+          35313534623965316664626630643239303963653862663034643531383265663038333035393539
+          3362633363666464360a346435656638356664666561616131333562396639343762643064636265
+          66626466383930383538633438613366313836326430646131386135326335636239636638613739
+          3135643630386131303865616535366638633036613438663133
+wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
 gateway_interface_name: "name_of_the_gateway_interface"
 
 # WireGuard clients
@@ -59,7 +59,7 @@ It's a good practice to AVOID having secrets in plaintext (like the VPN private 
 
 ```sh
 
-ansible-vault encrypt_string --ask-vault-password --stdin-name server_privkey
+ansible-vault encrypt_string --ask-vault-password --stdin-name wireguard_private_key
 
 ```
 

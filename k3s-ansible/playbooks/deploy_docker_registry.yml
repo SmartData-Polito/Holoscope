@@ -17,10 +17,17 @@
         path: "{{ fetch_result.dest }}"
         mode: "go-r"
 
-    - name: Ensure yq is installed on localhost
+    - name: Ensure yq is installed on the deployment
       become: true
       apt:
         name: yq
+        state: present
+      run_once: true
+
+    - name: Install kubectl in the on deployment
+      become: true
+      apt:
+        name: kubernetes-client
         state: present
       run_once: true
 
@@ -29,11 +36,18 @@
         yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
       run_once: true
 
-    - name: Ensure Helm is installed
-      command: helm version
-      register: helm_version
-      changed_when: False
-      failed_when: "'version' not in helm_version.stdout"
+    - name: Install helm if not exists
+      become: true
+      unarchive:
+        src: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /usr/local/bin
+        extra_opts: "--strip-components=1"
+        owner: root
+        group: root
+        mode: 0755
+        remote_src: true
+      args:
+        creates: /usr/local/bin/helm
 
     - name: Deploy Helm chart for Docker Registry on specific node
       command: >
