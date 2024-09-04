@@ -16,13 +16,13 @@ containers:
       - "-c"
     interface: eth0
     rotate_seconds: 3600
-    filter: "ip and (net 130.192.167.0/24)"
+    filter: "ip and (net 10.10.0.0/24)"
     outputPath: "/etc/tcpdump/trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
 nodeAffinity:
   hostname:
     values:
-      - polito-1
+      - poli-worker-00
 
 volumes:
   pv:

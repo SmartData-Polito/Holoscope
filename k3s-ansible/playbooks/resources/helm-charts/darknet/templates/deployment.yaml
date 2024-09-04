@@ -25,7 +25,7 @@ spec:
           args:
             - "tcpdump -i {{ .Values.containers.tcpdump.interface }} -nn -tt '{{ .Values.containers.tcpdump.filter }}' -G {{ .Values.containers.tcpdump.rotate_seconds }} -w {{ .Values.containers.tcpdump.outputPath }}"
           volumeMounts:
-            - mountPath: {{ .Values.containers.tcpdump.monthPath }}
+            - mountPath: {{ .Values.containers.tcpdump.mountPath }}
               name: {{ .Values.volumes.pv.name }}
       volumes:
         - name: {{ .Values.volumes.pv.name }}

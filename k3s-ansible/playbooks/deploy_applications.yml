@@ -46,21 +46,22 @@
         cmd: helm repo update
       when: add_repo is changed
 
-    - name: Deploy Kubernetes Dashboard
-      kubernetes.core.helm:
-        name: kubernetes-dashboard
-        chart_ref: kubernetes-dashboard/kubernetes-dashboard
-        release_namespace: kubernetes-dashboard
-        create_namespace: true
-        state: present
-      environment:
-        KUBECONFIG: "{{ fetch_result.dest }}"
+    # - name: Deploy Kubernetes Dashboard
+    #   kubernetes.core.helm:
+    #     name: kubernetes-dashboard
+    #     chart_ref: kubernetes-dashboard/kubernetes-dashboard
+    #     release_namespace: kubernetes-dashboard
+    #     create_namespace: true
+    #     state: present
+    #   environment:
+    #     KUBECONFIG: "{{ fetch_result.dest }}"
 
     - name: Deploy Helm chart for ARP Responder in each required node
       command: >
-        helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace {{ applications_namespace }} --create-namespace
+        helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace {{ hostvars[item].namespace }} --create-namespace
         --set name=arp-responder-{{ item }}
         --set appName=arp-responder-{{ item }}
+        --set namespace={{ hostvars[item].namespace }}
         --set "containers.arp4.args={"{{ hostvars[item].arp4_interface }}","{{ hostvars[item].arp4_network }}"}"
         --set "containers.arp6.args={"{{hostvars[item].arp6_interface}}"}"
         --set nodeAffinity.hostname.values[0]={{ item }}
@@ -76,16 +77,18 @@
           {% set _ = server_ip.append("host " + ip) %}
         {% endfor %}
 
-        helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ applications_namespace }} --create-namespace
+        helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ hostvars[item].namespace }} --create-namespace
         --set name=darknet-{{ item }}
         --set appName=darknet-{{ item }}
+        --set namespace={{ hostvars[item].namespace }}
         --set volumes.pv.name=darknet-pv-{{ item }}
         --set volumes.pvc.name=darknet-pvc-{{ item }}
         --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
         --set containers.tcpdump.filter="ip and (net {{ hostvars[item].darknet_range }} and not ( {{ server_ip | join(' or ') }} ))"
         --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
-        --set containers.tcpdump.outputPath="{{hostvars[item].monthPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
-        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
+        --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+        --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
+        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"       
         --set nodeAffinity.hostname.values[0]="{{ item }}"
       environment:
         KUBECONFIG: "{{ fetch_result.dest }}"
@@ -99,14 +102,16 @@
           {% set _ = filter_ips.append("host " + ip) %}
         {% endfor %}
 
-        helm upgrade -i cowrie-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/cowrie --namespace {{ applications_namespace }} --create-namespace
+        helm upgrade -i cowrie-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/cowrie --namespace {{ hostvars[item].namespace }} --create-namespace
         --set name=cowrie-{{ item }}
         --set appName=cowrie-{{ item }}
+        --set namespace={{ hostvars[item].namespace }}
         --set volumes.pv.name=cowrie-pv-{{ item }}
         --set volumes.pvc.name=cowrie-pvc-{{ item }}
         --set containers.tcpdump.filter="(port {{ hostvars[item].sshPort.port }} or port {{ hostvars[item].telnetPort.port }}) and ( {{ filter_ips | join(' or ')  }} )"
         --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
-        --set containers.tcpdump.outputPath="{{hostvars[item].monthPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+        --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+        --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
         --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
         --set nodeAffinity.hostname.values[0]="{{ item }}"
       environment:

@@ -1,25 +1,25 @@
 deploymentName: darknet
 appName: darknet
 hostNetwork: true
-namespace: ansible-managed
+namespace: darknetns
 
 containers:
   tcpdump:
     image: nicolaka/netshoot
     imagePullPolicy: IfNotPresent
-    monthPath: /etc/tcpdump
+    mountPath: /data
     command:
       - "/bin/bash"
       - "-c"
-    interface: eth1
+    interface: eth0
     rotate_seconds: 3600
-    filter: "ip and (net 130.192.167.0/24)"
-    outputPath: "/etc/tcpdump/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+    filter: "ip and (net 10.10.0.0/24)"
+    outputPath: "/data/trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
 nodeAffinity:
   hostname:
     values:
-      - polito-1
+      - poli-worker-00
 
 volumes:
   pv:
@@ -29,7 +29,7 @@ volumes:
     accessModes:
       - ReadWriteOnce
     hostPath:
-      path: "/mnt/data/tcpdump"
+      path: "/data"
   pvc:
     name: pvc-tcpdump-darknet
     storageClassName: manual

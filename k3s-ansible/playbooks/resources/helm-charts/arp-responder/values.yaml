@@ -12,17 +12,17 @@ containers:
       - "-d"
       - "-i"
     args:
-      - "eth1" # Use the variable
-      - "20.0.0.0/24" # Use the variable
+      - "eth0" # Use the variable
+      - "10.10.0.0/24" # Use the variable
   arp6:
     image: registry.local:30007/rvalentim/ipv6
     imagePullPolicy: IfNotPresent
     command:
       - "/usr/src/arpv6/parasite6"
     args:
-      - "eth1" # Use the variable
+      - "eth0" # Use the variable
 
 nodeAffinity:
   hostname:
     values:
-      - polito-1
+      - poli-worker-00
