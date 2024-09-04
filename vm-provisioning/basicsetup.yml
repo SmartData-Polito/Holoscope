@@ -32,27 +32,28 @@
         cmd: rm -f /etc/netplan/*
       become: true
 
-    - name: Create network configuration file if not exists
-      copy:
+    - name: Create network configuration file with dynamic IP address
+      ansible.builtin.copy:
         dest: /etc/netplan/01-netcfg.yaml
         content: |
           network:
+            version: 2
             ethernets:
               eth0:
                 dhcp4: true
                 dhcp6: false
-            version: 2
       become: true
 
     - name: Apply the new network configuration
-      command: netplan apply
+      ansible.builtin.command:
+        cmd: netplan apply
       become: true
 
     - name: Update APT package cache
       ansible.builtin.apt:
         update_cache: yes      
 
-    - name: Install basic packages in the vm
+    - name: Install basic packages in the VM
       ansible.builtin.apt:
         name:
           - net-tools

@@ -3,8 +3,8 @@ Address = {{ hostvars[inventory_hostname]['wireguard_ip'] }}/24
 ListenPort = {{ hostvars[inventory_hostname]['wireguard_listen_port'] }}
 PrivateKey = {{ hostvars[inventory_hostname]['wireguard_private_key'] }}
 
-PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }} -j MASQUERADE
-PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }}  -j MASQUERADE
+PostUp = iptables -A FORWARD -i {{ hostvars[inventory_hostname]['wireguard_interface'] }} -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i {{ hostvars[inventory_hostname]['wireguard_interface'] }} -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ hostvars[inventory_hostname]['wireguard_interface'] }}  -j MASQUERADE
 
 {% for client in groups['agents'] %}
 [Peer]

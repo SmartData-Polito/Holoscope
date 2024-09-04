@@ -12,8 +12,8 @@
 
 - name: Create WireGuard server configuration file
   template:
-    src: wg0-server.conf.j2
-    dest: /etc/wireguard/wg0.conf
+    src: server.conf.j2
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
   become: true
 
 - name: enable and persist ip forwarding
@@ -27,7 +27,7 @@
 - name: Activate Wireguard at boot
   command: "{{ item }}"
   loop:
-    - systemctl enable wg-quick@wg0.service
+    - systemctl enable wg-quick@{{ wireguard_interface }}.service
     - systemctl daemon-reload      
 
 - name: Include post-installation tasks

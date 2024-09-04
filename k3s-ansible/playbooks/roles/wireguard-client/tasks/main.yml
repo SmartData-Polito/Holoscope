@@ -39,19 +39,19 @@
 
 - name: Create WireGuard client configuration file
   template:
-    src: wg0-client.conf.j2
-    dest: /etc/wireguard/wg0.conf
+    src: client.conf.j2
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
   become: true
 
 - name: Activate Wireguard at boot
   command: "{{ item }}"
   loop:
-    - systemctl enable wg-quick@wg0.service
+    - systemctl enable wg-quick@{{ wireguard_interface }}.service
     - systemctl daemon-reload      
 
 - name: Reload WireGuard 
   block:
-    - command: wg-quick  {{ item }} wg0 
+    - command: wg-quick  {{ item }} {{ wireguard_interface }} 
       with_items:
         - down
         - up

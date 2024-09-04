@@ -1,6 +1,14 @@
-To run the playbook run this:
+### Install requirements: 
 
-ansible-playbook playbooks/site.yml
+```bash
+$ ansible-galaxy collection install ansible.posix
+```
+
+### Deploy the basic wireguard and k3s installation 
+
+```bash
+$ ansible-playbook playbooks/site.yml
+```
 
 The wireguard server need a fixed public and private key, which should not be regenerated every deploy, for this reason execute the procedure below:
 

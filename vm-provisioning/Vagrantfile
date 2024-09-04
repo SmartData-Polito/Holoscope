@@ -1,17 +1,14 @@
 ENV['VAGRANT_NO_PARALLEL'] = 'yes'
-NODE_ROLES = ["polito-master-0", "polito-worker-0", "garr-worker-0"]
+NODE_ROLES = ["poli-master-00", "poli-worker-00", "garr-worker-00"]
 NODE_BOXES = ['generic/ubuntu2204', 'generic/ubuntu2204', 'generic/ubuntu2204']
 NODE_CPUS = 2
 NODE_MEMORY = 2048
-NETWORK_PREFIX = "10.10.10"
-NODE_MACS = ["08:00:27:00:00:01", "08:00:27:00:00:02", "08:00:27:00:00:03"] 
+NODE_MACS = ["00:00:00:00:00:AA", "00:00:00:00:00:BB", "00:00:00:00:00:CC"] 
 
 def provision(vm, role, node_num)
   vm.box = NODE_BOXES[node_num]
-  vm.hostname = role
-  
-  node_ip = "#{NETWORK_PREFIX}.#{100+node_num}"
-  vm.network "private_network", ip: node_ip, netmask: "255.255.255.0", mac: NODE_MACS[node_num]
+  vm.hostname = role 
+  vm.network "private_network", mac: NODE_MACS[node_num], libvirt__network_name: "honeynet"
   
   # Use a provisioning script to set up basic configuration
   vm.provision "ansible" do |ansible|
