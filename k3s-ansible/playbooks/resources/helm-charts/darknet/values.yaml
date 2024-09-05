@@ -7,14 +7,14 @@ containers:
   tcpdump:
     image: nicolaka/netshoot
     imagePullPolicy: IfNotPresent
-    mountPath: /data
+    mountPath: /data/darknet
     command:
       - "/bin/bash"
       - "-c"
     interface: eth0
     rotate_seconds: 3600
     filter: "ip and (net 10.10.0.0/24)"
-    outputPath: "/data/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+    outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
 nodeAffinity:
   hostname:
@@ -29,7 +29,7 @@ volumes:
     accessModes:
       - ReadWriteOnce
     hostPath:
-      path: "/data"
+      path: "/data/darknet"
   pvc:
     name: pvc-tcpdump-darknet
     storageClassName: manual

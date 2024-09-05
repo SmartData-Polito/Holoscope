@@ -1,0 +1,24 @@
+- name: Deploy Helm chart for Darknet TCPDump in each required node
+  command: >
+    {% set used_listening_ips = hostvars[item].darknet_exclude_ips %}
+    {% set server_ip = [] %}
+    {% for ip in used_listening_ips %}
+      {% set _ = server_ip.append("host " + ip) %}
+    {% endfor %}
+
+    helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ hostvars[item].namespace }} --create-namespace
+    --set name=darknet-{{ item }}
+    --set appName=darknet-{{ item }}
+    --set namespace={{ hostvars[item].namespace }}
+    --set volumes.pv.name=darknet-pv-{{ item }}
+    --set volumes.pvc.name=darknet-pvc-{{ item }}
+    --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
+    --set containers.tcpdump.filter="ip and (net {{ hostvars[item].darknet_range }} and not ( {{ server_ip | join(' or ') }} ))"
+    --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
+    --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+    --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
+    --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"       
+    --set nodeAffinity.hostname.values[0]="{{ item }}"
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['darknet'] }}"

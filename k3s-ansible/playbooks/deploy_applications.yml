@@ -46,6 +46,23 @@
         cmd: helm repo update
       when: add_repo is changed
 
+    - name: Set the action for the applications
+      set_fact:
+        operation: "{{ action | default('install') }}"  # install or remove
+
+    # Step 1: Extract the list of applications to deploy
+    - name: Get applications to deploy
+      set_fact:
+        applications_to_deploy: "{{ deployed_applications }}"
+
+    # Step 2: Deploy or remove applications
+    - name: Deploy or remove applications
+      include_role:
+        name: "{{ item }}"
+        tasks_from: "{{ operation }}"
+      loop: "{{ applications_to_deploy }}"
+      when: item in groups['applications']['children'] | default([])
+
     # - name: Deploy Kubernetes Dashboard
     #   kubernetes.core.helm:
     #     name: kubernetes-dashboard
@@ -55,65 +72,3 @@
     #     state: present
     #   environment:
     #     KUBECONFIG: "{{ fetch_result.dest }}"
-
-    - name: Deploy Helm chart for ARP Responder in each required node
-      command: >
-        helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder --namespace {{ hostvars[item].namespace }} --create-namespace
-        --set name=arp-responder-{{ item }}
-        --set appName=arp-responder-{{ item }}
-        --set namespace={{ hostvars[item].namespace }}
-        --set "containers.arp4.args={"{{ hostvars[item].arp4_interface }}","{{ hostvars[item].arp4_network }}"}"
-        --set "containers.arp6.args={"{{hostvars[item].arp6_interface}}"}"
-        --set nodeAffinity.hostname.values[0]={{ item }}
-      environment:
-        KUBECONFIG: "{{ fetch_result.dest }}"
-      with_items: "{{ groups['arp_responder'] }}"
-
-    - name: Deploy Helm chart for Darknet TCPDump in each required node
-      command: >
-        {% set used_listening_ips = hostvars[item].darknet_exclude_ips %}
-        {% set server_ip = [] %}
-        {% for ip in used_listening_ips %}
-          {% set _ = server_ip.append("host " + ip) %}
-        {% endfor %}
-
-        helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ hostvars[item].namespace }} --create-namespace
-        --set name=darknet-{{ item }}
-        --set appName=darknet-{{ item }}
-        --set namespace={{ hostvars[item].namespace }}
-        --set volumes.pv.name=darknet-pv-{{ item }}
-        --set volumes.pvc.name=darknet-pvc-{{ item }}
-        --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
-        --set containers.tcpdump.filter="ip and (net {{ hostvars[item].darknet_range }} and not ( {{ server_ip | join(' or ') }} ))"
-        --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
-        --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
-        --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
-        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"       
-        --set nodeAffinity.hostname.values[0]="{{ item }}"
-      environment:
-        KUBECONFIG: "{{ fetch_result.dest }}"
-      with_items: "{{ groups['darknet'] }}"
-
-    - name: Deploy Helm chart for Cowrie with TCPDump in each required node
-      command: >
-        {% set listening_ips = hostvars[item].darknet_exclude_ips %}
-        {% set filter_ips = [] %}
-        {% for ip in listening_ips %}
-          {% set _ = filter_ips.append("host " + ip) %}
-        {% endfor %}
-
-        helm upgrade -i cowrie-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/cowrie --namespace {{ hostvars[item].namespace }} --create-namespace
-        --set name=cowrie-{{ item }}
-        --set appName=cowrie-{{ item }}
-        --set namespace={{ hostvars[item].namespace }}
-        --set volumes.pv.name=cowrie-pv-{{ item }}
-        --set volumes.pvc.name=cowrie-pvc-{{ item }}
-        --set containers.tcpdump.filter="(port {{ hostvars[item].sshPort.port }} or port {{ hostvars[item].telnetPort.port }}) and ( {{ filter_ips | join(' or ')  }} )"
-        --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
-        --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
-        --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
-        --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"
-        --set nodeAffinity.hostname.values[0]="{{ item }}"
-      environment:
-        KUBECONFIG: "{{ fetch_result.dest }}"
-      with_items: "{{ groups['cowrie'] }}"
