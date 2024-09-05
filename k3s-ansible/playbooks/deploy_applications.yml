@@ -61,7 +61,8 @@
         name: "{{ item }}"
         tasks_from: "{{ operation }}"
       loop: "{{ applications_to_deploy }}"
-      when: item in groups['applications']['children'] | default([])
+      loop_control:
+        loop_var: item
 
     # - name: Deploy Kubernetes Dashboard
     #   kubernetes.core.helm:

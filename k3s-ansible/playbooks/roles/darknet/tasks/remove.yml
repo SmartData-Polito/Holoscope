@@ -10,4 +10,3 @@
     kubectl delete namespace {{ hostvars[item].namespace }}
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
-  with_items: "{{ groups['darknet'] }}"
