@@ -1,39 +1,38 @@
-# Provisioning VMs for the Testing Environment
+# Setting Up a Testing Environment with Vagrant and Libvirt
 
-Set up and manage a testing environment that mirrors the production network. The environment uses Vagrant with Libvirt on a pre-configured `honeynet` network.
+This section explains how to set up a testing environment that mirrors production, using Vagrant and Libvirt on a pre-configured `honeynet` network.
 
 ## Prerequisites
 
-- **Libvirt** installed and configured
-- **Vagrant** installed
-- Pre-configured `libvirt_honeynet.xml` file
+Before starting, ensure the following are installed and configured:
+- **Libvirt** 
+- **Vagrant**
+- A pre-configured `libvirt_honeynet.xml` file for the honeynet network
 
-## Setup
+## Environment Setup
 
-### Create the Environment
-
-1. **Create the Honeynet Network:**
-
-```bash 
-$ virsh net-create libvirt_honeynet.xml
+### 1. Create the Honeynet Network
+Use `virsh` to create the honeynet network from the XML configuration file:
+```bash
+virsh net-create libvirt_honeynet.xml
 ```
 
-2. Start the Vagrant Environment:
-
-```bash 
-$ vagrant up
+### 2. Start the Vagrant Environment
+Once the honeynet network is running, bring up the Vagrant environment:
+```bash
+vagrant up
 ```
 
-### Destroy the Environment
+## Tearing Down the Environment
 
-1. Destroy Vagrant VMs:
-
-```bash 
-$ vagrant destroy -f
+### 1. Destroy Vagrant VMs
+To clean up, first destroy the Vagrant VMs:
+```bash
+vagrant destroy -f
 ```
 
-2. Destroy the Honeynet Network:
-
-```bash 
-$ virsh net-destroy honeynet
+### 2. Destroy the Honeynet Network
+Then, stop and remove the honeynet network:
+```bash
+virsh net-destroy honeynet
 ```

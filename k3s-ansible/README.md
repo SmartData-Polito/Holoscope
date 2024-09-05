@@ -1,3 +1,5 @@
+# Deployment of K3s Cluster with WireGuard
+
 ### Install requirements: 
 
 ```bash
@@ -15,42 +17,24 @@ The wireguard server need a fixed public and private key, which should not be re
 1. In a terminal generate the keys with wg genkey and wg pubkey commands. You can output both with the following command:
 
 ```sh
-
 privkey=$(wg genkey) sh -c 'echo "
     wireguard_private_key: $privkey
     wireguard_public_key: $(echo $privkey | wg pubkey)"'
-
 ```
 
-Copy the output lines and add them to a vars/main.yml. Here's what mine looks like now (your keys will be different):
+Copy the output lines and add them to a vars/main.yml. Here's what mine looks like now:
 
 ```yaml
-# K3s variables
-k3s_version: "v1.20.0+k3s2"
-k3s_token: "your_k3s_token"
-k3s_url: "https://{{ hostvars[groups['master'][0]] }}:6443"
-
 # WireGuard server variables
-server_ip: "10.0.0.1"
-listen_port: "51820"
 wireguard_private_key: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66363663316337643535666635613466303466623039376335333561643536613334306339626233
-          6337613835623662323164303461316336363962633831630a366365386635376262396563313134
-          35313534623965316664626630643239303963653862663034643531383265663038333035393539
-          3362633363666464360a346435656638356664666561616131333562396639343762643064636265
-          66626466383930383538633438613366313836326430646131386135326335636239636638613739
-          3135643630386131303865616535366638633036613438663133
+  $ANSIBLE_VAULT;1.1;AES256
+  66363663316337643535666635613466303466623039376335333561643536613334306339626233
+  6337613835623662323164303461316336363962633831630a366365386635376262396563313134
+  35313534623965316664626630643239303963653862663034643531383265663038333035393539
+  3362633363666464360a346435656638356664666561616131333562396639343762643064636265
+  66626466383930383538633438613366313836326430646131386135326335636239636638613739
+  3135643630386131303865616535366638633036613438663133
 wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
-gateway_interface_name: "name_of_the_gateway_interface"
-
-# WireGuard clients
-clients:
-  - ip: "10.0.0.2"
-    public_key: "client1_public_key"
-  - ip: "10.0.0.3"
-    public_key: "client2_public_key"
-  # Add additional clients here
 ```
 
 Encrypting the Private Key
@@ -58,9 +42,7 @@ Encrypting the Private Key
 It's a good practice to AVOID having secrets in plaintext (like the VPN private key above). This is especially true if those secrets will be shared with anyone else, like via a git repo. Let's prevent this by using Ansible Vault. Vault is a tool for encrypting secret values and using them in playbooks. Encrypt the private key with:
 
 ```sh
-
 ansible-vault encrypt_string --ask-vault-password --stdin-name wireguard_private_key
-
 ```
 
 You'll be prompted twice for a Vault encryption password, after which you'll paste your privkey value and hit Ctrl+d twice. If the command completed after a single Ctrl+d, try again and make sure you're not copy-pasting an invisible newline character at the end of the privkey value. Copy the output into your playbook, which will now look like:
@@ -81,7 +63,6 @@ You'll be prompted twice for a Vault encryption password, after which you'll pas
     server_pubkey: 7/6f7bUT+2hWMEP5BxeK51PGuMuTnQ9pRpkxg5jUSTo=
   tasks:
   ...
-
 ```
 
-Make sure to remember your encryption password (and save it in a password manager); you'll need to enter it every time you run the playbook.
+Make sure to remember your encryption password (and save it in a password manager); you will need to enter it every time you run the playbook.
