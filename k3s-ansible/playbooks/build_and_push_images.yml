@@ -2,7 +2,7 @@
 # ansible-playbook -i inventory build_and_push_images.yml
 - name: Build Docker images
   become: true
-  hosts: docker-registry
+  hosts: registry
   vars:
     dockerfiles:
       - name: ipv4
@@ -13,6 +13,7 @@
         author: "rvalentim"
     image_tag: latest
     local_registry: "registry.local:30007"
+    ansible_python_interpreter: /usr/bin/python3    
   
   tasks:
     - name: Ensure Docker is installed

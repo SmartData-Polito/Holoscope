@@ -4,9 +4,12 @@
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
   with_items: "{{ groups['darknet'] }}"
-
+  ignore_errors: yes
+        
 - name: Remove the namespace for Darknet Collector
   command: >
-    kubectl delete namespace {{ hostvars[item].namespace }}
+    kubectl delete namespace {{ hostvars[groups['darknet'][0]].namespace }}
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
+  run_once: true
+  ignore_errors: yes

@@ -3,6 +3,8 @@
 #jinja2: trim_blocks:True
 - name: Copy and modify file from remote host
   hosts: deployment
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  
   tasks:
     - name: Fetch Kubeconfig from the remote host
       fetch:
@@ -58,11 +60,11 @@
     # Step 2: Deploy or remove applications
     - name: Deploy or remove applications
       include_role:
-        name: "{{ item }}"
+        name: "{{ application }}"
         tasks_from: "{{ operation }}"
       loop: "{{ applications_to_deploy }}"
       loop_control:
-        loop_var: item
+        loop_var: application
 
     # - name: Deploy Kubernetes Dashboard
     #   kubernetes.core.helm:
