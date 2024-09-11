@@ -1,12 +1,12 @@
 all:
   hosts:
     poli-master-00:
-      ansible_host: 10.10.0.100
-      ansible_ssh_private_key_file: "../vm-provisioning/.vagrant/machines/poli-master-00/libvirt/private_key"
-      ansible_user: vagrant
+      ansible_host: vm1-bigdata.polito.it
+      ansible_port: 22
+      ansible_user: root
       # WireGuard server variables
       wireguard_ip: "10.0.0.100"
-      public_interface: "eth0"
+      public_interface: "ens2"
       wireguard_interface: "wg0"
       wireguard_private_key: !vault |
           $ANSIBLE_VAULT;1.1;AES256
@@ -18,24 +18,42 @@ all:
           3135643630386131303865616535366638633036613438663133
       wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
       wireguard_listen_port: "51820"
-      # wireguard_endpoint: "kubernetes.polito.it:51820"
-      wireguard_endpoint: "10.10.0.100:51820"
-
+      wireguard_endpoint: "kubernetes.polito.it:51820"
+      
     poli-worker-00:
-      ansible_host: 10.10.0.101
+      ansible_host: 90.147.183.9
+      ansible_port: 2221
+      ansible_host: "10.0.0.101"
       ansible_user: vagrant
-      ansible_ssh_private_key_file: "../vm-provisioning/.vagrant/machines/poli-worker-00/libvirt/private_key"
+      ansible_ssh_private_key_file: "~/.ssh/hiac/poli-worker-00"
       wireguard_ip: "10.0.0.101"
       public_interface: "eth0"
       wireguard_interface: "wg0"
 
-    garr-worker-00:
-      ansible_host: 10.10.0.102
+    poli-worker-01:
+      ansible_host: 90.147.183.9
+      ansible_port: 2222
+      ansible_host: "10.0.0.102"
       ansible_user: vagrant
-      ansible_ssh_private_key_file: "../vm-provisioning/.vagrant/machines/garr-worker-00/libvirt/private_key"
+      ansible_ssh_private_key_file: "~/.ssh/hiac/poli-worker-01"
       wireguard_ip: "10.0.0.102"
       public_interface: "eth0"
+      wireguard_interface: "wg0"      
+
+    garr-worker-00:
+      ansible_host: 90.147.183.9
+      ansible_port: 2223
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: "~/.ssh/hiac/garr-worker-00"
+      wireguard_ip: "10.0.0.103"
+      public_interface: "eth0"
       wireguard_interface: "wg0"
+
+    operator_drago:
+      ansible_connection: local
+      wireguard_ip: "10.0.0.2"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"  
 
   children:
     deployment:
@@ -51,12 +69,18 @@ all:
     agents:
       hosts:
         poli-worker-00:
+        poli-worker-01:
         garr-worker-00:
+    management:
+      hosts:
+        operator_drago:
     vpn:
       hosts:
         poli-worker-00:
+        poli-worker-01:
         garr-worker-00:
-        
+        operator_drago:
+
     darknet:
       hosts:
         poli-worker-00:

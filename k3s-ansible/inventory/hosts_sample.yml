@@ -1,64 +1,84 @@
 all:
   hosts:
-    host1:
-      ansible_host: <IP_ADDRESS>
+    master-host:
+      ansible_host: <MASTER_IP>
+      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
       ansible_user: <SSH_USERNAME>
-      # Uncomment and set the path to your SSH private key if needed
-      # ansible_ssh_private_key: <PATH_TO_PRIVATE_KEY>
-
       # WireGuard server variables
       wireguard_ip: "<WIREGUARD_IP>"
-      wireguard_interface: "<NETWORK_INTERFACE>"
-      # WireGuard keys should be securely stored, consider using Ansible Vault
-      wireguard_private_key: "<WIREGUARD_PRIVATE_KEY>"
-      wireguard_public_key: "<WIREGUARD_PUBLIC_KEY>"
+      public_interface: "<PUBLIC_INTERFACE>"
+      wireguard_interface: "<WIREGUARD_INTERFACE>"
+      wireguard_private_key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          <ENCRYPTED_PRIVATE_KEY>
+      wireguard_public_key: <WIREGUARD_PUBLIC_KEY>
       wireguard_listen_port: "<PORT_NUMBER>"
-      wireguard_endpoint: "<IP_ADDRESS>:<PORT_NUMBER>"
+      wireguard_endpoint: "<WIREGUARD_IP>:<PORT_NUMBER>"
 
-    host2:
-      ansible_host: <IP_ADDRESS>
+    worker-host-01:
+      ansible_host: <WORKER_IP_01>
       ansible_user: <SSH_USERNAME>
-      # Uncomment and set the path to your SSH private key if needed
-      # ansible_ssh_private_key: <PATH_TO_PRIVATE_KEY>
+      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
       wireguard_ip: "<WIREGUARD_IP>"
-      wireguard_interface: "<NETWORK_INTERFACE>"
+      public_interface: "<PUBLIC_INTERFACE>"
+      wireguard_interface: "<WIREGUARD_INTERFACE>"
+
+    worker-host-02:
+      ansible_host: <WORKER_IP_02>
+      ansible_user: <SSH_USERNAME>
+      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
+      wireguard_ip: "<WIREGUARD_IP>"
+      public_interface: "<PUBLIC_INTERFACE>"
+      wireguard_interface: "<WIREGUARD_INTERFACE>"
 
   children:
-    # Group for local deployment tasks
     deployment:
       hosts:
         localhost:
           ansible_connection: local
 
-    # K3s master node
+    registry:
+      hosts:
+        master-host:
+
     master:
       hosts:
-        host1:
+        master-host:
 
-    # K3s agent nodes
     agents:
       hosts:
-        host2:
+        worker-host-01:
+        worker-host-02:
 
-    # Darknet traffic capture configuration
+    vpn:
+      hosts:
+        worker-host-01:
+        worker-host-02:
+
     darknet:
       hosts:
-        host1:
-          # IP range for Darknet traffic capture
+        worker-host-01:
           darknet_range: "<IP_RANGE>"
-          # IPs to exclude from Darknet capture
           darknet_exclude_ips: 
             - <IP_ADDRESS_1>
             - <IP_ADDRESS_2>
-          # Paths for storing captured traffic
           hostPath: "<HOST_PATH>"
-          monthPath: "<MONTH_PATH>"
-          # Network interface to capture traffic on
+          mountPath: "<MOUNT_PATH>"
           tcpdump_interface: "<NETWORK_INTERFACE>"
-          # Rotation interval for capture files (in seconds)
           tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          # File naming pattern for captured traffic
-          tcpdump_file_pattern: "<FILE_PATTERN>"
+          tcpdump_file_pattern: "<FILE_PATTERN>" 
+        worker-host-02:
+          darknet_range: "<IP_RANGE>"
+          darknet_exclude_ips: 
+            - <IP_ADDRESS_1>
+            - <IP_ADDRESS_2>
+          hostPath: "<HOST_PATH>"
+          mountPath: "<MOUNT_PATH>"
+          tcpdump_interface: "<NETWORK_INTERFACE>"
+          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
+          tcpdump_file_pattern: "<FILE_PATTERN>" 
+      vars: 
+        namespace: "darknet"
 
     # Flower (distributed machine learning) nodes
     flower:
@@ -106,8 +126,10 @@ all:
           arp4_network: "<IP_RANGE>"
           arp6_interface: "<NETWORK_INTERFACE>"
 
-  vars:
-    # K3s cluster configuration
+ vars:
+    # K3s variables
+    helm_version: "<HELM_VERSION>"
     k3s_version: "<K3S_VERSION>"
     k3s_url: "https://<MASTER_IP>:<API_PORT>"
-    applications_namespace: "<NAMESPACE>"
+    deployed_applications: 
+      - darknet

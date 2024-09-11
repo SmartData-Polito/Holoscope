@@ -1,40 +1,45 @@
 ---
-- name: Update apt cache and install dependencies (Debian/Ubuntu)
+- name: Update apt cache and install dependencies
   ansible.builtin.apt:
     update_cache: yes
     name:
-      - apt-transport-https
       - ca-certificates
       - curl
-      - net-tools
-      - software-properties-common
+      - gnupg
     state: present
-  when: ansible_os_family == "Debian"
 
-- name: Add Docker's official GPG key (Debian/Ubuntu)
-  ansible.builtin.apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-  when: ansible_os_family == "Debian"
-
-- name: Add Docker apt repository (Debian/Ubuntu)
-  ansible.builtin.apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
-    state: present
-  when: ansible_os_family == "Debian"
-
-- name: Install Docker (Debian/Ubuntu)
+- name: Remove existing Docker installations
   ansible.builtin.apt:
-    name: docker-ce
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: Add Docker's official GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add Docker repository (using Bookworm)
+  ansible.builtin.apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable
+    state: present
+    filename: docker
+    update_cache: yes
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
     state: present
     update_cache: yes
-  when: ansible_os_family == "Debian"
-
-- name: Install Docker on RHEL/CentOS
-  ansible.builtin.yum:
-    name: docker
-    state: present
-  when: ansible_os_family == "RedHat"
 
 - name: Create Docker daemon configuration directory
   file:
@@ -56,17 +61,21 @@
     name: docker
     state: started
     enabled: yes
-
+    
 - name: Download Helm command line tool
-  ansible.builtin.uri:
+  ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-    return_content: true
-  register: helm_installer
+    dest: /tmp/get_helm.sh
+    mode: '0700'
 
 - name: Install Helm
   ansible.builtin.command:
-    cmd: bash
-    stdin: "{{ helm_installer.content }}"
+    cmd: /tmp/get_helm.sh
     creates: /usr/local/bin/helm
   environment:
     DESIRED_VERSION: "{{ helm_version | default('') }}"
+
+- name: Remove Helm installer script
+  ansible.builtin.file:
+    path: /tmp/get_helm.sh
+    state: absent
