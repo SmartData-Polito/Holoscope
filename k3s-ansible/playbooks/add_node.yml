@@ -1,12 +1,22 @@
 ---
+- name: Ensure master group is not empty
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check if master group exists and is not empty
+      assert:
+        that:
+          - groups['master'] is defined
+          - groups['master'] | length > 0
+        fail_msg: "The 'master' group is empty or not defined in the inventory"
+
 - name: Post-installation steps
-  hosts: "{{ hostvars[groups['master'][0]] }}"
+  hosts: "{{ groups['master'][0] }}"
   become: true
   roles:
     - role: k3s-server
       tasks_from: post_install
 
-# ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/add_node.yml -e "agents_group=brescia"
 - name: Configure agents
   hosts: "{{ agents_group }}"
   become: true
@@ -16,7 +26,7 @@
     - k3s-agent
 
 - name: Post-installation steps on WireGuard server
-  hosts: "{{ hostvars[groups['master'][0]] }}"
+  hosts: "{{ groups['master'][0] }}"
   become: true
   roles:
     - role: wireguard-server
