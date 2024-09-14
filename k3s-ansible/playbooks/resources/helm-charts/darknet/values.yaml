@@ -1,7 +1,7 @@
 deploymentName: darknet
 appName: darknet
 hostNetwork: true
-namespace: darknetns
+namespace: darknet
 
 containers:
   tcpdump:

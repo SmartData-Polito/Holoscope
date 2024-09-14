@@ -1,5 +1,4 @@
 ---
-# ansible-playbook -i inventory build_and_push_images.yml
 - name: Build Docker images
   become: true
   hosts: registry
@@ -22,10 +21,8 @@
         state: present
 
     - name: Archive Docker files [local]
-      ansible.builtin.archive:
-        path: "{{ item.path }}"
-        dest: "/tmp/{{ item.name }}.gz"
-        format: gz
+      ansible.builtin.command:
+        cmd: tar -czf /tmp/{{ item.name }}.tar.gz -C {{ item.path }} .
       delegate_to: localhost
       loop: "{{ dockerfiles }}"
       loop_control:
@@ -42,7 +39,7 @@
 
     - name: Unarchive Docker files on target host
       ansible.builtin.unarchive:
-        src: "/tmp/{{ item.name }}.gz"
+        src: "/tmp/{{ item.name }}.tar.gz"
         dest: "/tmp/{{ item.name }}"
       loop: "{{ dockerfiles }}"
       loop_control:

@@ -86,27 +86,33 @@ all:
     darknet:
       hosts:
         poli-worker-00:
-          darknet_range: "10.10.0.0/24"
+          darknet_range: "130.192.167.0/24"
           darknet_exclude_ips: 
-            - 10.10.0.100
-            - 10.10.0.101
-            - 10.10.0.102
+            - 130.192.167.1 
           hostPath: "/data/darknet"
           mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
-        garr-worker-00:
-          darknet_range: "10.10.0.0/24"
-          darknet_exclude_ips: 
-            - 10.10.0.100
-            - 10.10.0.101
-            - 10.10.0.102
+        poli-worker-01:
+          darknet_range: "130.192.166.0/24"
+          darknet_exclude_ips:
+            - 130.192.166.1
           hostPath: "/data/darknet"
           mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
-          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"          
+        unibs-worker-01:
+          darknet_range: "192.167.17.0/24"
+          darknet_exclude_ips:
+           - 192.167.17.1
+           - 192.167.17.2
+          hostPath: "/data/darknet"
+          mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
       vars: 
         namespace: "darknet"
 
@@ -115,7 +121,7 @@ all:
         # poli-master-00:
         # poli-worker-00:
       vars: 
-        namespace: "arp-responder"
+        namespace: "flower"
     
     cowrie:
       hosts:
@@ -139,16 +145,20 @@ all:
     
     arp_responder:
       hosts:
-        # poli-worker-1:
-        #   arp4_interface: "eth1"
-        #   arp4_network: "20.0.0.0/24"
-        #   arp6_interface: "eth1"
-        # poli-master-1:
-        #   arp4_interface: "eth1"
-        #   arp4_network: "20.0.0.0/24"
-        #   arp6_interface: "eth1"
+        poli-worker-00:
+          arp4_interface: "eth0"
+          arp4_network: "130.192.167.0/24"
+          arp6_interface: "eth0"
+        poli-worker-01:
+          arp4_interface: "eth0"
+          arp4_network: "130.192.166.0/24"
+          arp6_interface: "eth0"
+        uni-worker-00:
+          arp4_interface: "ens18"
+          arp4_network: "192.167.17.0/24"
+          arp6_interface: "ens18"
       vars: 
-        namespace: "arp-responder"
+        namespace: "arp_responder"
   vars:
     # K3s variables
     helm_version: "v3.7.0"
@@ -156,3 +166,5 @@ all:
     k3s_url: "https://10.0.0.100:6443"
     deployed_applications: 
       - darknet
+      - arp_responder
+
