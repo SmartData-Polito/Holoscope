@@ -1,0 +1,49 @@
+# Disable parallel execution
+ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+
+# Define a Node class to encapsulate node properties
+class Node
+  attr_reader :role, :box, :mac #, :ip
+
+  def initialize(role, box, mac)#, ip)
+    @role = role
+    @box = box
+    @mac = mac
+    #@ip = ip
+  end
+end
+
+# Define the nodes
+NODES = [
+  Node.new("poli-worker-00", "generic/ubuntu2204", "00:00:00:00:00:BB"),
+  Node.new("poli-worker-01", "generic/ubuntu2204", "00:00:00:00:00:CC"),
+  Node.new("garr-worker-00", "generic/ubuntu2204", "00:00:00:00:00:DD"),
+  Node.new("garr-worker-01", "generic/ubuntu2204", "00:00:00:00:00:EE")
+]
+
+# Common configuration
+NODE_CPUS = 16
+NODE_MEMORY = 32768
+
+Vagrant.configure("2") do |config|
+  # Libvirt provider configuration
+  config.vm.provider "libvirt" do |v|
+    v.cpus = NODE_CPUS
+    v.memory = NODE_MEMORY
+    v.mgmt_attach = false
+  end
+  
+  NODES.each do |node|
+    config.vm.define node.role do |n|
+      n.vm.box = node.box
+      n.vm.hostname = node.role
+      n.vm.network "private_network", mac: node.mac, libvirt__network_name: "honeynet"
+      
+      # Use a provisioning script to set up basic configuration
+      n.vm.provision "ansible" do |ansible|
+        ansible.playbook = "basicsetup.yml"
+        ansible.compatibility_mode = "2.0"
+      end
+    end
+  end
+end

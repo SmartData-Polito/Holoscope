@@ -2,7 +2,7 @@ all:
   hosts:
     master-host:
       ansible_host: <MASTER_IP>
-      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
+      ansible_port: <SSH_PORT>
       ansible_user: <SSH_USERNAME>
       # WireGuard server variables
       wireguard_ip: "<WIREGUARD_IP>"
@@ -13,10 +13,11 @@ all:
           <ENCRYPTED_PRIVATE_KEY>
       wireguard_public_key: <WIREGUARD_PUBLIC_KEY>
       wireguard_listen_port: "<PORT_NUMBER>"
-      wireguard_endpoint: "<WIREGUARD_IP>:<PORT_NUMBER>"
-
+      wireguard_endpoint: "<MASTER_IP>:<PORT_NUMBER>"
+      
     worker-host-01:
       ansible_host: <WORKER_IP_01>
+      ansible_port: <SSH_PORT>
       ansible_user: <SSH_USERNAME>
       ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
       wireguard_ip: "<WIREGUARD_IP>"
@@ -25,6 +26,7 @@ all:
 
     worker-host-02:
       ansible_host: <WORKER_IP_02>
+      ansible_port: <SSH_PORT>
       ansible_user: <SSH_USERNAME>
       ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
       wireguard_ip: "<WIREGUARD_IP>"
@@ -36,100 +38,67 @@ all:
       hosts:
         localhost:
           ansible_connection: local
-
     registry:
       hosts:
         master-host:
-
     master:
       hosts:
         master-host:
-
     agents:
       hosts:
         worker-host-01:
         worker-host-02:
-
+    management:
+      hosts:
     vpn:
       hosts:
         worker-host-01:
         worker-host-02:
 
     darknet:
+      vars: 
+        darknet_namespace: "darknet"    
       hosts:
         worker-host-01:
           darknet_range: "<IP_RANGE>"
           darknet_exclude_ips: 
             - <IP_ADDRESS_1>
             - <IP_ADDRESS_2>
-          hostPath: "<HOST_PATH>"
-          mountPath: "<MOUNT_PATH>"
+          darknet_hostPath: "<HOST_PATH>"
+          darknet_mountPath: "<MOUNT_PATH>"
           tcpdump_interface: "<NETWORK_INTERFACE>"
           tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
           tcpdump_file_pattern: "<FILE_PATTERN>" 
         worker-host-02:
           darknet_range: "<IP_RANGE>"
-          darknet_exclude_ips: 
+          darknet_exclude_ips:
             - <IP_ADDRESS_1>
             - <IP_ADDRESS_2>
-          hostPath: "<HOST_PATH>"
-          mountPath: "<MOUNT_PATH>"
+          darknet_hostPath: "<HOST_PATH>"
+          darknet_mountPath: "<MOUNT_PATH>"
           tcpdump_interface: "<NETWORK_INTERFACE>"
           tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          tcpdump_file_pattern: "<FILE_PATTERN>" 
-      vars: 
-        namespace: "darknet"
-
-    # Flower (distributed machine learning) nodes
-    flower:
-      hosts:
-        host1:
-        host2:
-
-    # Cowrie honeypot configuration
-    cowrie:
-      hosts:
-        host1:
-          # IPs on which Cowrie will listen
-          listening_ips:
-            - <IP_ADDRESS_1>
-            - <IP_ADDRESS_2>
-          # SSH port configuration
-          sshPort: 
-            port: <SSH_PORT>
-            targetPort: <TARGET_SSH_PORT>
-          # Telnet port configuration
-          telnetPort: 
-            port: <TELNET_PORT>
-            targetPort: <TARGET_TELNET_PORT>
-          # Paths for storing captured traffic
-          hostPath: "<HOST_PATH>"
-          monthPath: "<MONTH_PATH>"
-          # Network interface to capture traffic on
-          tcpdump_interface: "<NETWORK_INTERFACE>"
-          # Rotation interval for capture files (in seconds)
-          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          # File naming pattern for captured traffic
           tcpdump_file_pattern: "<FILE_PATTERN>"
 
-    # ARP responder configuration
+
     arp_responder:
+      vars: 
+        arp_responder_namespace: "arp-responder"    
       hosts:
-        host2:
-          # Network interface and range for IPv4 ARP responses
+        worker-host-01:
           arp4_interface: "<NETWORK_INTERFACE>"
           arp4_network: "<IP_RANGE>"
-          # Network interface for IPv6 ARP responses
           arp6_interface: "<NETWORK_INTERFACE>"
-        host1:
+        worker-host-02:
           arp4_interface: "<NETWORK_INTERFACE>"
           arp4_network: "<IP_RANGE>"
           arp6_interface: "<NETWORK_INTERFACE>"
 
- vars:
+  vars:
     # K3s variables
     helm_version: "<HELM_VERSION>"
     k3s_version: "<K3S_VERSION>"
-    k3s_url: "https://<MASTER_IP>:<API_PORT>"
+    k3s_url: "https://<WIREGUARD_IP>:6443"
     deployed_applications: 
       - darknet
+      - arp_responder

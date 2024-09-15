@@ -11,19 +11,18 @@
         fail_msg: "The 'master' group is empty or not defined in the inventory"
 
 - name: Post-installation steps
-  hosts: "{{ groups['master'][0] }}"
+  hosts: master
   become: true
   roles:
     - role: k3s-server
       tasks_from: post_install
 
 - name: Configure agents
-  hosts: "{{ agents_group }}"
+  hosts: agents
   become: true
   roles:
     - common
     - wireguard-client
-    - k3s-agent
 
 - name: Post-installation steps on WireGuard server
   hosts: "{{ groups['master'][0] }}"
@@ -31,3 +30,9 @@
   roles:
     - role: wireguard-server
       tasks_from: post_install
+
+- name: Configure agents
+  hosts: agents
+  become: true
+  roles:
+    - k3s-agent

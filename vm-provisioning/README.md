@@ -7,14 +7,14 @@ This section explains how to set up a testing environment that mirrors productio
 Before starting, ensure the following are installed and configured:
 - **Libvirt** 
 - **Vagrant**
-- A pre-configured `libvirt_honeynet.xml` file for the honeynet network
+- A pre-configured `honeynet.xml` file for the honeynet network
 
 ## Environment Setup
 
 ### 1. Create the Honeynet Network
 Use `virsh` to create the honeynet network from the XML configuration file:
 ```bash
-virsh net-create libvirt_honeynet.xml
+virsh net-create honeynet.xml
 ```
 
 ### 2. Start the Vagrant Environment

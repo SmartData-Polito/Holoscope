@@ -1,37 +1,69 @@
 all:
   hosts:
-    master-host:
-      ansible_host: <MASTER_IP>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
+    poli-master-00:
+      ansible_host: 130.192.95.220
+      ansible_port: 22
+      ansible_user: root
       # WireGuard server variables
-      wireguard_ip: "<WIREGUARD_IP>"
-      public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+      wireguard_ip: "10.0.0.100"
+      public_interface: "ens2"
+      wireguard_interface: "wg0"
       wireguard_private_key: !vault |
           $ANSIBLE_VAULT;1.1;AES256
-          <ENCRYPTED_PRIVATE_KEY>
-      wireguard_public_key: <WIREGUARD_PUBLIC_KEY>
-      wireguard_listen_port: "<PORT_NUMBER>"
-      wireguard_endpoint: "<MASTER_IP>:<PORT_NUMBER>"
+          66363663316337643535666635613466303466623039376335333561643536613334306339626233
+          6337613835623662323164303461316336363962633831630a366365386635376262396563313134
+          35313534623965316664626630643239303963653862663034643531383265663038333035393539
+          3362633363666464360a346435656638356664666561616131333562396639343762643064636265
+          66626466383930383538633438613366313836326430646131386135326335636239636638613739
+          3135643630386131303865616535366638633036613438663133
+      wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
+      wireguard_listen_port: "51820"
+      wireguard_endpoint: "130.192.95.220:51820"
       
-    worker-host-01:
-      ansible_host: <WORKER_IP_01>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
-      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
-      wireguard_ip: "<WIREGUARD_IP>"
-      public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+    poli-worker-00:
+      ansible_host: 90.147.183.9
+      ansible_port: 52201
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: "~/.ssh/hiac/poli-worker-00"
+      wireguard_ip: "10.0.0.101"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
 
-    worker-host-02:
-      ansible_host: <WORKER_IP_02>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
-      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
-      wireguard_ip: "<WIREGUARD_IP>"
-      public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+    poli-worker-01:
+      ansible_host: 90.147.183.9
+      ansible_port: 52202
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: "~/.ssh/hiac/poli-worker-01"
+      wireguard_ip: "10.0.0.102"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"      
+
+    garr-worker-00:
+      ansible_host: 90.147.183.9
+      ansible_port: 52203
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: "~/.ssh/hiac/garr-worker-00"
+      wireguard_ip: "10.0.0.103"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
+
+    unibs-worker-00:
+      ansible_host: 192.167.17.2
+      ansible_port: 9999
+      ansible_user: admin
+      ansible_ssh_private_key_file: "~/.ssh/hiac/unibs-worker-00"
+      wireguard_ip: "10.0.0.104"
+      public_interface: "ens18"
+      wireguard_interface: "wg0"      
+
+    garr-worker-01:
+      ansible_host: 90.147.183.9
+      ansible_port: 52205
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: "~/.ssh/hiac/garr-worker-01"
+      wireguard_ip: "10.0.0.105"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
 
   children:
     deployment:
@@ -40,65 +72,145 @@ all:
           ansible_connection: local
     registry:
       hosts:
-        master-host:
+        poli-master-00:
     master:
       hosts:
-        master-host:
+        poli-master-00:
     agents:
       hosts:
-        worker-host-01:
-        worker-host-02:
+        poli-worker-00:
+        poli-worker-01:
+        garr-worker-00:
+        garr-worker-01:
+        unibs-worker-00:
     management:
       hosts:
     vpn:
       hosts:
-        worker-host-01:
-        worker-host-02:
+        poli-worker-00:
+        poli-worker-01:
+        garr-worker-00:
+        garr-worker-01:
+        unibs-worker-00:
+        
 
     darknet:
       vars: 
         darknet_namespace: "darknet"    
       hosts:
-        worker-host-01:
-          darknet_range: "<IP_RANGE>"
+        poli-worker-00:
+          darknet_range: "130.192.167.0/24"
           darknet_exclude_ips: 
-            - <IP_ADDRESS_1>
-            - <IP_ADDRESS_2>
-          darknet_hostPath: "<HOST_PATH>"
-          darknet_mountPath: "<MOUNT_PATH>"
-          tcpdump_interface: "<NETWORK_INTERFACE>"
-          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          tcpdump_file_pattern: "<FILE_PATTERN>" 
-        worker-host-02:
-          darknet_range: "<IP_RANGE>"
+            - 130.192.167.1 
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
+        poli-worker-01:
+          darknet_range: "130.192.166.0/24"
           darknet_exclude_ips:
-            - <IP_ADDRESS_1>
-            - <IP_ADDRESS_2>
-          darknet_hostPath: "<HOST_PATH>"
-          darknet_mountPath: "<MOUNT_PATH>"
-          tcpdump_interface: "<NETWORK_INTERFACE>"
-          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          tcpdump_file_pattern: "<FILE_PATTERN>"
+            - 130.192.166.1
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"          
+        unibs-worker-00:
+          darknet_range: "192.167.17.0/24"
+          darknet_exclude_ips:
+           - 192.167.17.1
+           - 192.167.17.2
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "ens18"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        garr-worker-00:
+          darknet_range: "90.147.204.0/24"
+          darknet_exclude_ips:
+            - 90.147.204.1
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"  
+        garr-worker-01:
+          darknet_range: "90.147.183.0/24"
+          darknet_exclude_ips:
+            - 90.147.183.1
+            - 90.147.183.2
+            - 90.147.183.3
+            - 90.147.183.4
+            - 90.147.183.5
+            - 90.147.183.6
+            - 90.147.183.7
+            - 90.147.183.8
+            - 90.147.183.9
+            - 90.147.183.10
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
+          tcpdump_rotate_seconds: "3600"
+          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"  
 
+    flower:
+      vars: 
+        namespace: "flower"
+      hosts:
+        # poli-master-00:
+        # poli-worker-00:
+    
+    cowrie:
+      vars: 
+        namespace: "cowrie"
+      hosts:
+        # poli-master-00:
+        #   listening_ips:
+        #     - 130.192.167.2
+        #     - 130.192.167.3
+        #   sshPort: 
+        #     port: 2222
+        #     targetPort: 2222
+        #   telnetPort: 
+        #     port: 2223
+        #     targetPort: 2223
+        #   hostPath: "/mnt/data/tcpdump"
+        #   mountPath: "/etc/tcpdump"
+        #   tcpdump_interface: "eth0"
+        #   tcpdump_rotate_seconds: "3600"
+        #   tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
     arp_responder:
       vars: 
         arp_responder_namespace: "arp-responder"    
       hosts:
-        worker-host-01:
-          arp4_interface: "<NETWORK_INTERFACE>"
-          arp4_network: "<IP_RANGE>"
-          arp6_interface: "<NETWORK_INTERFACE>"
-        worker-host-02:
-          arp4_interface: "<NETWORK_INTERFACE>"
-          arp4_network: "<IP_RANGE>"
-          arp6_interface: "<NETWORK_INTERFACE>"
+        poli-worker-00:
+          arp4_interface: "eth0"
+          arp4_network: "130.192.167.0/24"
+          arp6_interface: "eth0"
+        poli-worker-01:
+          arp4_interface: "eth0"
+          arp4_network: "130.192.166.0/24"
+          arp6_interface: "eth0"
+        unibs-worker-00:
+          arp4_interface: "ens18"
+          arp4_network: "192.167.17.0/24"
+          arp6_interface: "ens18"
+        garr-worker-00:
+          arp4_interface: "eth0"
+          arp4_network: "90.147.204.0/24"
+          arp6_interface: "eth0"
+        garr-worker-01:
+          arp4_interface: "eth0"
+          arp4_network: "90.147.183.0/24"
+          arp6_interface: "eth0"          
 
   vars:
     # K3s variables
-    helm_version: "<HELM_VERSION>"
-    k3s_version: "<K3S_VERSION>"
-    k3s_url: "https://<WIREGUARD_IP>:6443"
+    helm_version: "v3.7.0"
+    k3s_version: "v1.30.4+k3s1"
+    k3s_url: "https://10.0.0.100:6443"
     deployed_applications: 
       - darknet
       - arp_responder
