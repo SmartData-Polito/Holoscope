@@ -84,13 +84,15 @@ all:
         
 
     darknet:
+      vars: 
+        darknet_namespace: "darknet"    
       hosts:
         poli-worker-00:
           darknet_range: "130.192.167.0/24"
           darknet_exclude_ips: 
             - 130.192.167.1 
-          hostPath: "/data/darknet"
-          mountPath: "/data/darknet"
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
@@ -98,32 +100,33 @@ all:
           darknet_range: "130.192.166.0/24"
           darknet_exclude_ips:
             - 130.192.166.1
-          hostPath: "/data/darknet"
-          mountPath: "/data/darknet"
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"          
-        unibs-worker-01:
+        unibs-worker-00:
           darknet_range: "192.167.17.0/24"
           darknet_exclude_ips:
            - 192.167.17.1
            - 192.167.17.2
-          hostPath: "/data/darknet"
-          mountPath: "/data/darknet"
-          tcpdump_interface: "eth0"
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "ens18"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
-      vars: 
-        namespace: "darknet"
+
 
     flower:
+      vars: 
+        namespace: "flower"
       hosts:
         # poli-master-00:
         # poli-worker-00:
-      vars: 
-        namespace: "flower"
     
     cowrie:
+      vars: 
+        namespace: "cowrie"
       hosts:
         # poli-master-00:
         #   listening_ips:
@@ -140,10 +143,11 @@ all:
         #   tcpdump_interface: "eth0"
         #   tcpdump_rotate_seconds: "3600"
         #   tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
-      vars: 
-        namespace: "cowrie"
+
     
     arp_responder:
+      vars: 
+        arp_responder_namespace: "arp-responder"    
       hosts:
         poli-worker-00:
           arp4_interface: "eth0"
@@ -153,12 +157,11 @@ all:
           arp4_interface: "eth0"
           arp4_network: "130.192.166.0/24"
           arp6_interface: "eth0"
-        uni-worker-00:
+        unibs-worker-00:
           arp4_interface: "ens18"
           arp4_network: "192.167.17.0/24"
           arp6_interface: "ens18"
-      vars: 
-        namespace: "arp_responder"
+
   vars:
     # K3s variables
     helm_version: "v3.7.0"

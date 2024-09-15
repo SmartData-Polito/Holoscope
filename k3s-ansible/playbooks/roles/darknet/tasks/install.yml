@@ -10,18 +10,18 @@
       {% set filter_condition = filter_condition ~ " and not (" ~ server_ip | join(' or ') ~ ")" %}
     {% endif %}
 
-    helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ hostvars[item].namespace }} --create-namespace
+    helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ hostvars[item].darknet_namespace }} --create-namespace
     --set name=darknet-{{ item }}
     --set appName=darknet-{{ item }}
-    --set namespace={{ hostvars[item].namespace }}
+    --set namespace={{ hostvars[item].darknet_namespace }}
     --set volumes.pv.name=darknet-pv-{{ item }}
     --set volumes.pvc.name=darknet-pvc-{{ item }}
     --set containers.tcpdump.interface="{{ hostvars[item].tcpdump_interface }}"
     --set containers.tcpdump.filter="{{ filter_condition }}"
     --set containers.tcpdump.rotate_seconds="{{ hostvars[item].tcpdump_rotate_seconds }}"
-    --set containers.tcpdump.outputPath="{{hostvars[item].mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
-    --set containers.tcpdump.mountPath="{{hostvars[item].mountPath}}"
-    --set volumes.pvc.hostPath.path="{{ hostvars[item].hostPath }}"       
+    --set containers.tcpdump.outputPath="{{hostvars[item].darknet_mountPath}}/{{ hostvars[item].tcpdump_file_pattern }}"
+    --set containers.tcpdump.mountPath="{{hostvars[item].darknet_mountPath}}"
+    --set volumes.pvc.hostPath.path="{{ hostvars[item].darknet_hostPath }}"       
     --set nodeAffinity.hostname.values[0]="{{ item }}"
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
