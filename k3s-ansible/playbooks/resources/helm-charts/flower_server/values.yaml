@@ -1,0 +1,88 @@
+deploymentName: flower-server
+appName: flower-server
+namespace: default
+
+containers:
+  client:
+    image: andreasordello/darkvec_server:latest
+    imagePullPolicy: Always
+    args: ["--round", "2", "--client_number", "1","--server_port","8080","--starting_round" ,"1"]
+    port: 8080
+    volumeMounts:
+    - mountPath: /darkvec/models
+      name: volume-1
+    - mountPath: /darkvec/vocabularies
+      name: volume-2
+    - mountPath: /darkvec/log/
+      name: volume-3
+
+nodeAffinity:
+  hostname:
+    values:
+      - poli-worker-00  #for now
+
+
+
+volumes:
+    - name : volume-1
+      claimName: pv-claim-models
+    - name : volume-2
+      claimName: pv-claim-vocabularies   
+    - name : volume-3
+      claimName: pv-claim-log-server   
+
+   
+pv:
+      - name: pv-volume-models
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/models"
+      - name: pv-volume-vocabularies
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/vocabularies"
+      - name: pv-volume-log-server
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/log"
+
+pvc:
+      - name: pv-claim-log-server
+        storageClassName: manual
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        volumeName: pv-volume-log-server
+      - name: pv-claim-vocabularies
+        storageClassName: manual
+        accessModes:
+        - ReadWriteOnce
+        resources:
+        requests:
+          storage: 5Gi
+        volumeName: pv-volume-vocabularies
+      - name: pv-claim-models
+        storageClassName: manual
+        accessModes:
+        - ReadWriteOnce
+        resources:
+        requests:
+          storage: 5Gi
+        volumeName: pv-volume-models
+        
+# Service Configuration
+service:
+  name: flower-server
+  port: 8080
+  targetPort: 8080
