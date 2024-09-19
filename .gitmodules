@@ -1,0 +1,3 @@
+[submodule "hiac-inventories"]
+	path = hiac-inventories
+	url = https://github.com/SmartData-Polito/hiac-inventories

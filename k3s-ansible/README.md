@@ -1,15 +1,15 @@
-# Deployment of K3s Cluster with WireGuard
+# Deployment of K3s Cluster with WireGuard 
 
-### Install requirements: 
+## Install requirements: 
 
 ```bash
 $ ansible-galaxy collection install ansible.posix
 ```
 
-### Deploy the basic wireguard and k3s installation 
+## Deploy the basic wireguard and k3s installation 
 
 ```bash
-$ ansible-playbook playbooks/site.yml --ask-vault-password
+$ ansible-playbook playbooks/site.yml --i path/to/hosts.yml --ask-vault-password
 ```
 
 The wireguard server need a fixed public and private key, which should not be regenerated every deploy, for this reason execute the procedure below:
@@ -37,7 +37,7 @@ wireguard_private_key: !vault |
 wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
 ```
 
-Encrypting the Private Key
+## Encrypting the Private Key
 
 It's a good practice to AVOID having secrets in plaintext (like the VPN private key above). This is especially true if those secrets will be shared with anyone else, like via a git repo. Let's prevent this by using Ansible Vault. Vault is a tool for encrypting secret values and using them in playbooks. Encrypt the private key with:
 
