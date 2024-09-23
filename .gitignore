@@ -1,3 +1,5 @@
 .vscode
 k3s-ansible/.python-version
 .vagrant
+.python-version
+.python-version

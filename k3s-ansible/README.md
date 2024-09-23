@@ -1,15 +1,15 @@
-# Deployment of K3s Cluster with WireGuard
+# Deployment of K3s Cluster with WireGuard 
 
-### Install requirements: 
+## Install requirements: 
 
 ```bash
 $ ansible-galaxy collection install ansible.posix
 ```
 
-### Deploy the basic wireguard and k3s installation 
+## Deploy the basic wireguard and k3s installation 
 
 ```bash
-$ ansible-playbook playbooks/site.yml --ask-vault-password
+$ ansible-playbook playbooks/site.yml --i path/to/hosts.yml --ask-vault-password
 ```
 
 The wireguard server need a fixed public and private key, which should not be regenerated every deploy, for this reason execute the procedure below:
@@ -28,16 +28,16 @@ Copy the output lines and add them to a vars/main.yml. Here's what mine looks li
 # WireGuard server variables
 wireguard_private_key: !vault |
   $ANSIBLE_VAULT;1.1;AES256
-  66363663316337643535666635613466303466623039376335333561643536613334306339626233
-  6337613835623662323164303461316336363962633831630a366365386635376262396563313134
-  35313534623965316664626630643239303963653862663034643531383265663038333035393539
-  3362633363666464360a346435656638356664666561616131333562396639343762643064636265
-  66626466383930383538633438613366313836326430646131386135326335636239636638613739
-  3135643630386131303865616535366638633036613438663133
-wireguard_public_key: k6vJn2qKMJ4edWK0B5FBCF/cGWmYz76J5tNYnWzSLRk=
+  66633530373637636637333065363864616339313262623361393132326564386661393935323865
+  3964663130373962333333653931376334356338313231310a366562343233636166376634376631
+  31353534396666336230326464333064343337383463343035383333326162373666383363313538
+  3261353731313330310a356261626630306263653537656238333536313134323465353163316633
+  32343632383539356530366531646562353335313739663436366666663965343663663163396132
+  6631326264396663313935373037383230333833636665323464
+wireguard_public_key: /SPUC+mZEcY0ChebN97MhEExlWh/LJR0NbLs8eg27Uk=
 ```
 
-Encrypting the Private Key
+## Encrypting the Private Key
 
 It's a good practice to AVOID having secrets in plaintext (like the VPN private key above). This is especially true if those secrets will be shared with anyone else, like via a git repo. Let's prevent this by using Ansible Vault. Vault is a tool for encrypting secret values and using them in playbooks. Encrypt the private key with:
 
