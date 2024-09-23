@@ -1,7 +1,7 @@
 all:
   hosts:
     master-00:
-      ansible_host: 10.10.0.101
+      ansible_host: 10.10.0.100
       ansible_port: 22
       ansible_user: vagrant
       # WireGuard server variables
@@ -21,7 +21,7 @@ all:
       wireguard_endpoint: "10.10.0.101:51820"
       
     worker-00:
-      ansible_host: 10.10.0.102
+      ansible_host: 10.10.0.101
       ansible_port: 22
       ansible_user: vagrant
       wireguard_ip: "10.0.0.101"
@@ -52,40 +52,15 @@ all:
         darknet_namespace: "darknet"
       hosts:
         worker-00:
-          darknet_range: "130.192.167.0/24"
+          darknet_range: "10.10.0.0/24"
           darknet_exclude_ips: 
-            - 130.192.167.1 
+            - 10.10.0.100
+            - 10.10.0.101
           darknet_hostPath: "/data/darknet"
           darknet_mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
-    flower:
-      vars: 
-        namespace: "flower"
-      hosts:
-        # master-00:
-        # worker-00:
-    
-    cowrie:
-      vars: 
-        namespace: "cowrie"
-      hosts:
-        # master-00:
-        #   listening_ips:
-        #     - 130.192.167.2
-        #     - 130.192.167.3
-        #   sshPort: 
-        #     port: 2222
-        #     targetPort: 2222
-        #   telnetPort: 
-        #     port: 2223
-        #     targetPort: 2223
-        #   hostPath: "/mnt/data/tcpdump"
-        #   mountPath: "/etc/tcpdump"
-        #   tcpdump_interface: "eth0"
-        #   tcpdump_rotate_seconds: "3600"
-        #   tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
 
     arp_responder:
       vars: 
@@ -93,7 +68,7 @@ all:
       hosts:
         worker-00:
           arp4_interface: "eth0"
-          arp4_network: "130.192.167.0/24"
+          arp4_network: "10.10.0.0/24"
           arp6_interface: "eth0"  
 
   vars:

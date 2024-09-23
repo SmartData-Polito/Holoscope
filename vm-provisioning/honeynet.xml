@@ -10,25 +10,21 @@
   <mac address='52:54:00:38:27:36'/>
   <dns>
     <host ip='10.10.0.100'>
-      <hostname>poli-worker-00.local</hostname>
-    </host>
+      <hostname>poli-master-00.local</hostname>
+    </host>    
     <host ip='10.10.0.101'>
-      <hostname>poli-worker-01.local</hostname>
+      <hostname>poli-worker-00.local</hostname>
     </host>
     <host ip='10.10.0.102'>
       <hostname>garr-worker-00.local</hostname>
-    </host>
-    <host ip='10.10.0.105'>
-      <hostname>garr-worker-01.local</hostname>
     </host>
   </dns>
   <ip address='10.10.0.1' netmask='255.255.255.0'>
     <dhcp>
       <range start='10.10.0.2' end='10.10.0.254'/>
+      <host mac='00:00:00:00:00:AA' name='poli-master-00' ip='10.10.0.100'/>
       <host mac='00:00:00:00:00:BB' name='poli-worker-00' ip='10.10.0.101'/>
-      <host mac='00:00:00:00:00:CC' name='poli-worker-01' ip='10.10.0.102'/>
-      <host mac='00:00:00:00:00:DD' name='garr-worker-00' ip='10.10.0.103'/>
-      <host mac='00:00:00:00:00:EE' name='garr-worker-01' ip='10.10.0.105'/>
-    </dhcp>
+      <host mac='00:00:00:00:00:DD' name='garr-worker-00' ip='10.10.0.102'/>
+      </dhcp>
   </ip>
 </network>

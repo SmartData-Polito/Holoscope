@@ -16,6 +16,27 @@ spec:
       labels:
         app.kubernetes.io/name: {{ .Values.appName }}
     spec:
+      initContainers:
+      - name: generate-tls-certs
+        image: alpine/openssl
+        command:
+        - sh
+        - -c
+        - |
+          echo "REGISTRY_DOMAIN is: ${REGISTRY_DOMAIN}"
+          if [ -z "${REGISTRY_DOMAIN}" ]; then
+            echo "REGISTRY_DOMAIN is not set. Using default value."
+            REGISTRY_DOMAIN="registry.local"
+          fi
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+            -keyout /certs/tls.key -out /certs/tls.crt -subj "/CN=${REGISTRY_DOMAIN}" \
+            -addext "subjectAltName=DNS:${REGISTRY_DOMAIN}"
+        env:
+        - name: REGISTRY_DOMAIN
+          value: "{{ .Values.registryDomain }}"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
       containers:
       - name: registry
         image: {{ .Values.containers.registry.image }}
@@ -24,10 +45,22 @@ spec:
         volumeMounts:
           - mountPath: {{ .Values.containers.registry.monthPath }}
             name: {{ .Values.volumes.pv.name }}
+          - name: certs
+            mountPath: /certs
+            readOnly: true
+        env:
+          - name: REGISTRY_HTTP_TLS_CERTIFICATE
+            value: /certs/tls.crt
+          - name: REGISTRY_HTTP_TLS_KEY
+            value: /certs/tls.key
+          - name: REGISTRY_HTTP_ADDR
+            value: :5000
       volumes:
         - name: {{ .Values.volumes.pv.name }}
           persistentVolumeClaim:
             claimName: {{ .Values.volumes.pvc.name }}
+        - name: certs
+          emptyDir: {}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

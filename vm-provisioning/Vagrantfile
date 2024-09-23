@@ -8,6 +8,10 @@ CONFIG_FILE = ENV['CONFIG_FILE']
 # Fetch the Ansible playbook path from an environment variable with a default value
 ANSIBLE_PLAYBOOK = ENV['ANSIBLE_PLAYBOOK'] || 'basicsetup.yml'
 
+# get the memory and cpu count from the environment variables
+NODE_CPUS = ENV['NODE_CPUS'] || 2
+NODE_MEMORY = ENV['NODE_MEMORY'] || 2048
+
 # Define a Node class to encapsulate node properties: role, box, mac, and ip
 class Node
   attr_reader :role, :box, :mac, :ip
@@ -53,8 +57,8 @@ end
 # Function to define hardcoded nodes if no configuration file is provided
 def define_hardcoded_nodes
   [
-    Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.101"),
-    Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:CC", "10.10.0.102")
+    Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.100"),
+    Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.101"),
   ]
 end
 
@@ -107,13 +111,15 @@ def configure_nodes(config, nodes, os, playbook)
       n.vm.box = node.box
       n.vm.hostname = node.role
 
-      # Set network configuration based on the host OS
-      if os != :windows
-        # On Linux/macOS, set the MAC address for the network
+      # Set network configuration based on the host OS and whether we're using hardcoded nodes
+      if os == :linux
         n.vm.network "private_network", mac: node.mac, libvirt__network_name: "honeynet"
-      else
+      elsif os == :windows
         # On Windows, set the IP address (since MAC might not be supported by VirtualBox here)
         n.vm.network "private_network", ip: node.ip, netmask: "255.255.255.0"
+      else
+        # For macOS, use the MAC address
+        n.vm.network "private_network", mac: node.mac
       end
 
       # Provision using Ansible if not on Windows
@@ -129,10 +135,6 @@ end
 
 # Main block to execute the Vagrantfile
 Vagrant.configure("2") do |config|
-  # Set common VM configurations
-  NODE_CPUS = 2
-  NODE_MEMORY = 2048
-
   # Determine the host OS
   os = host_os
 
