@@ -3,10 +3,15 @@ appName: flower-server
 namespace: default
 
 containers:
-  client:
+  server:
     image: andreasordello/darkvec_server:latest
     imagePullPolicy: Always
-    args: ["--round", "2", "--client_number", "1","--server_port","8080","--starting_round" ,"1"]
+    
+    args:
+      round_number: 3
+      client_number: 1
+      server_port: 8080
+           
     port: 8080
     volumeMounts:
     - mountPath: /darkvec/models
@@ -33,21 +38,27 @@ volumes:
 
    
 pv:
-      - name: pv-volume-models
+
+    models:
+        name: pv-volume-models
         storageClassName: manual
         capacity: 5Gi
         accessModes:
           - ReadWriteOnce
         hostPath:
           path: "/data/models"
-      - name: pv-volume-vocabularies
+
+    vocabularies:
+        name: pv-volume-vocabularies
         storageClassName: manual
         capacity: 5Gi
         accessModes:
           - ReadWriteOnce
         hostPath:
           path: "/data/vocabularies"
-      - name: pv-volume-log-server
+
+    log:
+        name: pv-volume-log-server
         storageClassName: manual
         capacity: 5Gi
         accessModes:

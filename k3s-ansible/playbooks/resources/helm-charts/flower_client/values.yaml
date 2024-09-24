@@ -6,60 +6,66 @@ containers:
   client:
     image: andreasordello/darkvec_client:latest
     imagePullPolicy: Always
-    args: ["--server_address", "flower-server.default:8080", "--cid","2"]
+    args:
+      server_address: flower-server:8080
+      cid: 1
+
+  
     volumeMounts:
-    - mountPath: /darkvec/dataset/
+    - mountPath: /darkvec/dataset
       name: volume-1
     - mountPath: /darkvec/log/
       name: volume-2
 
-
 nodeAffinity:
   hostname:
     values:
-      - poli-worker-00  #for now
+      - poli-master-00  #for now
+
+
 
 volumes:
     - name : volume-1
       claimName: pv-claim-dataset
     - name : volume-2
-      claimName: pv-claim-log-client    
+      claimName: pv-claim-log-client   
+  
 
-
-
-
+   
 pv:
-    - name: pv-volume-dataset
-      storageClassName: manual
-      capacity: 5Gi
-      accessModes:
-        - ReadWriteOnce
-      hostPath:
-        path: "/data/dataset"
-      
-    - name: pv-volume-log-client
-      storageClassName: manual
-      capacity: 5Gi
-      accessModes:
-        - ReadWriteOnce
-      hostPath:
-        path: "/data/log"
+    dataset:
+        name: pv-volume-dataset
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/dataset"
+
+    log:
+        name: pv-volume-log-client
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/log"
 
 pvc:
-    - name: pv-claim-log-client
-      storageClassName: manual
-      accessModes:
+      - name: pv-claim-dataset
+        storageClassName: manual
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        volumeName: pv-volume-dataset
+      - name: pv-claim-log-client
+        storageClassName: manual
+        accessModes:
         - ReadWriteOnce
-      resources:
+        resources:
         requests:
           storage: 5Gi
-      volumeName: pv-volume-log-client
-    - name: pv-claim-dataset
-      storageClassName: manual
-      accessModes:
-       - ReadWriteOnce
-      resources:
-       requests:
-         storage: 5Gi
-      volumeName: pv-volume-dataset
-      
+        volumeName: pv-volume-log-client
+    

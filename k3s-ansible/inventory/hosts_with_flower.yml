@@ -1,0 +1,96 @@
+all:
+  hosts:
+    poli-master-00:
+      ansible_host: 10.10.0.100
+      ansible_ssh_private_key_file: ../vm-provisioning/.vagrant/machines/poli-master-00/libvirt/private_key
+      ansible_user: vagrant
+      ansible_ssh_extra_args: '-o IdentitiesOnly=yes'
+      
+      # WireGuard server variables
+      wireguard_ip: "10.0.0.100"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
+      wireguard_private_key:
+      wireguard_public_key: 
+      wireguard_listen_port: "51820"
+      # wireguard_endpoint: "kubernetes.polito.it:51820"
+      wireguard_endpoint: "10.10.0.100:51820"
+
+    poli-worker-00:
+      ansible_host: 10.10.0.101
+      ansible_user: vagrant
+      ansible_ssh_extra_args: '-o IdentitiesOnly=yes'
+      ansible_ssh_private_key_file: "../vm-provisioning/.vagrant/machines/poli-worker-00/libvirt/private_key"
+      wireguard_ip: "10.0.0.101"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
+
+    
+  children:
+    deployment:
+      hosts:
+        localhost:
+          ansible_connection: local
+    registry:
+      hosts:
+        poli-master-00:
+    master:
+      hosts:
+        poli-master-00:
+    agents:
+      hosts:
+        poli-worker-00:
+        
+    vpn:
+      hosts:
+        poli-worker-00:
+      
+        
+    darknet:
+      hosts:
+       # poli-master-00:
+      vars: 
+        darknet_namespace: "darknet"
+
+    flower_server:
+      hosts:
+        poli-master-00:
+          client_number: 2
+          round_number: 2
+        # server_port: 8080 Not yet handled, It must be coerent with the port of the clusterIP service that clients will use
+          log_host_path: /data/log
+          vocabularies_host_path: /data/vocabularies
+          models_host_path: /data/models
+      vars: 
+        flower_namespace: "flwr"
+    flower_client:
+      hosts:
+        poli-worker-00:
+            cid: 1   #still required, but it can be removed in future release, UNIQUE
+            log_host_path: /data/log
+            dataset_host_path: /data/dataset    #remember that the files with the data must be under /{dataset_host_path}/darknet0{cid}/ folder.
+        poli-master-00:
+            cid: 2   
+            log_host_path: /data/log
+            dataset_host_path: /data/dataset
+      vars: 
+        flower_namespace: "flwr"
+    cowrie:
+      hosts:
+      vars: 
+        cowrie_namespace: "cowrie"
+    
+    arp_responder:
+      hosts:
+        
+      vars: 
+        arp_responder_namespace: "arp-responder"
+  vars:
+    # K3s variables
+    helm_version: "v3.7.0"
+    k3s_version: "v1.30.4+k3s1"
+    k3s_url: "https://10.0.0.100:6443"
+    deployed_applications: 
+     #- darknet
+      - flower_server
+      - flower_client

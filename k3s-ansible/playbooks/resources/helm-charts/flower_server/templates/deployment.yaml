@@ -12,16 +12,20 @@ spec:
     metadata:
       labels:
         app: {{ .Values.appName }}
+        namespace: {{ .Values.namespace }}
     spec:
       containers:
-        - name: client
-          image: {{ .Values.containers.client.image }}
-          imagePullPolicy: {{ .Values.containers.client.imagePullPolicy }}
-          args: {{ toYaml .Values.containers.client.args | nindent 12 }}
+        - name: server
+          image: {{ .Values.containers.server.image }}
+          imagePullPolicy: {{ .Values.containers.server.imagePullPolicy }}
+          args: 
+            - "--round_number={{ .Values.containers.server.args.round_number }}"
+            - "--client_number={{ .Values.containers.server.args.client_number }}"
+            - "--server_port={{ .Values.containers.server.args.server_port }}"
           ports:
-          - containerPort: {{ .Values.containers.client.port }}
+          - containerPort: {{ .Values.containers.server.port }}
           volumeMounts:
-            {{- range .Values.containers.client.volumeMounts }}
+            {{- range .Values.containers.server.volumeMounts }}
             - mountPath: {{ .mountPath }}
               name: {{ .name }}
             {{- end }}

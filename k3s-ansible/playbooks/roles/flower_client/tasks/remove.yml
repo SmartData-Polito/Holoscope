@@ -1,0 +1,6 @@
+- name: Uninstall Helm chart for Flower Client  on each agent node
+  command: >
+    helm uninstall flower-client-{{ item }} 
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['flower_client'] }}"

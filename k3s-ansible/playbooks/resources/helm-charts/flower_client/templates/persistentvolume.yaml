@@ -1,19 +1,20 @@
-{{- range .Values.pv }}
+{{- range $key, $value := .Values.pv }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .name }}
+  name: {{ $value.name }}-{{$.Values.appName}}
+  namespace: {{ $.Values.namespace }}
   labels:
     type: local
 spec:
-  storageClassName: {{ .storageClassName }}
+  storageClassName: {{ $value.storageClassName }}
   capacity:
-    storage: {{ .capacity }}
+    storage: {{ $value.capacity }}
   accessModes:
-    {{- range .accessModes }}
+    {{- range $value.accessModes }}
     - {{ . }}
     {{- end }}
   hostPath:
-    path: {{ .hostPath.path }}
+    path: {{ $value.hostPath.path }}
 ---
 {{- end }}
