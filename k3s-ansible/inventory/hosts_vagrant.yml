@@ -18,7 +18,7 @@ all:
         6631326264396663313935373037383230333833636665323464
       wireguard_public_key: /SPUC+mZEcY0ChebN97MhEExlWh/LJR0NbLs8eg27Uk=
       wireguard_listen_port: "51820"
-      wireguard_endpoint: "10.10.0.101:51820"
+      wireguard_endpoint: "10.10.0.100:51820"
       
     worker-00:
       ansible_host: 10.10.0.101
