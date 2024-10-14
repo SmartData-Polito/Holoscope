@@ -20,7 +20,8 @@ EXCLUDE_FILE=$(ssh "$HOST" ls -t "$SOURCE_PATH" | head -n1)
 echo "[$LOG_DATE] Starting rsync from $HOST:$SOURCE_PATH to $DEST_PATH, excluding $EXCLUDE_FILE" >> "$LOG_FILE"
 
 # Run the rsync command with logging
-rsync -azP --remove-source-files --mkpath --exclude="$EXCLUDE_FILE" "$HOST:$SOURCE_PATH" "$DEST_PATH" >> "$LOG_FILE" 2>&1
+# rsync -azP --remove-source-files --mkpath --exclude="$EXCLUDE_FILE" "$HOST:$SOURCE_PATH" "$DEST_PATH" >> "$LOG_FILE" 2>&1
+rsync -azP --mkpath --exclude="$EXCLUDE_FILE" "$HOST:$SOURCE_PATH" "$DEST_PATH" >> "$LOG_FILE" 2>&1
 
 # Log the completion of the rsync process
 LOG_DATE=$(date '+%Y-%m-%d %H:%M:%S')
