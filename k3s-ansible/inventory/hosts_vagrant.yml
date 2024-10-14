@@ -59,7 +59,7 @@ all:
           darknet_hostPath: "/data/darknet"
           darknet_mountPath: "/data/darknet"
           tcpdump_interface: "eth0"
-          tcpdump_rotate_seconds: "3600"
+          tcpdump_rotate_seconds: "60"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
 
     arp_responder:

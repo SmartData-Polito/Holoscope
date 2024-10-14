@@ -18,22 +18,22 @@ This project sets up a K3s cluster to deploy network probes (such as honeypots) 
 
 ## Deployment
 
-### Set Up Hosts:
+### Set Up Hosts
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-password --ask-become-pass
 ```
 
-### Deploy Local Registry:
+### Deploy Local Registry
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/deploy_registry.yml --ask-vault-password --ask-become-pass
 ```
 
-### Build and Push Images:
+### Build and Push Images
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/build_and_push_images.yml --ask-vault-password --ask-become-pass
 ```
 
-### Install/Uninstall Applications:
+### Install/Uninstall Applications
 Refer to `host.yml` to define which applications to deploy.
 - To install applications:
   ```bash
@@ -45,6 +45,11 @@ Refer to `host.yml` to define which applications to deploy.
   ```
 
 ---
+
+### Deploy scripts for data sync
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/set_data_sync.yml
+```
 
 # Provisioning VMs for the Testing Environment
 
