@@ -2,50 +2,40 @@
 
 ## Overview
 
-**CyBorg** is a distributed edge platform designed for both cybersecurity data collection and machine learning applications. The project aims to create an extensive testbed for deploying and exploiting vulnerable applications. The platform operates in two main capacities:
+**CyBorg** is a distributed edge platform designed for cybersecurity data collection and machine learning applications. The platform operates with multiple capabilities:
 
-1. **Testbed for Vulnerabilities**: CyBorg allows for the deployment of vulnerable applications, which can be exploited by both internal and external agents. These scenarios provide rich data for testing security mechanisms and understanding the behavior of different types of cyber-attacks.
-    
-2. **Data Collection Platform**: CyBorg is equipped with powerful crawlers to monitor activity on the darknet and other cybersecurity-relevant platforms. The collected data is then utilized for machine learning models to identify threats, vulnerabilities, and trends in cybersecurity.
-    
+1. **Passive Measurement Probes**: CyBorg enables the deployment of passive network probes for performance measurements, including darknet monitoring, to track ongoing network scanning activities.
 
-This platform is lightweight, stable, and scalable, utilizing [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automation of the deployment and configuration processes. CyBorg provides an efficient environment for simulating real-world cybersecurity attacks and data collection for further analysis.
+2. **Active Cybersecurity Probes**: CyBorg supports the deployment of a honeynet - a distributed network of honeypots at the edge that monitors ongoing network attacks. It includes the deployment of some classic low-interaction honeypot such as Cowrie.
+
+3. **Testbed for Vulnerabilities**: CyBorg helps the deployment of vulnerable applications that can be exploited by internal nodes or serve as high-interaction honeypots.
+
+4. **Data Collection Platform**: CyBorg manages the deployment of crawlers for distributed data collection across various sources.
+
+5. **Federated Learning**: CyBorg implements distributed training of ML tasks using data collected by the above probes. This federated learning approach allows the development of ML models on distributed data without requiring direct data exchange between nodes.
+
+This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automated deployment and configuration.
 
 ---
-
 ## Why the Name **CyBorg**?
 
 The name **CyBorg** is inspired by the **Borg**, a collective race from the _Star Trek_ universe. The Borg are known for their interconnected, hive-mind system where each individual unit contributes to the greater whole. Similarly, **CyBorg** reflects the idea of multiple distributed nodes working together to form a powerful, collective platform for cybersecurity.
 
-While **"Cy"** stands for **Cybersecurity**, **"Borg"** signifies the distributed and collective intelligence behind the platform, much like the _Star Trek_ Borg. This distributed nature enables the platform to gather data and defend against threats in a unified, cohesive way.
-
 ---
-
-## Key Features
-
-- **Distributed Edge Nodes**: CyBorg operates at the edge, allowing cybersecurity monitoring and data collection from a variety of distributed nodes.
-- **Vulnerability Testbed**: Deploy and exploit vulnerable applications in a controlled environment to simulate real-world attack scenarios.
-- **Data Collection**: Leverages crawlers and monitoring tools to gather data from various sources, including the darknet, for further analysis.
-- **Lightweight Kubernetes**: Utilizes K3s for a reliable, lightweight Kubernetes implementation, making the platform scalable and easy to manage.
-- **Ansible Automation**: The entire platform is managed by Ansible, simplifying deployments, updates, and configuration across distributed nodes.
-
----
-
 ## Architecture
 
 - **K3s**: A lightweight Kubernetes distribution for running services on edge nodes.
 - **Ansible**: Automation tool for managing deployment and configuration.
-- **Data Crawlers**: Custom crawlers to collect data from darknet and other cybersecurity sources.
-- **Testbed Applications**: A variety of vulnerable applications to be deployed and exploited by internal/external agents.
+
 ## Prerequisites
 
-### Single Node Setup:
+### Single Node Setup (for development):
 - **Operating System**: Linux (e.g., Ubuntu 20.04)
 - **Resources**: Adequate CPU and memory for running at least 3 VMs for testing
 - **Dependencies**: Docker installed
 
 ### Multiple Nodes Setup (Master and Agents):
-- **Operating System**: Linux (e.g., Ubuntu 20.04) on all nodes
+- **Operating System**: Linux on all nodes
 - **Resources**: 
   - Master: at least 2 CPUs, 16 GB of memory, and sufficient storage (e.g, ~20 GBs for the retention of some days of honeypot logs)
   - Agents: similar to master
