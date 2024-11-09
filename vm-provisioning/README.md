@@ -39,13 +39,13 @@ Before running this setup, ensure the following software is installed on your ma
 Create the honeynet network using the provided `honeynet.xml` file.
 
 ```bash
-virsh net-create honeynet.xml
+sudo virsh net-create honeynet.xml
 ```
 
 Ensure that the network is active:
 
 ```bash
-virsh net-list
+sudo virsh net-list
 ```
 This will list all active networks. Make sure that the honeynet is up and running.
 
