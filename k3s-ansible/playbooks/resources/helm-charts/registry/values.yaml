@@ -11,7 +11,7 @@ containers:
 nodeAffinity:
   hostname:
     values:
-      - poli-master-00
+      - master-00
 
 volumes:
   pv:

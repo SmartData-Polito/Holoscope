@@ -57,8 +57,8 @@ end
 # Function to define hardcoded nodes if no configuration file is provided
 def define_hardcoded_nodes
   [
-    Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.100"),
-    Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.101"),
+    Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.100"),
+    Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.101"),
   ]
 end
 
