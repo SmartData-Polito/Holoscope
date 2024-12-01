@@ -16,6 +16,8 @@
 
 This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automated deployment and configuration.
 
+**If you are interested in joining the network contact the maintainers**  
+
 ---
 ## Why the Name **CyBorg**?
 
@@ -45,24 +47,24 @@ The name **CyBorg** is inspired by the **Borg**, a collective race from the _Sta
 
 ### Set Up Hosts
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-password --ask-become-pass
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-password
 ```
 
 ### Deploy Local Registry
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/deploy_registry.yml --ask-vault-password --ask-become-pass
+ansible-playbook -i inventory/hosts.yml playbooks/deploy_registry.yml 
 ```
 
 ### Build and Push Images
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/build_and_push_images.yml --ask-vault-password --ask-become-pass
+ansible-playbook -i inventory/hosts.yml playbooks/build_and_push_images.yml 
 ```
 
 ### Install/Uninstall Applications
 Refer to `host.yml` to define which applications to deploy.
 - To install applications:
   ```bash
-  ansible-playbook -i inventory/hosts.yml playbooks/deploy_applications.yml --ask-become-pass
+  ansible-playbook -i inventory/hosts.yml playbooks/deploy_applications.yml
   ```
 - To uninstall applications:
   ```bash
@@ -70,6 +72,7 @@ Refer to `host.yml` to define which applications to deploy.
   ```
 
 ---
+<<<<<<< HEAD
 
 ### Deploy scripts for data sync
 ```bash
@@ -77,18 +80,21 @@ ansible-playbook -i inventory/hosts.yml playbooks/set_data_sync.yml
 ```
 
 # Provisioning VMs for the Testing Environment
+=======
+## Provisioning VMs for the Testing Environment
+>>>>>>> aec0cee (updating the readme files)
 
 See [vm-provisioning/README.md](vm-provisioning/README.md)
 
 ---
-
-# WireGuard and K3s Installation
+## WireGuard and K3s Installation
 
 See [k3s-ansible/README.md](k3s-ansible/README.md)
 
 
-<!-- 
-# Maintainers & Contributors
-TODO: Complete here
- -->
+## Maintainers
 
+- Rodolfo Vieira Valentim
+- Andrea Sordello
+- Idilio Drago
+- Alejandro Ayala Gil 
