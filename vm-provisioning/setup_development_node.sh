@@ -7,9 +7,9 @@ set -e
 echo "Updating package lists and installing dependencies..."
 sudo apt-get update
 sudo apt-get install -y curl git build-essential libssl-dev zlib1g-dev \
-libbz2-dev libreadline-dev libsqlite3-dev wget llvm \
-libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
-python-openssl libedit-dev
+    libbz2-dev libreadline-dev libsqlite3-dev wget llvm \
+    libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
+    python3-openssl libedit-dev
 
 # Install pyenv using curl
 echo "Installing pyenv..."
@@ -29,7 +29,7 @@ eval "$(pyenv init -)"
 
 # Install Ansible
 echo "Installing Ansible via pyenv..."
-pyenv install 3.11.5  # You can change this to any version of Python
+pyenv install 3.11.5  
 pyenv global 3.11.5
 pip install --upgrade pip
 pip install ansible
