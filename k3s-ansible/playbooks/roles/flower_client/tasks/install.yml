@@ -9,7 +9,8 @@
     --set cid={{ hostvars[item].cid }}
     --set pv.dataset.host_path.path={{ hostvars[item].dataset_host_path }}
     --set pv.log.host_path.path={{ hostvars[item].log_host_path }}
-  
+
+
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
   with_items: "{{ groups['flower_client'] }}"

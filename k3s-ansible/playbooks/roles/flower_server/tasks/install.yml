@@ -7,10 +7,14 @@
     --set appName=flower-server-{{ item }}
     --set containers.server.args.round_number={{ hostvars[item].round_number }}
     --set containers.server.args.client_number={{ hostvars[item].client_number }}
+    --set containers.server.args.max_voc_size={{ hostvars[item].max_voc_size }}
+    --set containers.server.args.beta={{ hostvars[item].beta }}
     --set pv.log.host_path.path={{ hostvars[item].log_host_path }}
     --set pv.vocabularies.host_path.path={{ hostvars[item].vocabularies_host_path }}
     --set pv.models.host_path.path={{ hostvars[item].models_host_path }}
-  
+    --set pv.interest.host_path.path={{ hostvars[item].interest_host_path }}
+
+
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
   with_items: "{{ groups['flower_server'] }}"

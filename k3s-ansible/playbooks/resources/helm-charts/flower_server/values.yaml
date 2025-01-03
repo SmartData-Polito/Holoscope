@@ -4,22 +4,28 @@ namespace: default
 
 containers:
   server:
-    image: andreasordello/darkvec_server:latest
+    image: andreasordello/flower_idarkvec_server:latest
     imagePullPolicy: Always
     
     args:
       round_number: 3
       client_number: 1
       server_port: 8080
+      max_voc_size: -1
+      beta: 800
+
            
     port: 8080
     volumeMounts:
-    - mountPath: /darkvec/models
+    - mountPath: /idarkvec/models
       name: volume-1
-    - mountPath: /darkvec/vocabularies
+    - mountPath: /idarkvec/vocabularies
       name: volume-2
-    - mountPath: /darkvec/log/
+    - mountPath: /idarkvec/log/
       name: volume-3
+    - mountPath: /idarkvec/interest/
+      name: volume-4
+
 
 nodeAffinity:
   hostname:
@@ -34,7 +40,9 @@ volumes:
     - name : volume-2
       claimName: pv-claim-vocabularies   
     - name : volume-3
-      claimName: pv-claim-log-server   
+      claimName: pv-claim-log-server
+    - name : volume-4
+      claimName: pv-claim-interest  
 
    
 pv:
@@ -42,7 +50,7 @@ pv:
     models:
         name: pv-volume-models
         storageClassName: manual
-        capacity: 5Gi
+        capacity: 15Gi
         accessModes:
           - ReadWriteOnce
         hostPath:
@@ -65,6 +73,14 @@ pv:
           - ReadWriteOnce
         hostPath:
           path: "/data/log"
+    interest:
+        name: pv-volume-interest
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/interest"
 
 pvc:
       - name: pv-claim-log-server
@@ -89,8 +105,16 @@ pvc:
         - ReadWriteOnce
         resources:
         requests:
-          storage: 5Gi
+          storage: 15Gi
         volumeName: pv-volume-models
+      - name: pv-claim-interest
+        storageClassName: manual
+        accessModes:
+        - ReadWriteOnce
+        resources:
+        requests:
+          storage: 5Gi
+        volumeName: pv-volume-interest
         
 # Service Configuration
 service:

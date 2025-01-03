@@ -25,7 +25,8 @@ spec:
           imagePullPolicy: {{ .Values.containers.client.imagePullPolicy }}
           args: 
             - "--server_address={{ .Values.containers.client.args.server_address }}"
-            - "--cid= {{ .Values.cid}}"
+            - "--cid={{ .Values.cid}}"
+            - "--dataset_path=/idarkvec/dataset/" # internal folder of the container, defined in the DockerFile
 
           volumeMounts:
 

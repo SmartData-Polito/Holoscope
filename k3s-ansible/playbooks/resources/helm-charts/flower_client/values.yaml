@@ -4,7 +4,7 @@ namespace: default
 
 containers:
   client:
-    image: andreasordello/darkvec_client:latest
+    image: andreasordello/flower_idarkvec_client:latest
     imagePullPolicy: Always
     args:
       server_address: flower-server:8080
@@ -12,15 +12,10 @@ containers:
 
   
     volumeMounts:
-    - mountPath: /darkvec/dataset
+    - mountPath: /idarkvec/dataset
       name: volume-1
-    - mountPath: /darkvec/log/
+    - mountPath: /idarkvec/log/
       name: volume-2
-
-nodeAffinity:
-  hostname:
-    values:
-      - poli-master-00  #for now
 
 
 
