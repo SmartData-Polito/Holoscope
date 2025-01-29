@@ -8,11 +8,12 @@ containers:
     imagePullPolicy: Always
     
     args:
-      round_number: 3
       client_number: 1
+      first_day: 20210501
+      end_day: 20210503
       server_port: 8080
       max_voc_size: -1
-      beta: 800
+      beta: 0.8
 
            
     port: 8080

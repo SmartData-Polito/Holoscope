@@ -19,7 +19,8 @@ spec:
           image: {{ .Values.containers.server.image }}
           imagePullPolicy: {{ .Values.containers.server.imagePullPolicy }}
           args: 
-            - "--round_number={{ .Values.containers.server.args.round_number }}"
+            - "--first_day={{ .Values.containers.server.args.first_day }}"
+            - "--last_day={{ .Values.containers.server.args.last_day }}"
             - "--client_number={{ .Values.containers.server.args.client_number }}"
             - "--server_port={{ .Values.containers.server.args.server_port }}"
           ports:

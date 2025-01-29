@@ -54,10 +54,12 @@ all:
     flower_server:
       hosts:
         poli-master-00:
-          client_number: 1
-          round_number: 2
+          client_number: 2
+          #round_number: 2
+          first_day: 20210501
+          last_day: 20210705
           max_voc_size: -1
-          beta: 700
+          beta: 0.1
           log_host_path: /data/log
           vocabularies_host_path: /data/vocabularies
           models_host_path: /data/models
@@ -68,13 +70,13 @@ all:
     flower_client:
       hosts:
         poli-worker-00:
-            cid:  poli-worker-00                              
+            cid:  darknet01                             
             log_host_path: /data/log
-            dataset_host_path: /data/dataset/
-       # poli-master-00:
-       #     cid: 2   
-       #     log_host_path: /data/log
-       #     dataset_host_path: /data/dataset/darknet02
+            dataset_host_path: /data/dataset
+        poli-master-00:
+            cid: darknet02 
+            log_host_path: /data/log
+            dataset_host_path: /data/dataset
       vars: 
         flower_namespace: "flwr"
     cowrie:

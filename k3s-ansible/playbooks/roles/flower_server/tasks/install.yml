@@ -5,7 +5,8 @@
     --set name=flower-server-{{ item }}
     --set namespace={{ hostvars[item].flower_namespace }}
     --set appName=flower-server-{{ item }}
-    --set containers.server.args.round_number={{ hostvars[item].round_number }}
+    --set containers.server.args.first_day={{ hostvars[item].first_day }}
+    --set containers.server.args.last_day={{ hostvars[item].last_day }}
     --set containers.server.args.client_number={{ hostvars[item].client_number }}
     --set containers.server.args.max_voc_size={{ hostvars[item].max_voc_size }}
     --set containers.server.args.beta={{ hostvars[item].beta }}
