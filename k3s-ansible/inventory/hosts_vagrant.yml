@@ -1,12 +1,13 @@
 all:
   hosts:
-    polito-1:
-      ansible_host: 10.10.10.100
-      # ansible_ssh_private_key: privatekey
+    master-00:
+      ansible_host: 10.10.0.100
+      ansible_port: 22
       ansible_user: vagrant
       # WireGuard server variables
       wireguard_ip: "10.0.0.100"
-      wireguard_interface: "eth1"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
       wireguard_private_key: !vault |
         $ANSIBLE_VAULT;1.1;AES256
         66633530373637636637333065363864616339313262623361393132326564386661393935323865
@@ -17,79 +18,64 @@ all:
         6631326264396663313935373037383230333833636665323464
       wireguard_public_key: /SPUC+mZEcY0ChebN97MhEExlWh/LJR0NbLs8eg27Uk=
       wireguard_listen_port: "51820"
-      wireguard_endpoint: "10.10.10.100:51820"
-
-    brescia1:
-      ansible_host: 10.10.10.101
+      wireguard_endpoint: "10.10.0.100:51820"
+      
+    worker-00:
+      ansible_host: 10.10.0.101
+      ansible_port: 22
       ansible_user: vagrant
-      # ansible_ssh_private_key: privatekey
       wireguard_ip: "10.0.0.101"
-      wireguard_interface: "eth1"
+      public_interface: "eth0"
+      wireguard_interface: "wg0"
 
   children:
     deployment:
       hosts:
         localhost:
           ansible_connection: local
-    docker-registry:
+    registry:
       hosts:
-        polito-1:
+        master-00:
     master:
       hosts:
-        polito-1:
+        master-00:
     agents:
       hosts:
-        brescia1:
-
-    darknet:
+        worker-00:
+    management:
       hosts:
-        polito-1:
-          darknet_range: "130.192.167.0/24"
+    vpn:
+      hosts:
+        worker-00:       
+    darknet:
+      vars: 
+        darknet_namespace: "darknet"
+      hosts:
+        worker-00:
+          darknet_range: "10.10.0.0/24"
           darknet_exclude_ips: 
-            - 130.192.167.2
-            - 130.192.167.3
-          hostPath: "/mnt/data/tcpdump"
-          monthPath: "/etc/tcpdump"
-          tcpdump_interface: "eth1"
+            - 10.10.0.100
+            - 10.10.0.101
+          darknet_hostPath: "/data/darknet"
+          darknet_mountPath: "/data/darknet"
+          tcpdump_interface: "eth0"
           tcpdump_rotate_seconds: "3600"
           tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap" 
 
-    flower:
-      hosts:
-        polito-1:
-        brescia1:
-
-    cowrie:
-      hosts:
-        polito-1:
-          listening_ips:
-            - 130.192.167.2
-            - 130.192.167.3
-          sshPort: 
-            port: 2222
-            targetPort: 2222
-          telnetPort: 
-            port: 2223
-            targetPort: 2223
-          hostPath: "/mnt/data/tcpdump"
-          monthPath: "/etc/tcpdump"
-          tcpdump_interface: "eth0"
-          tcpdump_rotate_seconds: "3600"
-          tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
-
     arp_responder:
+      vars: 
+        arp_responder_namespace: "arp-responder"    
       hosts:
-        brescia1:
-          arp4_interface: "eth1"
-          arp4_network: "20.0.0.0/24"
-          arp6_interface: "eth1"
-        polito-1:
-          arp4_interface: "eth1"
-          arp4_network: "20.0.0.0/24"
-          arp6_interface: "eth1"
+        worker-00:
+          arp4_interface: "eth0"
+          arp4_network: "10.10.0.0/24"
+          arp6_interface: "eth0"  
 
   vars:
     # K3s variables
-    k3s_version: "v1.29.6+k3s2"
+    helm_version: "v3.7.0"
+    k3s_version: "v1.30.4+k3s1"
     k3s_url: "https://10.0.0.100:6443"
-    applications_namespace: "ansible-managed"
+    deployed_applications: 
+      - darknet
+      - arp_responder

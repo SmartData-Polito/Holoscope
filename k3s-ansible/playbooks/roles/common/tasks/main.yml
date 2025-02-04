@@ -18,14 +18,24 @@
       - runc
     state: absent
 
+- name: Ensure required variables are set
+  ansible.builtin.set_fact:
+    os_name: "{{ ansible_distribution | default('debian') | lower }}"
+    os_release: "{{ ansible_distribution_release | default('bookworm') }}"
+
 - name: Add Docker's official GPG key
   ansible.builtin.apt_key:
-    url: https://download.docker.com/linux/debian/gpg
+    url: "https://download.docker.com/linux/{{ os_name }}/gpg"
     state: present
 
-- name: Add Docker repository (using Bookworm)
+- name: Determine repository
+  ansible.builtin.set_fact:
+    docker_repo: >-
+      deb https://download.docker.com/linux/{{ os_name }} {{ os_release }} stable
+
+- name: Add Docker repository
   ansible.builtin.apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable
+    repo: "{{ docker_repo }}"
     state: present
     filename: docker
     update_cache: yes

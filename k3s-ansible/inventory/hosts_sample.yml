@@ -1,37 +1,26 @@
 all:
   hosts:
-    master-host:
+    master-00:
       ansible_host: <MASTER_IP>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
+      ansible_ssh_private_key_file: "<SSH_PRIVATE_KEY_PATH>"
+      ansible_user: <USER>
       # WireGuard server variables
-      wireguard_ip: "<WIREGUARD_IP>"
+      wireguard_ip: "<WG_SERVER_IP>"
       public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+      wireguard_interface: "<WG_INTERFACE>"
       wireguard_private_key: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          <ENCRYPTED_PRIVATE_KEY>
-      wireguard_public_key: <WIREGUARD_PUBLIC_KEY>
-      wireguard_listen_port: "<PORT_NUMBER>"
-      wireguard_endpoint: "<MASTER_IP>:<PORT_NUMBER>"
-      
-    worker-host-01:
-      ansible_host: <WORKER_IP_01>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
-      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
-      wireguard_ip: "<WIREGUARD_IP>"
-      public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+          <ENCRYPTED_VAULT_KEY>
+      wireguard_public_key: <WG_PUBLIC_KEY>
+      wireguard_listen_port: "<WG_LISTEN_PORT>"
+      wireguard_endpoint: "<WG_ENDPOINT_IP>:<WG_LISTEN_PORT>"
 
-    worker-host-02:
-      ansible_host: <WORKER_IP_02>
-      ansible_port: <SSH_PORT>
-      ansible_user: <SSH_USERNAME>
-      ansible_ssh_private_key_file: "<PATH_TO_PRIVATE_KEY>"
-      wireguard_ip: "<WIREGUARD_IP>"
+    worker-00:
+      ansible_host: <WORKER_00_IP>
+      ansible_user: <USER>
+      ansible_ssh_private_key_file: "<SSH_PRIVATE_KEY_PATH>"
+      wireguard_ip: "<WG_WORKER_00_IP>"
       public_interface: "<PUBLIC_INTERFACE>"
-      wireguard_interface: "<WIREGUARD_INTERFACE>"
+      wireguard_interface: "<WG_INTERFACE>"
 
   children:
     deployment:
@@ -40,60 +29,66 @@ all:
           ansible_connection: local
     registry:
       hosts:
-        master-host:
+        master-00:
     master:
       hosts:
-        master-host:
+        master-00:
     agents:
       hosts:
-        worker-host-01:
-        worker-host-02:
-    management:
-      hosts:
+        worker-00:
     vpn:
       hosts:
-        worker-host-01:
-        worker-host-02:
-
+        worker-00:
+        
     darknet:
-      vars: 
-        darknet_namespace: "darknet"    
       hosts:
-        worker-host-01:
-          darknet_range: "<IP_RANGE>"
+        worker-00:
+          darknet_range: "<DARKNET_RANGE>"
           darknet_exclude_ips: 
-            - <IP_ADDRESS_1>
-            - <IP_ADDRESS_2>
-          darknet_hostPath: "<HOST_PATH>"
-          darknet_mountPath: "<MOUNT_PATH>"
-          tcpdump_interface: "<NETWORK_INTERFACE>"
-          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          tcpdump_file_pattern: "<FILE_PATTERN>" 
-        worker-host-02:
-          darknet_range: "<IP_RANGE>"
-          darknet_exclude_ips:
-            - <IP_ADDRESS_1>
-            - <IP_ADDRESS_2>
-          darknet_hostPath: "<HOST_PATH>"
-          darknet_mountPath: "<MOUNT_PATH>"
-          tcpdump_interface: "<NETWORK_INTERFACE>"
-          tcpdump_rotate_seconds: "<ROTATION_INTERVAL>"
-          tcpdump_file_pattern: "<FILE_PATTERN>"
-
-
-    arp_responder:
+            - <MASTER_IP>
+            - <WORKER_00_IP>
+            - <WORKER_01_IP>
+          darknet_hostPath: "<DARKNET_HOST_PATH>"
+          darknet_mountPath: "<DARKNET_MOUNT_PATH>"
+          tcpdump_interface: "<TCPDUMP_INTERFACE>"
+          tcpdump_rotate_seconds: "<TCPDUMP_ROTATE_SECONDS>"
+          tcpdump_file_pattern: "<TCPDUMP_FILE_PATTERN>" 
       vars: 
-        arp_responder_namespace: "arp-responder"    
+        darknet_namespace: "<DARKNET_NAMESPACE>"
+    cowrie:
       hosts:
-        worker-host-01:
-          arp4_interface: "<NETWORK_INTERFACE>"
-          arp4_network: "<IP_RANGE>"
-          arp6_interface: "<NETWORK_INTERFACE>"
-        worker-host-02:
-          arp4_interface: "<NETWORK_INTERFACE>"
-          arp4_network: "<IP_RANGE>"
-          arp6_interface: "<NETWORK_INTERFACE>"
 
+        master-00:
+          listening_ips:
+            - <LISTENING_IP_1>
+            - <LISTENING_IP_2>
+          sshPort: 
+            port: <SSH_PORT>
+            targetPort: <SSH_TARGET_PORT>
+          telnetPort: 
+            port: <TELNET_PORT>
+            targetPort: <TELNET_TARGET_PORT>
+          hostPath: "<HOST_PATH>"
+          mountPath: "<MOUNT_PATH>"
+          tcpdump_interface: "<TCPDUMP_INTERFACE>"
+          tcpdump_rotate_seconds: "<TCPDUMP_ROTATE_SECONDS>"
+          tcpdump_file_pattern: "<TCPDUMP_FILE_PATTERN>"
+      vars: 
+        cowrie_namespace: "<COWRIE_NAMESPACE>"
+    
+    arp_responder:
+      hosts:
+        worker-1:
+          arp4_interface: "<ARP4_INTERFACE>"
+          arp4_network: "<ARP4_NETWORK>"
+          arp6_interface: "<ARP6_INTERFACE>"
+        master-1:
+          arp4_interface: "<ARP4_INTERFACE>"
+          arp4_network: "<ARP4_NETWORK>"
+          arp6_interface: "<ARP6_INTERFACE>"
+      vars: 
+        arp_responder_namespace: "<ARP_RESPONDER_NAMESPACE>"
+        
     flower_server:
       hosts:
         master-host:
@@ -121,9 +116,10 @@ all:
     # K3s variables
     helm_version: "<HELM_VERSION>"
     k3s_version: "<K3S_VERSION>"
-    k3s_url: "https://<WIREGUARD_IP>:6443"
+    k3s_url: "<K3S_URL>"
     deployed_applications: 
       - darknet
       - arp_responder
       - flower-client
       - flower-server
+
