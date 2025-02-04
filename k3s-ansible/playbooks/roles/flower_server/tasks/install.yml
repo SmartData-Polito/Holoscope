@@ -1,0 +1,21 @@
+- name: Deploy Helm chart for Flower Server in each required node
+  command: >
+    helm upgrade -i flower-server-{{ item }} {{ playbook_dir }}/resources/helm-charts/flower_server --namespace {{ hostvars[item].flower_namespace }} --create-namespace
+    --set nodeAffinity.hostname.values[0]={{ item }}
+    --set name=flower-server-{{ item }}
+    --set namespace={{ hostvars[item].flower_namespace }}
+    --set appName=flower-server-{{ item }}
+    --set containers.server.args.first_day={{ hostvars[item].first_day }}
+    --set containers.server.args.last_day={{ hostvars[item].last_day }}
+    --set containers.server.args.client_number={{ hostvars[item].client_number }}
+    --set containers.server.args.max_voc_size={{ hostvars[item].max_voc_size }}
+    --set containers.server.args.beta={{ hostvars[item].beta }}
+    --set pv.log.host_path.path={{ hostvars[item].log_host_path }}
+    --set pv.vocabularies.host_path.path={{ hostvars[item].vocabularies_host_path }}
+    --set pv.models.host_path.path={{ hostvars[item].models_host_path }}
+    --set pv.interest.host_path.path={{ hostvars[item].interest_host_path }}
+
+
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['flower_server'] }}"

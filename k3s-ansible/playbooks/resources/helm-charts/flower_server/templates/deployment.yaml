@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploymentName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+        namespace: {{ .Values.namespace }}
+    spec:
+      containers:
+        - name: server
+          image: {{ .Values.containers.server.image }}
+          imagePullPolicy: {{ .Values.containers.server.imagePullPolicy }}
+          args: 
+            - "--first_day={{ .Values.containers.server.args.first_day }}"
+            - "--last_day={{ .Values.containers.server.args.last_day }}"
+            - "--client_number={{ .Values.containers.server.args.client_number }}"
+            - "--server_port={{ .Values.containers.server.args.server_port }}"
+          ports:
+          - containerPort: {{ .Values.containers.server.port }}
+          volumeMounts:
+            {{- range .Values.containers.server.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+            {{- end }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: 
+                    {{- range .Values.nodeAffinity.hostname.values }}
+                    - {{ . }}
+                    {{- end }}
+      volumes:
+        {{- range .Values.volumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .claimName }}
+        {{- end }}
+

@@ -1,0 +1,66 @@
+deploymentName: flower-client
+appName: flower-client
+namespace: default
+
+containers:
+  client:
+    image: andreasordello/flower_idarkvec_client:latest
+    imagePullPolicy: Always
+    args:
+      server_address: flower-server:8080
+      cid: 1
+
+  
+    volumeMounts:
+    - mountPath: /idarkvec/dataset
+      name: volume-1
+    - mountPath: /idarkvec/log/
+      name: volume-2
+
+
+
+volumes:
+    - name : volume-1
+      claimName: pv-claim-dataset
+    - name : volume-2
+      claimName: pv-claim-log-client   
+  
+
+   
+pv:
+    dataset:
+        name: pv-volume-dataset
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/dataset"
+
+    log:
+        name: pv-volume-log-client
+        storageClassName: manual
+        capacity: 5Gi
+        accessModes:
+          - ReadWriteOnce
+        hostPath:
+          path: "/data/log"
+
+pvc:
+      - name: pv-claim-dataset
+        storageClassName: manual
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        volumeName: pv-volume-dataset
+      - name: pv-claim-log-client
+        storageClassName: manual
+        accessModes:
+        - ReadWriteOnce
+        resources:
+        requests:
+          storage: 5Gi
+        volumeName: pv-volume-log-client
+    

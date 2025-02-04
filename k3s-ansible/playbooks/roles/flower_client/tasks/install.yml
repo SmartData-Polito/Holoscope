@@ -1,0 +1,16 @@
+- name: Deploy Helm chart for Flower Client in each required node
+  command: >
+    helm upgrade -i flower-client-{{ item }} {{ playbook_dir }}/resources/helm-charts/flower_client --namespace {{ hostvars[item].flower_namespace }} --create-namespace
+    --set nodeAffinity.hostname.values[0]={{ item }}
+    --set deploymentName=flower-client-{{ item }}
+    --set namespace={{ hostvars[item].flower_namespace }}
+    --set name=flower-client-{{ item }}
+    --set appName=flower-client-{{ item }}
+    --set cid={{ hostvars[item].cid }}
+    --set pv.dataset.host_path.path={{ hostvars[item].dataset_host_path }}
+    --set pv.log.host_path.path={{ hostvars[item].log_host_path }}
+
+
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['flower_client'] }}"

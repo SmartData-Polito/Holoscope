@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploymentName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      
+      initContainers: # simply wait that the server is ready, otherwise the client will crash
+          - name: wait-flower-server  
+            image: busybox
+            command: ['sh', '-c', 'until nc -z flower-server 8080; do echo "Waiting for Flower Server to be reachable..."; sleep 2; done; echo "Flower Server reachable!"']
+
+      containers:
+        - name: client
+          image: {{ .Values.containers.client.image }}
+          imagePullPolicy: {{ .Values.containers.client.imagePullPolicy }}
+          args: 
+            - "--server_address={{ .Values.containers.client.args.server_address }}"
+            - "--cid={{ .Values.cid}}"
+            - "--dataset_path=/idarkvec/dataset/" # internal folder of the container, defined in the DockerFile
+
+          volumeMounts:
+
+            {{- range .Values.containers.client.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}-{{$.Values.appName}}
+            {{- end }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: 
+                    {{- range .Values.nodeAffinity.hostname.values }}
+                    - {{ . }}
+                    {{- end }}
+      volumes:
+        {{- range .Values.volumes }}
+        - name: {{ .name }}-{{$.Values.appName}}
+          persistentVolumeClaim:
+            claimName: {{ .claimName }}-{{$.Values.appName}}
+        {{- end }}
+
