@@ -1,0 +1,8 @@
+# inventory/dev/group_vars/cowrie.yml
+---
+# Cowrie application settings
+namespace: "cowrie"
+enabled: false
+
+# Host-specific configurations when needed
+host_specific: {}

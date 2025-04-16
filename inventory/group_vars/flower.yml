@@ -1,0 +1,8 @@
+# inventory/dev/group_vars/flower.yml
+---
+# Flower application settings
+namespace: "flower"
+enabled: false
+
+# Host-specific configurations when needed
+host_specific: {}

@@ -1,0 +1,15 @@
+- name: Uninstall Helm chart for Darknet Collector on each agent node
+  command: >
+    helm uninstall darknet-ansible-{{ item }} --namespace {{ darknet_namespace }}
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['darknet'] }}"
+  ignore_errors: yes
+        
+- name: Remove the namespace for Darknet Collector
+  command: >
+    kubectl delete namespace {{ darknet_namespace }}
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  run_once: true
+  ignore_errors: yes

@@ -1,0 +1,6 @@
+- name: Uninstall Helm chart for Flower Server on each agent node
+  command: >
+    helm uninstall flower-server-{{ item }} --kubeconfig {{ fetch_result.dest }} --namespace {{ namespace }}
+  with_items: "{{ groups['flower'] }}"
+  when: host_specific[item] is defined and 'server' in host_specific[item].role | default('client')
+  ignore_errors: yes

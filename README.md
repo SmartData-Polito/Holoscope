@@ -32,7 +32,7 @@ The name **CyBorg** is inspired by the **Borg**, a collective race from the _Sta
 ## Prerequisites
 
 ### Single Node Setup (for development):
-- **Operating System**: Linux (e.g., Ubuntu 20.04)
+- **Operating System**: Linux (e.g., Ubuntu 24.04)
 - **Resources**: Adequate CPU and memory for running at least 3 VMs for testing
 - **Dependencies**: Docker installed
 
@@ -41,41 +41,40 @@ The name **CyBorg** is inspired by the **Borg**, a collective race from the _Sta
 - **Resources**: 
   - Master: at least 2 CPUs, 16 GB of memory, and sufficient storage (e.g, ~20 GBs for the retention of some days of honeypot logs)
   - Agents: similar to master
-- **Dependencies**: See the installation scripts in [k3s-ansible/README.md](k3s-ansible/README.md)
 
 ## Deployment
 
 ### Set Up Hosts
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-password
+ansible-playbook playbooks/site.yml --ask-vault-password
 ```
 
 ### Deploy Local Registry
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/deploy_registry.yml 
+ansible-playbook playbooks/deploy_registry.yml 
 ```
 
 ### Build and Push Images
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/build_and_push_images.yml 
+ansible-playbook playbooks/build_and_push_images.yml 
 ```
 
 ### Install/Uninstall Applications
 Refer to `host.yml` to define which applications to deploy.
 - To install applications:
   ```bash
-  ansible-playbook -i inventory/hosts.yml playbooks/deploy_applications.yml
+  ansible-playbook  playbooks/deploy_applications.yml
   ```
 - To uninstall applications:
   ```bash
-  ansible-playbook -i inventory/hosts.yml playbooks/deploy_applications.yml -e "action=remove"
+  ansible-playbook  playbooks/deploy_applications.yml -e "action=remove"
   ```
 
 ---
 
 ### Deploy scripts for data sync
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/set_data_sync.yml
+ansible-playbook  playbooks/set_data_sync.yml
 ```
 
 # Provisioning VMs for the Testing Environment

@@ -1,0 +1,26 @@
+# inventory/dev/group_vars/all.yml
+---
+# Global variables for all hosts
+helm_version: "v3.7.0"
+k3s_version: "v1.30.4+k3s1"
+k3s_url: "https://10.0.0.100:6443"
+
+# Registry of all available applications
+application_registry:
+  darknet:
+    namespace: "darknet"
+    requires_pv: true
+  cowrie:
+    namespace: "cowrie"
+    requires_pv: true
+  flower:
+    namespace: "flower"
+    requires_pv: true
+  arp_responder:
+    namespace: "arp-responder"
+    requires_pv: false
+
+# List of applications to deploy by default
+deployed_applications: 
+  - arp_responder
+  - darknet

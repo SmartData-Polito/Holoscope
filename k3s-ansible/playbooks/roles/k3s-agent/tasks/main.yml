@@ -1,4 +1,0 @@
----
-- name: Install and configure K3s
-  shell: |
-    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - agent  --flannel-iface={{hostvars[ inventory_hostname ].wireguard_interface}} --node-ip={{hostvars[ inventory_hostname ].wireguard_ip}}  --token="{{hostvars[groups['master'][0]].k3s_token}}" --server="https://{{hostvars[groups['master'][0]].wireguard_ip}}:6443" --node-name="{{inventory_hostname}}" --debug --docker

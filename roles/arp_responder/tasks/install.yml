@@ -1,0 +1,20 @@
+- name: Deploy Helm chart for ARP Responder in each required node
+  command: >
+    {% set host_config = host_specific[item] | default({}) %}
+    {% set arp4_interface = host_config.arp4_interface %}
+    {% set arp4_network = host_config.arp4_network %}
+    {% set arp6_interface = host_config.arp6_interface %}
+
+    helm upgrade -i arp-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/arp-responder 
+    --namespace {{ arp_responder_namespace }} 
+    --create-namespace
+    --set name=arp-responder-{{ item }}
+    --set appName=arp-responder-{{ item }}
+    --set namespace={{ arp_responder_namespace }}
+    --set "containers.arp4.args={"{{ arp4_interface }}","{{ arp4_network }}"}"
+    --set "containers.arp6.args={"{{ arp6_interface }}"}"
+    --set nodeAffinity.hostname.values[0]={{ item }}
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['arp_responder'] }}"
+  when: host_specific[item] is defined

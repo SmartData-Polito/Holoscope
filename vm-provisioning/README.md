@@ -1,6 +1,6 @@
 # Vagrant Environment for Honeynet Network Setup
 
-This project sets up a virtualized environment using Vagrant, Libvirt, and VirtualBox, creating virtual nodes for a honeynet testing environment. The configuration supports multiple operating systems (Linux, macOS, and Windows) and uses Ansible for provisioning.
+This project sets up a virtualized environment using Vagrant, Libvirt, and VirtualBox, creating virtual nodes for a honeynet development environment. The configuration supports multiple operating systems (Linux, macOS, and Windows) and uses Ansible for provisioning.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ Before running this setup, ensure the following software is installed on your ma
 2. **Libvirt** (for Linux) - A toolkit to interact with the virtualization capabilities of Linux systems.
 3. **VirtualBox** (for macOS and Windows) - A cross-platform hypervisor that allows you to run virtual machines on your local system.
 4. **Ansible** - An open-source IT automation engine, required for provisioning.
-5. **Pre-configured Honeynet Network XML**  (for production compatibility) - Ensure you have a valid `honeynet.xml` file to set up the network.
+5. **Pre-configured Honeynet Network XML**  - Ensure you have a valid `honeynet.xml` file to set up the network.
 
 ### Installing Prerequisites
 
@@ -28,29 +28,14 @@ Before running this setup, ensure the following software is installed on your ma
 
 4. **Install Pyenv and Ansible using the helper script**:
     ```bash
-    chmod +x ./setup_development_node.sh
-    ./setup_development_node.sh
+    chmod +x ./install.sh
+    ./install.sh
     ```
 
 ## Setup Instructions
 
-### Step 1: Create Honeynet Network (Linux)
-
-Create the honeynet network using the provided `honeynet.xml` file.
-
-```bash
-sudo virsh net-create honeynet.xml
-```
-
-Ensure that the network is active:
-
-```bash
-sudo virsh net-list
-```
-This will list all active networks. Make sure that the honeynet is up and running.
-
-### Step 2: Configure Environment Variables
-Set the Vagrant configuration file path: You can define an external configuration file (XML format) by setting the CONFIG_FILE environment variable. If no configuration file is provided, default nodes will be used. This is valid for production compatibility, since the network configuration for the host are defined via DHCP. 
+### Step 1: Configure Environment Variables
+Set the Vagrant configuration file path: You can define an external configuration file (XML format) by setting the CONFIG_FILE environment variable. If no configuration file is provided, default nodes will be used. 
 
 ```bash
 export CONFIG_FILE="/path/to/your/network/config.xml"
@@ -64,7 +49,7 @@ export ANSIBLE_PLAYBOOK="/path/to/your/playbook.yml"
 
 If no playbook is provided, basicsetup.yml will be used by default.
 
-### Step 3: Start the Vagrant Environment
+### Step 2: Start the Vagrant Environment
 Run the following command to start up the Vagrant environment:
 
 ```bash
@@ -72,13 +57,13 @@ vagrant up
 ```
 The Vagrantfile will automatically detect your host operating system and configure the environment using either Libvirt (Linux) or VirtualBox (macOS/Windows).
 
-### Step 4: Verify the Setup
+### Step 3: Verify the Setup
 Once Vagrant has finished setting up the environment, you can verify that the VMs are running and provisioned correctly using:
 
 ```bash
 vagrant status
 ```
-### Step 5: Access the Virtual Machines
+### Step 4: Access the Virtual Machines
 To SSH into a specific node (e.g., the master node), run:
 
 ```bash

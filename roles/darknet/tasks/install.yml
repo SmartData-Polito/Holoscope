@@ -1,0 +1,32 @@
+- name: Deploy Helm chart for Darknet TCPDump in each required node
+  command: >
+    {% set host_config = host_specific[item] | default({}) %}
+    {% set darknet_range = host_config.darknet_range %}
+    {% set exclude_ips = host_config.darknet_exclude_ips | default([]) %}
+    {% set tcpdump_interface = host_config.tcpdump_interface %}
+    {% set server_ip = [] %}
+    {% for ip in exclude_ips %}
+      {% set _ = server_ip.append("host " + ip) %}
+    {% endfor %}
+    {% set filter_condition = "ip and (net " ~ darknet_range ~ ")" %}
+    {% if server_ip %}
+      {% set filter_condition = filter_condition ~ " and not (" ~ server_ip | join(' or ') ~ ")" %}
+    {% endif %}
+
+    helm upgrade -i darknet-ansible-{{ item }} {{ playbook_dir }}/resources/helm-charts/darknet --namespace {{ darknet_namespace }} --create-namespace
+    --set name=darknet-{{ item }}
+    --set appName=darknet-{{ item }}
+    --set namespace={{ darknet_namespace }}
+    --set volumes.pv.name=darknet-pv-{{ item }}
+    --set volumes.pvc.name=darknet-pvc-{{ item }}
+    --set containers.tcpdump.interface="{{ tcpdump_interface }}"
+    --set containers.tcpdump.filter="{{ filter_condition }}"
+    --set containers.tcpdump.rotate_seconds="{{ tcpdump_rotate_seconds }}"
+    --set containers.tcpdump.outputPath="{{ darknet_mountPath }}/{{ tcpdump_file_pattern }}"
+    --set containers.tcpdump.mountPath="{{ darknet_mountPath }}"
+    --set volumes.pvc.hostPath.path="{{ darknet_hostPath }}"       
+    --set nodeAffinity.hostname.values[0]="{{ item }}"
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['darknet'] }}"
+  when: host_specific[item] is defined

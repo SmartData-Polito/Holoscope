@@ -1,0 +1,18 @@
+# inventory/dev/group_vars/darknet.yml
+---
+# Darknet application settings
+darknet_namespace: "darknet"
+darknet_hostPath: "/data/darknet"
+darknet_mountPath: "/data/darknet"
+tcpdump_rotate_seconds: "3600"
+tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
+enabled: true
+
+# Host-specific configurations
+host_specific:
+  worker-00:
+    darknet_range: "10.10.0.0/24"
+    darknet_exclude_ips: 
+      - 10.10.0.100
+      - 10.10.0.101
+    tcpdump_interface: "eth0"

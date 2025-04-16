@@ -1,0 +1,151 @@
+---
+- name: Ensure master group is not empty
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check if master group exists and is not empty
+      assert:
+        that:
+          - groups['master'] is defined
+          - groups['master'] | length > 0
+        fail_msg: "The 'master' group is empty or not defined in the inventory"
+
+- name: Post-installation steps on master
+  hosts: master
+  become: true
+  roles:
+    - role: k3s-server
+      tasks_from: post_install
+
+- name: Identify new nodes
+  hosts: agents
+  gather_facts: true
+  tasks:
+    - name: Check if WireGuard key files exist and have content
+      shell: |
+        if [ -s /etc/wireguard/publickey ] && [ -s /etc/wireguard/privatekey ]; then
+          echo "valid"
+        else
+          echo "invalid"
+        fi
+      register: wg_keys_check
+      changed_when: false
+      become: true
+
+    - name: Check if K3s agent is installed and running
+      shell: systemctl is-active k3s-agent || echo "not_running"
+      register: k3s_status
+      changed_when: false
+      become: true
+      
+    - name: Get hostname for grep check
+      set_fact:
+        hostname_for_grep: "{{ inventory_hostname }}"
+
+    - name: Add to new_agents group if not fully configured
+      add_host:
+        name: "{{ inventory_hostname }}"
+        groups: new_agents
+      when: >
+        (wg_keys_check.stdout == "invalid") or 
+        (k3s_status.stdout == "not_running" or k3s_status.stdout == "inactive") or
+        (force_reconfigure | default(false) | bool)
+
+- name: Configure common on new agents
+  hosts: new_agents
+  become: true
+  tasks:
+    - name: Include common role
+      include_role:
+        name: common
+
+- name: Configure WireGuard on new agents
+  hosts: new_agents
+  become: true
+  tasks:
+    - name: Include wireguard-client role
+      include_role:
+        name: wireguard-client
+
+- name: Update all WireGuard facts and configurations
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check if WireGuard keys exist
+      stat:
+        path: /etc/wireguard/publickey
+      register: wg_pubkey_file
+
+    - name: Get public key from file if it exists
+      command: cat /etc/wireguard/publickey
+      register: publickey_contents
+      changed_when: False
+      when: wg_pubkey_file.stat.exists
+
+    - name: Get private key from file if it exists
+      command: cat /etc/wireguard/privatekey
+      register: privatekey_contents
+      changed_when: False
+      when: wg_pubkey_file.stat.exists
+      
+    - name: Set WireGuard public key fact for hosts with keys
+      set_fact:
+        wireguard_public_key: "{{ publickey_contents.stdout }}"
+      when: wg_pubkey_file.stat.exists
+      delegate_facts: true
+
+    - name: Set WireGuard private key fact for hosts with keys
+      set_fact:
+        wireguard_private_key: "{{ privatekey_contents.stdout }}"
+      when: wg_pubkey_file.stat.exists
+      delegate_facts: true
+      
+    - name: Set WireGuard IP fact for hosts with keys
+      set_fact:
+        wireguard_ip: "{{ wireguard_ip }}"  
+      when: wg_pubkey_file.stat.exists and wireguard_ip is defined
+      delegate_facts: true
+
+- name: Post-installation steps on WireGuard server
+  hosts: "{{ groups['master'][0] }}"
+  become: true
+  tasks:
+    - name: Find all hosts with wireguard_public_key
+      set_fact:
+        vpn_peers: []
+
+    - name: Collect wireguard peers
+      set_fact:
+        vpn_peers: "{{ vpn_peers + [item] }}"
+      when: 
+        - hostvars[item]['wireguard_public_key'] is defined
+        - item != inventory_hostname
+      loop: "{{ groups['all'] }}"
+      
+    - name: Include WireGuard server template task
+      include_role:
+        name: wireguard-server
+        tasks_from: update_config
+
+- name: Configure k3s-agent on new agents
+  hosts: new_agents
+  become: true
+  tasks:
+    - name: Include k3s-agent role
+      include_role:
+        name: k3s-agent
+
+- name: Show summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Display configured nodes
+      debug:
+        msg: "Successfully configured new nodes: {{ groups.get('new_agents', []) | join(', ') }}"
+      when: groups.get('new_agents', []) | default([]) | length > 0
+        
+    - name: Display no changes message
+      debug:
+        msg: "No new nodes were configured. All nodes already have WireGuard and K3s agent installed."
+      when: groups.get('new_agents', []) | default([]) | length == 0

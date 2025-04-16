@@ -1,0 +1,4 @@
+# inventory/dev/group_vars/vpn.yml
+---
+# VPN configuration
+wireguard_interface: "wg0"

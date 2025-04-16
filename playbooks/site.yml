@@ -1,0 +1,35 @@
+---
+- name: Configure agents first to collect WireGuard facts
+  hosts: agents
+  become: true
+  roles:
+    - common
+    - wireguard-client
+  vars:
+    ansible_python_interpreter: /usr/bin/python3      
+
+- name: Configure master (WireGuard) with client information
+  hosts: master
+  become: true
+  roles:
+    - common
+    - wireguard-server
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    vpn_clients: "{{ groups['agents'] + groups['management'] }}"
+
+- name: Configure master (K3s)
+  hosts: master
+  become: true
+  roles:
+    - k3s-server
+  vars:
+    ansible_python_interpreter: /usr/bin/python3          
+
+- name: Configure agents (K3s)
+  hosts: agents
+  become: true
+  roles:
+    - k3s-agent
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

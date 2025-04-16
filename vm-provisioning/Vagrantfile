@@ -60,6 +60,7 @@ def define_hardcoded_nodes
     Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.100"),
     Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.101"),
     Node.new("worker-01", "generic/ubuntu2204", "00:00:00:00:00:CC", "10.10.0.102"),
+    Node.new("worker-02", "generic/ubuntu2204", "00:00:00:00:00:DD", "10.10.0.103"),
   ]
 end
 
@@ -136,6 +137,11 @@ end
 
 # Main block to execute the Vagrantfile
 Vagrant.configure("2") do |config|
+  config.trigger.before :up do |trigger|
+    trigger.info = "Creating the network before VM creation..."
+    trigger.run = {inline: "bash -c 'sudo virsh net-define honeynet.xml || true'"}
+  end
+
   # Determine the host OS
   os = host_os
 

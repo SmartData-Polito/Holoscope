@@ -1,0 +1,31 @@
+- name: Deploy Helm chart for Flower Server in each required node
+  command: >
+    {% set host_config = host_specific[item] | default({}) %}
+    {% set first_day = host_config.first_day %}
+    {% set last_day = host_config.last_day %}
+    {% set client_number = host_config.client_number %}
+    {% set max_voc_size = host_config.max_voc_size %}
+    {% set beta = host_config.beta %}
+    {% set log_host_path = host_config.log_host_path %}
+    {% set vocabularies_host_path = host_config.vocabularies_host_path %}
+    {% set models_host_path = host_config.models_host_path %}
+    {% set interest_host_path = host_config.interest_host_path %}
+
+    helm upgrade -i flower-server-{{ item }} {{ playbook_dir }}/resources/helm-charts/flower_server --namespace {{ namespace }} --create-namespace
+    --set nodeAffinity.hostname.values[0]={{ item }}
+    --set name=flower-server-{{ item }}
+    --set namespace={{ namespace }}
+    --set appName=flower-server-{{ item }}
+    --set containers.server.args.first_day={{ first_day }}
+    --set containers.server.args.last_day={{ last_day }}
+    --set containers.server.args.client_number={{ client_number }}
+    --set containers.server.args.max_voc_size={{ max_voc_size }}
+    --set containers.server.args.beta={{ beta }}
+    --set pv.log.host_path.path={{ log_host_path }}
+    --set pv.vocabularies.host_path.path={{ vocabularies_host_path }}
+    --set pv.models.host_path.path={{ models_host_path }}
+    --set pv.interest.host_path.path={{ interest_host_path }}
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  with_items: "{{ groups['flower'] }}"
+  when: host_specific[item] is defined and 'server' in host_specific[item].role | default('client')

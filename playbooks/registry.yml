@@ -1,0 +1,77 @@
+---
+# ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/deploy_registry.yml  --ask-become-pass
+#jinja2: trim_blocks:True
+- name: Copy and modify file from remote host
+  hosts: deployment
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  
+  tasks:
+    - name: Fetch Kubeconfig from the remote host
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/kubeconfig.yaml
+        flat: yes
+      delegate_to: "{{ groups['master'][0] }}"
+      register: fetch_result
+
+    - name: Change Kubeconfig permissions
+      ansible.builtin.file:
+        path: "{{ fetch_result.dest }}"
+        mode: "go-r"
+
+    - name: Ensure yq is installed on the deployment
+      become: true
+      apt:
+        name: yq
+        state: present
+      run_once: true
+
+    - name: Install kubectl in the on deployment
+      become: true
+      apt:
+        name: kubernetes-client
+        state: present
+      run_once: true
+
+    - name: Modify the server URL in the YAML file using yq
+      shell: |
+        yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
+      run_once: true
+
+    - name: Install helm if not exists
+      become: true
+      unarchive:
+        src: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /usr/local/bin
+        extra_opts: "--strip-components=1"
+        owner: root
+        group: root
+        mode: 0755
+        remote_src: true
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Deploy Helm chart for Docker Registry on specific node
+      command: >
+        helm upgrade -i registry-{{ item }} {{ playbook_dir }}/resources/helm-charts/registry --namespace registry --create-namespace
+        --set name=registry-{{ item }}
+        --set appName=registry-{{ item }}
+        --set nodeAffinity.hostname.values[0]={{ item }}
+        --set service.loadBalancerIP={{ hostvars[groups['registry'][0]]['wireguard_ip'] }}
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['registry'] }}"
+
+- name: Append to /etc/hosts file on all machines in a group
+  hosts: master:agents
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Append entry to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^.*\sregistry\.local\s*$'
+        line: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }} registry registry.local"
+        state: present
+        insertafter: EOF
