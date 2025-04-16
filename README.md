@@ -45,22 +45,22 @@ The name **CyBorg** is inspired by the **Borg**, a collective race from the _Sta
 
 ## Deployment
 
-### Set Up Hosts:
+### Set Up Hosts
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-password
 ```
 
-### Deploy Local Registry:
+### Deploy Local Registry
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/deploy_registry.yml 
 ```
 
-### Build and Push Images:
+### Build and Push Images
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/build_and_push_images.yml 
 ```
 
-### Install/Uninstall Applications:
+### Install/Uninstall Applications
 Refer to `host.yml` to define which applications to deploy.
 - To install applications:
   ```bash
@@ -72,7 +72,13 @@ Refer to `host.yml` to define which applications to deploy.
   ```
 
 ---
-## Provisioning VMs for the Testing Environment
+
+### Deploy scripts for data sync
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/set_data_sync.yml
+```
+
+# Provisioning VMs for the Testing Environment
 
 See [vm-provisioning/README.md](vm-provisioning/README.md)
 

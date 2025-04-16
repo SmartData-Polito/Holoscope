@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Get the current date for logging
+LOG_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+LOG_DIR="/home/{{ ansible_user }}/log/rsync_data_sync"
+LOG_FILE="$LOG_DIR/rsync_sync_{{ hostvars[item].inventory_hostname }}.log"
+
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
+
+# Define the source path and the destination path
+SOURCE_PATH="{{ hostvars[item].darknet_hostPath }}/"
+DEST_PATH="/home/{{ ansible_user }}/darknet/{{ hostvars[item].inventory_hostname }}"
+HOST="{{ hostvars[item].ansible_user }}@{{ hostvars[item].wireguard_ip }}"
+
+# Exclude the most recent file from rsync
+EXCLUDE_FILE=$(ssh "$HOST" ls -t "$SOURCE_PATH" | head -n1)
+
+# Log the start of the process
+echo "[$LOG_DATE] Starting rsync from $HOST:$SOURCE_PATH to $DEST_PATH, excluding $EXCLUDE_FILE" >> "$LOG_FILE"
+
+# Run the rsync command with logging
+# rsync -azP --remove-source-files --mkpath --exclude="$EXCLUDE_FILE" "$HOST:$SOURCE_PATH" "$DEST_PATH" >> "$LOG_FILE" 2>&1
+rsync -azP --mkpath --exclude="$EXCLUDE_FILE" "$HOST:$SOURCE_PATH" "$DEST_PATH" >> "$LOG_FILE" 2>&1
+
+# Log the completion of the rsync process
+LOG_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "[$LOG_DATE] Completed rsync for $HOST" >> "$LOG_FILE"
+
+# Now, process the .pcap files in the destination path to organize them by date
+input_dir="$DEST_PATH"
+
+# Loop through all .pcap files in the directory
+for filepath in "$input_dir"/*.pcap; do
+    echo "$filepath"
+    if [[ -f "$filepath" ]]; then
+        # Extract the filename from the filepath
+        filename=$(basename "$filepath")
+        
+        # Extract the date part from the filename (assuming format: trace-YYYYMMDD_HH-MM-SS_SOMENUMBER.pcap)
+        date_part=$(echo "$filename" | cut -d'_' -f1 | cut -d'-' -f2)
+        
+        # Extract year, month, and day
+        year=${date_part:0:4}
+        month=${date_part:4:2}
+        day=${date_part:6:2}
+        
+        # Create the directory hierarchy (year/month/day)
+        destination_dir="$input_dir/$year/$month/$day"
+        mkdir -p "$destination_dir"
+        
+        # Move the file to the destination directory
+        mv "$filepath" "$destination_dir"
+        
+        # Log the file movement
+        LOG_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+        echo "[$LOG_DATE] Moved $filename to $destination_dir" >> "$LOG_FILE"
+    fi
+done
+
+# Log the completion of the file organization
+LOG_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "[$LOG_DATE] Completed organizing .pcap files in $input_dir" >> "$LOG_FILE"

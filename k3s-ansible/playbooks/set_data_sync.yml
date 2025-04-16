@@ -1,0 +1,8 @@
+---
+- name: Configure data sync
+  hosts: master 
+  become: false
+  roles:
+    - storage
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
