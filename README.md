@@ -72,7 +72,6 @@ Refer to `host.yml` to define which applications to deploy.
   ```
 
 ---
-<<<<<<< HEAD
 
 ### Deploy scripts for data sync
 ```bash
@@ -80,9 +79,6 @@ ansible-playbook -i inventory/hosts.yml playbooks/set_data_sync.yml
 ```
 
 # Provisioning VMs for the Testing Environment
-=======
-## Provisioning VMs for the Testing Environment
->>>>>>> aec0cee (updating the readme files)
 
 See [vm-provisioning/README.md](vm-provisioning/README.md)
 

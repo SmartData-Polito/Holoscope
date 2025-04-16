@@ -55,17 +55,9 @@ all:
           tcpdump_file_pattern: "<TCPDUMP_FILE_PATTERN>" 
       vars: 
         darknet_namespace: "<DARKNET_NAMESPACE>"
-
-    # TODO
-    flower:
-      hosts:
-        master-00:
-        worker-00:
-      vars: 
-        flower_namespace: "<FLOWER_NAMESPACE>"
-    
     cowrie:
       hosts:
+
         master-00:
           listening_ips:
             - <LISTENING_IP_1>
@@ -96,6 +88,30 @@ all:
           arp6_interface: "<ARP6_INTERFACE>"
       vars: 
         arp_responder_namespace: "<ARP_RESPONDER_NAMESPACE>"
+        
+    flower_server:
+      hosts:
+        master-host:
+          client_number: "<NUMBER_OF_EXPECTED_CLIENT>"
+          round_number: "<NUMBER_OF_ROUND>"
+          log_host_path: "<HOST_PATH_FOR_LOG>"
+          vocabularies_host_path: "<HOST_PATH_FOR_VOCABULARIES>"
+          models_host_path: "<HOST_PATH_FOR_MODELS>"
+      vars: 
+        flower_namespace: "flwr"
+
+    flower_client:
+      hosts:
+        worker-host-01:
+            cid: "<CLIENT-ID>"  #still required, but it can be removed in future release, UNIQUE
+            log_host_path: "<HOST_PATH_FOR_LOG>"
+            dataset_host_path: "<HOST_PATH_FOR_DATASET>"   #remember that the files with the data must be under /{dataset_host_path}/darknet0{cid}/ folder.
+        worker-host-02:
+            cid: "<CLIENT-ID>"  
+            log_host_path: "<HOST_PATH_FOR_LOG>"
+            dataset_host_path: "<HOST_PATH_FOR_DATASET>" 
+      vars: 
+        flower_namespace: "flwr"
   vars:
     # K3s variables
     helm_version: "<HELM_VERSION>"
@@ -103,3 +119,7 @@ all:
     k3s_url: "<K3S_URL>"
     deployed_applications: 
       - darknet
+      - arp_responder
+      - flower-client
+      - flower-server
+

@@ -19,6 +19,11 @@
         path: "{{ fetch_result.dest }}"
         mode: "go-r"
 
+
+    # To install yq
+    #sudo add-apt-repository ppa:rmescandon/yq
+    #sudo apt update
+    #sudo apt install yq -y
     - name: Ensure yq is installed on localhost
       become: true
       apt:
@@ -26,10 +31,30 @@
         state: present
       run_once: true
 
+
+  # older yq version
+  # - name: Modify the server URL in the YAML file using yq
+  #   shell: |
+  #    yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
+  #   run_once: true
+
+
+    #for yq > 1.4
     - name: Modify the server URL in the YAML file using yq
+      become: true
       shell: |
-        yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
-      run_once: true
+       yq eval '.clusters[0].cluster.server = "https://{{ hostvars[groups["master"][0]].ansible_host }}:6443"' -i {{ fetch_result.dest }}
+
+
+    # install helm
+    #- name: Install Helm
+    #  become: true
+    #  shell: |
+    #   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+
+    - name: Verify Helm installation
+      command: helm version
 
     - name: Ensure Helm is installed
       command: helm version
