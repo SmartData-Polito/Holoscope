@@ -17,7 +17,7 @@
     - role: k3s-server
       tasks_from: post_install
 
-- name: Identify new nodes
+- name: Identify and configure new nodes
   hosts: agents
   gather_facts: true
   tasks:
@@ -31,41 +31,48 @@
       register: wg_keys_check
       changed_when: false
       become: true
-
+      
     - name: Check if K3s agent is installed and running
       shell: systemctl is-active k3s-agent || echo "not_running"
-      register: k3s_status
+      register: k3s_status_raw
       changed_when: false
       become: true
-      
-    - name: Get hostname for grep check
+
+    - name: Set clean k3s status
       set_fact:
-        hostname_for_grep: "{{ inventory_hostname }}"
-
-    - name: Add to new_agents group if not fully configured
-      add_host:
-        name: "{{ inventory_hostname }}"
-        groups: new_agents
-      when: >
-        (wg_keys_check.stdout == "invalid") or 
-        (k3s_status.stdout == "not_running" or k3s_status.stdout == "inactive") or
-        (force_reconfigure | default(false) | bool)
-
-- name: Configure common on new agents
-  hosts: new_agents
-  become: true
-  tasks:
-    - name: Include common role
-      include_role:
+        k3s_status: "{{ k3s_status_raw.stdout.split('\n')[0] }}"
+    
+    - name: Register if node needs configuration
+      set_fact:
+        needs_config: "{{ (wg_keys_check.stdout | trim == 'invalid') or (k3s_status == 'not_running' or k3s_status == 'inactive') }}"
+    
+    - name: Debug configuration status
+      debug:
+        msg: "Node {{ inventory_hostname }} needs configuration: {{ needs_config }}"
+    
+    # Configure nodes that need setup right here, in the same play
+    - name: Configure common role if needed
+      import_role:
         name: common
-
-- name: Configure WireGuard on new agents
-  hosts: new_agents
-  become: true
-  tasks:
-    - name: Include wireguard-client role
-      include_role:
+      become: true  
+      when: needs_config
+      
+    - name: Configure wireguard-client role if needed
+      import_role:
         name: wireguard-client
+      become: true  
+      when: needs_config
+      
+    - name: Register node as configured
+      set_fact:
+        node_was_configured: "{{ needs_config }}"
+      
+    # Keep track of configured hosts for summary
+    - name: Register configured host with localhost
+      delegate_to: localhost
+      set_fact:
+        configured_hosts: "{{ configured_hosts | default([]) + [inventory_hostname] }}"
+      when: needs_config
 
 - name: Update all WireGuard facts and configurations
   hosts: all
@@ -93,19 +100,16 @@
       set_fact:
         wireguard_public_key: "{{ publickey_contents.stdout }}"
       when: wg_pubkey_file.stat.exists
-      delegate_facts: true
-
+      
     - name: Set WireGuard private key fact for hosts with keys
       set_fact:
         wireguard_private_key: "{{ privatekey_contents.stdout }}"
       when: wg_pubkey_file.stat.exists
-      delegate_facts: true
       
     - name: Set WireGuard IP fact for hosts with keys
       set_fact:
         wireguard_ip: "{{ wireguard_ip }}"  
       when: wg_pubkey_file.stat.exists and wireguard_ip is defined
-      delegate_facts: true
 
 - name: Post-installation steps on WireGuard server
   hosts: "{{ groups['master'][0] }}"
@@ -128,13 +132,14 @@
         name: wireguard-server
         tasks_from: update_config
 
-- name: Configure k3s-agent on new agents
-  hosts: new_agents
+- name: Configure k3s-agent on configured nodes
+  hosts: agents
   become: true
   tasks:
-    - name: Include k3s-agent role
+    - name: Include k3s-agent role if node was configured
       include_role:
         name: k3s-agent
+      when: hostvars[inventory_hostname].get('node_was_configured', false) | bool
 
 - name: Show summary
   hosts: localhost
@@ -142,10 +147,10 @@
   tasks:
     - name: Display configured nodes
       debug:
-        msg: "Successfully configured new nodes: {{ groups.get('new_agents', []) | join(', ') }}"
-      when: groups.get('new_agents', []) | default([]) | length > 0
-        
+        msg: "Successfully configured new nodes: {{ configured_hosts | default([]) | join(', ') }}"
+      when: configured_hosts is defined and configured_hosts | length > 0
+      
     - name: Display no changes message
       debug:
         msg: "No new nodes were configured. All nodes already have WireGuard and K3s agent installed."
-      when: groups.get('new_agents', []) | default([]) | length == 0
+      when: configured_hosts is not defined or configured_hosts | length == 0
