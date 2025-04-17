@@ -4,15 +4,22 @@
 darknet_namespace: "darknet"
 darknet_hostPath: "/data/darknet"
 darknet_mountPath: "/data/darknet"
-tcpdump_rotate_seconds: "3600"
+tcpdump_rotate_seconds: "60"
 tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
 enabled: true
 
 # Host-specific configurations
 host_specific:
   worker-00:
-    darknet_range: "10.10.0.0/24"
+    darknet_range: "10.128.0.0/24"
     darknet_exclude_ips: 
-      - 10.10.0.100
-      - 10.10.0.101
+      - 10.128.0.1
+      - 10.128.0.1
     tcpdump_interface: "eth0"
+
+  worker-01:
+    darknet_range: "10.129.0.0/24"
+    darknet_exclude_ips: 
+      - 10.129.0.255
+      - 10.129.0.254
+    tcpdump_interface: "eth0"    

@@ -4,16 +4,24 @@
 arp_responder_namespace: "arp-responder"
 enabled: true
 
+application_images:
+  - name: ipv4
+    path: "resources/docker-images/arp-responder/ipv4/"
+    author: "rvalentim,drago"
+  - name: ipv6
+    path: "resources/docker-images/arp-responder/ipv6/"
+    author: "rvalentim,drago"
+
 # Host-specific configurations
 host_specific:
   worker-00:
     arp4_interface: "eth0"
-    arp4_network:   "10.128.128.0/24"
+    arp4_network:   "10.128.0.0/24"
     arp6_interface: "eth0"
     arp6_network:   "2001:db8:0:0::/64"
     
   worker-01:
     arp4_interface: "eth0"
-    arp4_network:   "10.128.129.0/24"
+    arp4_network:   "10.129.0.0/24"
     arp6_interface: "eth0"
     arp6_network:   "2001:db8:0:1::/64"

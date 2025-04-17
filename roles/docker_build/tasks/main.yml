@@ -1,0 +1,61 @@
+# roles/docker_build/tasks/main.yml
+- name: Ensure Docker is installed
+  ansible.builtin.package:
+    name: docker
+    state: present
+
+- name: Initialize Docker images list
+  set_fact:
+    all_docker_images: []
+
+- name: Collect Docker images from active application groups
+  set_fact:
+    all_docker_images: "{{ all_docker_images + (hostvars[inventory_hostname]['application_images'] | default([])) }}"
+  loop: "{{ groups | select('match', '^(arp_responder|darknet|flower|cowrie)$') | list }}"
+  loop_control:
+    label: "{{ item }}"
+  when: groups[item] | length > 0
+
+- name: Debug collected Docker images
+  debug:
+    var: all_docker_images
+
+- name: Create build directories on master
+  file:
+    path: "/tmp/docker-build/{{ item.name }}"
+    state: directory
+  loop: "{{ all_docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Synchronize Docker context to master
+  synchronize:
+    src: "{{ project_root }}/{{ item.path }}/"
+    dest: "/tmp/docker-build/{{ item.name }}/"
+    rsync_opts:
+      - "--exclude=.git"
+  loop: "{{ all_docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  delegate_to: localhost
+
+- name: Build Docker images
+  ansible.builtin.command:
+    cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/docker-build/{{ item.name }}/Dockerfile /tmp/docker-build/{{ item.name }}
+  loop: "{{ all_docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Tag Docker images for local registry
+  ansible.builtin.command:
+    cmd: docker tag {{ item.author }}/{{ item.name }}:{{ image_tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
+  loop: "{{ all_docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Push Docker images to local registry
+  ansible.builtin.command:
+    cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
+  loop: "{{ all_docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"

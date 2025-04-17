@@ -1,0 +1,18 @@
+# playbooks/deploy-application.yml
+
+- name: Load group_vars for {{ application }}
+  include_vars:
+    file: "{{ inventory_dir }}/group_vars/{{ application }}.yml"
+    name: application_vars
+  ignore_errors: true
+
+- name: Skip {{ application }} if disabled
+  debug:
+    msg: "Skipping {{ application }} (enabled=false in group_vars)"
+  when: not (application_vars.enabled | default(true) | bool)
+
+- name: "{{ application }} → {{ shared_operation }}"
+  include_role:
+    name: "{{ application }}"
+    tasks_from: "{{ shared_operation }}.yml"
+  when: application_vars.enabled | default(true) | bool

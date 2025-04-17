@@ -1,0 +1,111 @@
+---
+# Dynamic application deployment playbook
+- name: Set shared variables
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Default to install if no action specified
+    operation: "{{ action | default('install') }}"
+    build_images: "{{ build | default(false) | bool }}"
+  
+  tasks:
+    - name: Discover application groups from inventory
+      set_fact:
+        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
+      
+    - name: Filter for applications with hosts
+      set_fact:
+        active_applications: "{{ discovered_applications | select('in', groups) | select('regex', '.+') | map('regex_replace', '^(.*)$', '\\1') | list }}"
+        
+    - name: Set target applications
+      set_fact:
+        target_applications: "{{ applications | default(active_applications) }}"
+      
+    - name: Set shared facts
+      set_fact:
+        shared_operation: "{{ operation }}"
+        shared_target_applications: "{{ target_applications }}"
+        shared_build_images: "{{ build_images }}"
+      
+    - name: Debug applications
+      debug:
+        msg:
+          - "Applications to deploy: {{ target_applications }}"
+          - "Operation: {{ operation }}"
+
+- name: Prepare Kubernetes configuration
+  hosts: master[0]
+  become: true
+  tasks:
+    - name: Check if kubeconfig exists
+      stat:
+        path: /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig_stat
+
+    - name: Fail if kubeconfig not found
+      fail:
+        msg: "Kubeconfig file not found at /etc/rancher/k3s/k3s.yaml on master node"
+      when: not kubeconfig_stat.stat.exists
+
+    - name: Set kubeconfig environment variable
+      set_fact:
+        kube_config: "/etc/rancher/k3s/k3s.yaml"
+  
+    - name: Set kubeconfig content as fact 
+      slurp:
+        src: "/etc/rancher/k3s/k3s.yaml"
+      register: kubeconfig_content
+      
+    - name: Set master IP for kubectl access
+      set_fact:
+        master_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
+
+    - name: Pass kubeconfig to localhost
+      set_fact:
+        shared_kubeconfig_content: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
+        shared_master_ip: "{{ master_ip }}"
+      delegate_to: localhost
+      delegate_facts: true
+      
+  tags: [always, k8s]
+
+- name: Build Docker Images
+  hosts: registry
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Include Docker build role
+      include_role:
+        name: docker_build
+      when: hostvars.localhost.shared_build_images | default(false) | bool
+  tags: [build]
+
+- name: Deploy Applications
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/k3s-kubeconfig.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  tasks:
+    - name: Ensure Kubeconfig parent directory exists
+      file:
+        path: "{{ kubeconfig_path | dirname }}"
+        state: directory
+        mode: '0700'
+
+    - name: Create temporary kubeconfig file
+      copy:
+        content: "{{ shared_kubeconfig_content }}"    
+        dest: "{{ kubeconfig_path }}"
+        mode: '0600'
+
+    - name: Loop over all target applications
+      include_tasks: _deployapp.yml
+      loop: "{{ shared_target_applications }}"
+      loop_control:
+        loop_var: application
+  tags: [deploy]
