@@ -4,6 +4,7 @@
 helm_version: "v3.7.0"
 k3s_version: "v1.30.4+k3s1"
 k3s_url: "https://10.0.0.100:6443"
+project_root: "{{ lookup('env', 'PWD') | regex_replace('/playbooks$', '') }}"
 
 # Registry of all available applications
 application_registry:

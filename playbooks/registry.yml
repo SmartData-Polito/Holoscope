@@ -1,6 +1,4 @@
 ---
-# ansible-playbook -i inventory/hosts.yml --ask-vault-password playbooks/deploy_registry.yml  --ask-become-pass
-#jinja2: trim_blocks:True
 - name: Copy and modify file from remote host
   hosts: deployment
   vars:
@@ -53,7 +51,7 @@
 
     - name: Deploy Helm chart for Docker Registry on specific node
       command: >
-        helm upgrade -i registry-{{ item }} {{ playbook_dir }}/resources/helm-charts/registry --namespace registry --create-namespace
+        helm upgrade -i registry-{{ item }} {{ project_root }}/resources/helm-charts/registry --namespace registry --create-namespace
         --set name=registry-{{ item }}
         --set appName=registry-{{ item }}
         --set nodeAffinity.hostname.values[0]={{ item }}
