@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploymentName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                {{- range .Values.nodeAffinity.hostname.values }}
+                - {{ . }}
+                {{- end }}
+      containers:
+      - name: collector
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: WORKER_NODES
+          value: {{ .Values.config.workerNodes | quote }}
+        - name: SSH_USERS
+          value: {{ .Values.config.sshUsers | quote }}
+        - name: SOURCE_PATH
+          value: {{ .Values.config.srcPath | quote }}
+        - name: DEST_PATH
+          value: {{ .Values.config.dstPath | quote }}
+        - name: COLLECTION_INTERVAL
+          value: {{ .Values.config.collectionInterval | quote }}
+        volumeMounts:
+        - name: collector-data
+          mountPath: /data/collector
+        - name: ssh-key
+          mountPath: /etc/ssh-keys
+          readOnly: true
+      volumes:
+      - name: collector-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.volumes.pvc.name }}
+      - name: ssh-key
+        secret:
+          secretName: {{ .Values.sshKeySecret.name }}
+          defaultMode: 0600

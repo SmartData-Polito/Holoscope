@@ -1,0 +1,46 @@
+deploymentName: collector
+appName: collector
+namespace: darknet
+
+image:
+  repository: registry.local:30500/public/collector
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Schedule the pod on the master node only
+nodeAffinity:
+  hostname:
+    values:
+      - master-00
+
+# Configure the collector - These values will be replaced by ansible variables
+config:
+  workerNodes: "worker-00"            # Will be constructed from the darknet hosts group
+  srcPath: "/data/darknet"            # Will use darknet_hostPath from group_vars
+  dstPath: "/data/collector"          # Will use collector_hostPath from group_vars 
+  sshUsers: "vagrant"                 # Will be constructed to match workerNodes order
+  collectionInterval: "3600"          # Will use collector_interval from group_vars
+
+# Volume for storing collected pcaps on the master
+volumes:
+  pv:
+    name: pv-volume-collector
+    storageClassName: manual          # Will use collector_storage_class from group_vars
+    capacity: 50Gi                    # Will use collector_storage_size from group_vars
+    accessModes:
+      - ReadWriteOnce
+    hostPath:
+      path: "/data/collector"         # Will use collector_hostPath from group_vars
+  pvc:
+    name: pvc-collector
+    storageClassName: manual          # Will use collector_storage_class from group_vars
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 50Gi                 # Will use collector_storage_size from group_vars
+
+# SSH key secret - will be created by ansible
+sshKeySecret:
+  name: collector-ssh-key
+  type: Opaque
