@@ -10,11 +10,11 @@
 
 - name: Collect Docker images from active application groups
   set_fact:
-    all_docker_images: "{{ all_docker_images + (hostvars[inventory_hostname]['application_images'] | default([])) }}"
-  loop: "{{ groups | select('match', '^(arp_responder|darknet|flower|cowrie)$') | list }}"
+    all_docker_images: "{{ all_docker_images + (hostvars[groups[item][0]][item + '_images'] | default([])) }}"
+  loop: "{{ deployed_applications | default([]) }}"
   loop_control:
     label: "{{ item }}"
-  when: groups[item] | length > 0
+  when: "item | length > 0 and groups[item] | default([]) | length > 0"
 
 - name: Debug collected Docker images
   debug:
@@ -27,17 +27,16 @@
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
+  when: all_docker_images | length > 0
 
-- name: Synchronize Docker context to master
-  synchronize:
+- name: Copy Docker context to master
+  copy:
     src: "{{ project_root }}/{{ item.path }}/"
     dest: "/tmp/docker-build/{{ item.name }}/"
-    rsync_opts:
-      - "--exclude=.git"
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
-  delegate_to: localhost
+  when: all_docker_images | length > 0
 
 - name: Build Docker images
   ansible.builtin.command:
@@ -45,6 +44,7 @@
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
+  when: all_docker_images | length > 0
 
 - name: Tag Docker images for local registry
   ansible.builtin.command:
@@ -52,6 +52,7 @@
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
+  when: all_docker_images | length > 0
 
 - name: Push Docker images to local registry
   ansible.builtin.command:
@@ -59,3 +60,4 @@
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
+  when: all_docker_images | length > 0

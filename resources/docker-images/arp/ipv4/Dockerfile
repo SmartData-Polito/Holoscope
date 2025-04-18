@@ -11,6 +11,3 @@ RUN apt-get -y install \
     libpcap-dev 
 
 RUN gcc /usr/src/arpd/arpd.c -o /usr/src/arpd/farpd2 -ldumbnet -levent -lpcap -lbsd
-
-# docker run --network host --name arp_responder_ipv4 arp_responder_ipv4
-

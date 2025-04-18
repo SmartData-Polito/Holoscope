@@ -1,4 +1,4 @@
-# roles/arp-responder/tasks/install.yml
+# roles/arp/tasks/install.yml
 - name: Debug variables for application
   debug:
     msg:
@@ -9,7 +9,7 @@
 - name: Deploy Helm chart for each node in the application group
   command: >
     {% set host_specific = application_vars.host_specific | default({}) %}
-    {% set namespace = application_vars.arp_responder_namespace | default(application + '-namespace') %}
+    {% set namespace = application_vars.arp_namespace | default(application) %}
     {% set host_config = host_specific[item] | default({}) %}
     {% set arp4_interface = host_config.arp4_interface | default('eth0') %}
     {% set arp4_network = host_config.arp4_network | default('10.10.0.0/24') %}
@@ -20,13 +20,10 @@
     --set name={{ application }}-{{ item }}
     --set appName={{ application }}-{{ item }}
     --set namespace={{ namespace }}
+    --set "containers.arp4.image={{ local_registry }}/rvalentim/ipv4:{{ image_tag }}"
+    --set "containers.arp6.image={{ local_registry }}/rvalentim/ipv6:{{ image_tag }}"
     --set "containers.arp4.args={"{{ arp4_interface }}","{{ arp4_network }}"}"
     --set "containers.arp6.args={"{{ arp6_interface }}"}"
     --set nodeAffinity.hostname.values[0]={{ item }}
   register: helm_result
   with_items: "{{ groups[application] }}"
-
-# - name: Display Helm command output
-#   debug:
-#     var: helm_result
-#     verbosity: 0

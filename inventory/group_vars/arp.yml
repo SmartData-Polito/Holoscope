@@ -1,16 +1,16 @@
-# inventory/group_vars/arp_responder.yml
+# inventory/group_vars/arp.yml
 ---
-# ARP responder application settings
-arp_responder_namespace: "arp-responder"
+# ARP application settings
+arp_namespace: "arp"
 enabled: true
 
-application_images:
+arp_images:
   - name: ipv4
-    path: "resources/docker-images/arp-responder/ipv4/"
-    author: "rvalentim,drago"
+    path: "resources/docker-images/arp/ipv4/"
+    author: "rvalentim"
   - name: ipv6
-    path: "resources/docker-images/arp-responder/ipv6/"
-    author: "rvalentim,drago"
+    path: "resources/docker-images/arp/ipv6/"
+    author: "rvalentim"
 
 # Host-specific configurations
 host_specific:

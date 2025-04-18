@@ -6,6 +6,14 @@ k3s_version: "v1.30.4+k3s1"
 k3s_url: "https://10.0.0.100:6443"
 project_root: "{{ lookup('env', 'PWD') | regex_replace('/playbooks$', '') }}"
 
+network_policy:
+  allowed_cidrs:
+    - 10.0.0.0/24  
+
+# Docker registry configuration
+local_registry: "registry.local:30500"
+image_tag: "latest"    
+
 # Registry of all available applications
 application_registry:
   darknet:
@@ -17,11 +25,13 @@ application_registry:
   flower:
     namespace: "flower"
     requires_pv: true
-  arp_responder:
-    namespace: "arp-responder"
+  arp:
+    namespace: "arp"
     requires_pv: false
 
 # List of applications to deploy by default
 deployed_applications: 
-  - arp_responder
+  - arp
   - darknet
+
+  

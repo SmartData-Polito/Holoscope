@@ -1,4 +1,2 @@
 # roles/docker_build/defaults/main.yml
-image_tag: latest
-local_registry: "registry.local:30007"
 project_root: "{{ lookup('pipe', 'git rev-parse --show-toplevel 2>/dev/null || echo $PWD') }}"

@@ -5,9 +5,9 @@ metadata:
   labels:
     type: local
 spec:
-  storageClassName: {{ .Values.volumes.pv.storageClassName }}
+  storageClassName: {{ .Values.volumes.storageClassName | default "manual" }}
   capacity:
-    storage: {{ .Values.volumes.pv.capacity }}
+    storage: {{ .Values.volumes.capacity | default "15Gi" }}
   accessModes: {{ .Values.volumes.pv.accessModes }}
   hostPath:
-    path: {{ .Values.volumes.pv.hostPath.path }}
+    path: {{ .Values.volumes.hostPath | default "/data/registry" }}

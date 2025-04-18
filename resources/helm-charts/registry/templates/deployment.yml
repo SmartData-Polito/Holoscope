@@ -41,20 +41,20 @@ spec:
       - name: registry
         image: {{ .Values.containers.registry.image }}
         ports:
-        - containerPort: 5000
-        volumeMounts:
-          - mountPath: {{ .Values.containers.registry.monthPath }}
-            name: {{ .Values.volumes.pv.name }}
-          - name: certs
-            mountPath: /certs
-            readOnly: true
+          - name: https
+            containerPort: {{ .Values.service.port }}
         env:
           - name: REGISTRY_HTTP_TLS_CERTIFICATE
             value: /certs/tls.crt
           - name: REGISTRY_HTTP_TLS_KEY
             value: /certs/tls.key
           - name: REGISTRY_HTTP_ADDR
-            value: :5000
+            value: ":{{ .Values.service.port }}"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: {{ .Values.volumes.pv.name }}
+          mountPath: /var/lib/registry
       volumes:
         - name: {{ .Values.volumes.pv.name }}
           persistentVolumeClaim:

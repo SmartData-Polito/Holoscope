@@ -1,0 +1,25 @@
+deploymentName: arp
+appName: arp
+namespace: arp
+hostNetwork: true
+
+containers:
+  arp4:
+    image: registry.local:30500/rvalentim/ipv4:latest
+    imagePullPolicy: IfNotPresent
+    command:
+      - "/usr/src/arpd/farpd2"
+      - "-d"
+      - "-i"
+    args: []
+  arp6:
+    image: registry.local:30500/rvalentim/ipv6:latest
+    imagePullPolicy: IfNotPresent
+    command:
+      - "/usr/src/arpv6/parasite6"
+    args: []
+
+nodeAffinity:
+  hostname:
+    values:
+      - worker-00

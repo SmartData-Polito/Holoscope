@@ -7,7 +7,7 @@
   vars:
     # Default to install if no action specified
     operation: "{{ action | default('install') }}"
-    build_images: "{{ build | default(false) | bool }}"
+    build_images: "{{ build | default(true) | bool }}"
   
   tasks:
     - name: Discover application groups from inventory

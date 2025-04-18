@@ -5,6 +5,6 @@
 [Peer]
     PublicKey = {{ server_public_key }}
     Endpoint = {{ server_endpoint }}
-    AllowedIPs = 10.0.0.0/24
+    AllowedIPs = {{ network_policy.allowed_cidrs | join(', ') }}
     PersistentKeepalive = 20
     

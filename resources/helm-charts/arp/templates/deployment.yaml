@@ -16,7 +16,7 @@ spec:
     spec:
       hostNetwork: {{ .Values.hostNetwork }}
       containers:
-        - name: arp4-responder
+        - name: arp4
           image: {{ .Values.containers.arp4.image }}
           imagePullPolicy: {{ .Values.containers.arp4.imagePullPolicy }}
           command: {{ .Values.containers.arp4.command | toJson}}
@@ -24,11 +24,11 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "128Mi"
+              memory: "64Mi"
             limits:
               cpu: "500m"
               memory: "256Mi"
-        - name: arp6-responder
+        - name: arp6
           image: {{ .Values.containers.arp6.image }}
           imagePullPolicy: {{ .Values.containers.arp6.imagePullPolicy }}
           command: {{ .Values.containers.arp6.command | toJson }}
@@ -36,7 +36,7 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "128Mi"
+              memory: "64Mi"
             limits:
               cpu: "500m"
               memory: "256Mi"

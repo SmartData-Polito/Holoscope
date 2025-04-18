@@ -1,14 +1,14 @@
 - name: Uninstall Helm chart for Arp Responder on each agent node
   command: >
-    helm uninstall arp-ansible-{{ item }} --namespace {{ arp_responder_namespace }}
+    helm uninstall arp-ansible-{{ item }} --namespace {{ arp }}
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
-  with_items: "{{ groups['arp_responder'] }}"
+  with_items: "{{ groups['arp'] }}"
   ignore_errors: yes
         
 - name: Remove the namespace for Arp Responder
   command: >
-    kubectl delete namespace {{ arp_responder_namespace }}
+    kubectl delete namespace {{ arp }}
   environment:
     KUBECONFIG: "{{ fetch_result.dest }}"
   run_once: true

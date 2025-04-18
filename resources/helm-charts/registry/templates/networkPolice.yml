@@ -6,13 +6,15 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.appName }}  # Matches the service selector
+      app.kubernetes.io/name: {{ .Values.appName }}
   policyTypes:
   - Ingress
   ingress:
   - from:
+    {{- range .Values.networkPolicy.allowedCidrs }}
     - ipBlock:
-        cidr: 10.0.0.0/24
+        cidr: {{ . }}
+    {{- end }}
     ports:
     - protocol: TCP
-      port: {{ .Values.service.port }}  # Matches the service port
+      port: {{ .Values.service.port }}

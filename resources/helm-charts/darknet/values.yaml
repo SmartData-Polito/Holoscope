@@ -19,7 +19,7 @@ containers:
 nodeAffinity:
   hostname:
     values:
-      - poli-worker-00
+      - worker-00
 
 volumes:
   pv:
