@@ -17,10 +17,29 @@
     - name: Filter for applications with hosts
       set_fact:
         active_applications: "{{ discovered_applications | select('in', groups) | select('regex', '.+') | map('regex_replace', '^(.*)$', '\\1') | list }}"
-        
+    
+    - name: Pre-load all application group vars
+      include_vars:
+        file: "{{ inventory_dir }}/group_vars/{{ item }}.yml"
+        name: "app_vars_{{ item }}"
+      loop: "{{ active_applications }}"
+      ignore_errors: true
+    
+    - name: Initialize enabled applications list
+      set_fact:
+        enabled_applications: []
+
+    - name: Check which applications are enabled
+      set_fact:
+        enabled_applications: "{{ enabled_applications + [item] }}"
+      loop: "{{ active_applications }}"
+      when: 
+        - hostvars['localhost']['app_vars_' + item] is defined
+        - hostvars['localhost']['app_vars_' + item].enabled | default(true) | bool
+      
     - name: Set target applications
       set_fact:
-        target_applications: "{{ applications | default(active_applications) }}"
+        target_applications: "{{ applications | default(enabled_applications) }}"
       
     - name: Set shared facts
       set_fact:
@@ -104,8 +123,13 @@
         mode: '0600'
 
     - name: Loop over all target applications
-      include_tasks: _deployapp.yml
+      include_role:
+        name: app_deploy
+      vars:
+        application: "{{ app_item }}"
+        operation: "{{ shared_operation }}"
       loop: "{{ shared_target_applications }}"
       loop_control:
-        loop_var: application
+        loop_var: app_item 
+
   tags: [deploy]

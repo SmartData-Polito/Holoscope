@@ -1,4 +1,4 @@
-# roles/arp_responder/tasks/install.yml
+# roles/arp-responder/tasks/install.yml
 - name: Debug variables for application
   debug:
     msg:
@@ -23,4 +23,10 @@
     --set "containers.arp4.args={"{{ arp4_interface }}","{{ arp4_network }}"}"
     --set "containers.arp6.args={"{{ arp6_interface }}"}"
     --set nodeAffinity.hostname.values[0]={{ item }}
+  register: helm_result
   with_items: "{{ groups[application] }}"
+
+# - name: Display Helm command output
+#   debug:
+#     var: helm_result
+#     verbosity: 0

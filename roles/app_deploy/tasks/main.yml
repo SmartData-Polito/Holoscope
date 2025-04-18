@@ -1,4 +1,5 @@
-# playbooks/deploy-application.yml
+---
+# roles/app_deploy/tasks/main.yml
 
 - name: Load group_vars for {{ application }}
   include_vars:
@@ -11,8 +12,8 @@
     msg: "Skipping {{ application }} (enabled=false in group_vars)"
   when: not (application_vars.enabled | default(true) | bool)
 
-- name: "{{ application }} → {{ shared_operation }}"
+- name: "{{ application }} → {{ operation }}"
   include_role:
     name: "{{ application }}"
-    tasks_from: "{{ shared_operation }}.yml"
+    tasks_from: "{{ operation }}.yml"
   when: application_vars.enabled | default(true) | bool
