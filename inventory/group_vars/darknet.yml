@@ -6,7 +6,7 @@ darknet_hostPath: "/data/darknet"
 darknet_mountPath: "/data/darknet"
 tcpdump_rotate_seconds: "60"
 tcpdump_file_pattern: "trace-%Y%m%d_%H-%M-%S_%s.pcap"
-enabled: true
+enabled: false
 
 # Host-specific configurations
 host_specific:

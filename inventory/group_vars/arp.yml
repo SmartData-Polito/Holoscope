@@ -2,15 +2,15 @@
 ---
 # ARP application settings
 arp_namespace: "arp"
-enabled: true
+enabled: false
 
 arp_images:
   - name: ipv4
     path: "resources/docker-images/arp/ipv4/"
-    author: "rvalentim"
+    author: "public"
   - name: ipv6
     path: "resources/docker-images/arp/ipv6/"
-    author: "rvalentim"
+    author: "public"
 
 # Host-specific configurations
 host_specific:

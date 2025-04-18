@@ -20,8 +20,8 @@
     --set name={{ application }}-{{ item }}
     --set appName={{ application }}-{{ item }}
     --set namespace={{ namespace }}
-    --set "containers.arp4.image={{ local_registry }}/rvalentim/ipv4:{{ image_tag }}"
-    --set "containers.arp6.image={{ local_registry }}/rvalentim/ipv6:{{ image_tag }}"
+    --set "containers.arp4.image={{ local_registry }}/public/ipv4:{{ image_tag }}"
+    --set "containers.arp6.image={{ local_registry }}/public/ipv6:{{ image_tag }}"
     --set "containers.arp4.args={"{{ arp4_interface }}","{{ arp4_network }}"}"
     --set "containers.arp6.args={"{{ arp6_interface }}"}"
     --set nodeAffinity.hostname.values[0]={{ item }}

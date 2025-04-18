@@ -62,7 +62,7 @@
     dest: /etc/docker/daemon.json
     content: |
       {
-        "insecure-registries" : ["{{ local_registry }}""]
+        "insecure-registries" : ["{{ local_registry }}"]
       }
     mode: '0644'
 

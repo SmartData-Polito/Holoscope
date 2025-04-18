@@ -5,7 +5,7 @@ hostNetwork: true
 
 containers:
   arp4:
-    image: registry.local:30500/rvalentim/ipv4:latest
+    image: registry.local:30500/public/ipv4:latest
     imagePullPolicy: IfNotPresent
     command:
       - "/usr/src/arpd/farpd2"
@@ -13,7 +13,7 @@ containers:
       - "-i"
     args: []
   arp6:
-    image: registry.local:30500/rvalentim/ipv6:latest
+    image: registry.local:30500/public/ipv6:latest
     imagePullPolicy: IfNotPresent
     command:
       - "/usr/src/arpv6/parasite6"

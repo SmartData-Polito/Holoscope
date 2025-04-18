@@ -8,10 +8,10 @@
   set_fact:
     all_docker_images: []
 
-- name: Collect Docker images from active application groups
+- name: Collect Docker images from target application groups
   set_fact:
     all_docker_images: "{{ all_docker_images + (hostvars[groups[item][0]][item + '_images'] | default([])) }}"
-  loop: "{{ deployed_applications | default([]) }}"
+  loop: "{{ hostvars.localhost.shared_target_applications | default([]) }}"
   loop_control:
     label: "{{ item }}"
   when: "item | length > 0 and groups[item] | default([]) | length > 0"
