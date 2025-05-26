@@ -1,0 +1,4 @@
+# inventory/environments/dev/group_vars/all.yml
+storage_class: "local-storage"
+darknet_collection_interval: "1800"  # 30 min for dev
+

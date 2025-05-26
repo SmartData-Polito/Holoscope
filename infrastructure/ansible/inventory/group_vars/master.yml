@@ -1,4 +1,4 @@
-# inventory/dev/group_vars/master.yml
+#infrastructure/ansible/inventory/group_vars/master.yml
 ---
 # Master-specific configuration
 wireguard_private_key: !vault |

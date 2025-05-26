@@ -1,0 +1,43 @@
+{{- if .Values.collector.enabled }}
+---
+# Persistent Volume for Collector
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "darknet.fullname" . }}-collector-pv
+  labels:
+    {{- include "darknet.collector.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: {{ .Values.global.storageClass }}
+  capacity:
+    storage: {{ .Values.collector.storage.size }}
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: {{ .Values.collector.storage.hostPath }}
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+
+---
+# Persistent Volume Claim for Collector
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "darknet.fullname" . }}-collector-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "darknet.collector.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.global.storageClass }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.collector.storage.size }}
+{{- end }}

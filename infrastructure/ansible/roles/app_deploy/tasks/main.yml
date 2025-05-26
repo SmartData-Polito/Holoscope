@@ -1,19 +1,54 @@
 ---
-# roles/app_deploy/tasks/main.yml
-
-- name: Load group_vars for {{ application }}
+- name: Load application variables
   include_vars:
     file: "{{ inventory_dir }}/group_vars/{{ application }}.yml"
-    name: application_vars
-  ignore_errors: true
+    name: app_config
+  failed_when: false
+  register: var_load_result
 
-- name: Skip {{ application }} if disabled
+- name: Fail if application config not found
+  fail:
+    msg: "Configuration file not found for application: {{ application }}"
+  when: var_load_result.failed | default(false)
+
+- name: Set application facts
+  set_fact:
+    app_name: "{{ application }}"
+    app_namespace: "{{ app_config.namespace | default(application) }}"
+    chart_path: "{{ app_config.chart_path }}"
+    app_values: "{{ app_config.values | default({}) }}"
+    app_enabled: "{{ app_config.enabled | default(true) | bool }}"
+
+- name: Debug application configuration
   debug:
-    msg: "Skipping {{ application }} (enabled=false in group_vars)"
-  when: not (application_vars.enabled | default(true) | bool)
+    msg:
+      - "Application: {{ app_name }}"
+      - "Namespace: {{ app_namespace }}"
+      - "Chart Path: {{ chart_path }}"
+      - "Operation: {{ operation }}"
+      - "Enabled: {{ app_enabled }}"
+  when: debug_mode | default(false) | bool
 
-- name: "{{ application }} → {{ operation }}"
-  include_role:
-    name: "{{ application }}"
-    tasks_from: "{{ operation }}.yml"
-  when: application_vars.enabled | default(true) | bool
+- name: Skip disabled applications
+  debug:
+    msg: "Skipping {{ app_name }} - application is disabled"
+  when: not app_enabled
+
+- name: Include installation tasks
+  include_tasks: install.yml
+  when:
+    - operation == 'install'
+    - app_enabled
+
+- name: Include removal tasks
+  include_tasks: remove.yml
+  when:
+    - operation == 'remove'
+    - app_enabled
+
+- name: Include validation tasks
+  include_tasks: validate.yml
+  when:
+    - operation == 'install'
+    - app_enabled
+    - validate_deployment | default(true) | bool

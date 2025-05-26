@@ -49,7 +49,7 @@
 
     - name: Deploy Helm chart for Docker Registry on specific node
       command: >
-        helm upgrade -i registry-{{ item }} {{ project_root }}/resources/helm-charts/registry --namespace registry --create-namespace
+        helm upgrade -i registry-{{ item }} {{ project_root }}/helm-charts/registry --namespace registry --create-namespace
           --set name=registry-{{ item }}
           --set appName=registry-{{ item }}
           --set nodeAffinity.hostname.values[0]={{ item }}

@@ -1,0 +1,105 @@
+---
+# Production Darknet Application Configuration
+enabled: true
+namespace: darknet
+chart_path: "{{ project_root }}/../../applications/base/darknet/helm"
+
+# Deployment settings
+timeout: 300
+validate_deployment: true
+validate_service: false
+remove_namespace: false
+
+# Production-specific Helm chart values
+values:
+  global:
+    registry: "{{ local_registry }}"
+    storageClass: "{{ storage_class | default('manual') }}"
+    namespace: darknet
+
+  # Production node configurations
+  captureNodes:
+    prod-worker-01:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 3600
+        filter: "ip and (net 10.10.0.0/24)"
+        outputPath: "/data/darknet/prod-worker-01-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/prod-worker-01"
+        size: "20Gi"
+      arp:
+        enabled: true
+        ipv4:
+          enabled: true
+        ipv6:
+          enabled: true
+
+    prod-worker-02:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 3600
+        filter: "ip and (net 10.20.0.0/24)"
+        outputPath: "/data/darknet/prod-worker-02-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/prod-worker-02"
+        size: "20Gi"
+      arp:
+        enabled: false  # Only worker-01 runs ARP in prod
+        ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+
+    prod-worker-03:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 3600
+        filter: "ip and (net 10.30.0.0/24)"
+        outputPath: "/data/darknet/prod-worker-03-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/prod-worker-03"
+        size: "20Gi"
+      arp:
+        enabled: false
+        ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+
+  # Production collector configuration
+  collector:
+    enabled: true
+    config:
+      # All enabled worker nodes
+      workerNodes: 
+        - "prod-worker-01"
+        - "prod-worker-02"
+        - "prod-worker-03"
+      sshUsers: 
+        - "admin"
+        - "admin"
+        - "admin"
+      srcPath: "/data/darknet"
+      dstPath: "/data/collector"
+      collectionInterval: "3600"  # 1 hour for production
+    storage:
+      hostPath: "/data/collector"
+      size: "100Gi"  # Larger storage for production
+    resources:
+      requests:
+        memory: "512Mi"  # More resources for production
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+
+  # Production network policy (enabled for security)
+  networkPolicy:
+    enabled: true
+    allowedCidrs:
+      - "10.0.0.0/8"     # Production internal network
+      - "172.16.0.0/12"  # Additional production subnets

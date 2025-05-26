@@ -1,6 +1,6 @@
 # Vagrant Environment for Honeynet Network Setup
 
-This project sets up a virtualized environment using Vagrant, Libvirt, and VirtualBox, creating virtual nodes for a honeynet development environment. The configuration supports multiple operating systems (Linux, macOS, and Windows) and uses Ansible for provisioning.
+This project sets up a virtualized environment using Vagrant, Libvirt (or VirtualBox), creating virtual nodes for a honeynet development environment. The configuration supports multiple operating systems (Linux, macOS, and Windows) and uses Ansible for provisioning.
 
 ## Prerequisites
 
@@ -10,7 +10,6 @@ Before running this setup, ensure the following software is installed on your ma
 2. **Libvirt** (for Linux) - A toolkit to interact with the virtualization capabilities of Linux systems.
 3. **VirtualBox** (for macOS and Windows) - A cross-platform hypervisor that allows you to run virtual machines on your local system.
 4. **Ansible** - An open-source IT automation engine, required for provisioning.
-5. **Pre-configured Honeynet Network XML**  - Ensure you have a valid `honeynet.xml` file to set up the network.
 
 ### Installing Prerequisites
 

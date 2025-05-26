@@ -3,43 +3,38 @@
 # Exit on any error
 set -e
 
-# Update and install dependencies
-echo "Updating package lists and installing dependencies..."
+# Update and install system dependencies
+echo "Installing system dependencies..."
 sudo apt-get update
-sudo apt-get install -y curl git build-essential libssl-dev zlib1g-dev \
-    libbz2-dev libreadline-dev libsqlite3-dev wget llvm \
-    libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
-    python3-openssl libedit-dev
+sudo apt-get install -y ansible python3-venv python3-full pipx
 
-# Install pyenv using curl
-echo "Installing pyenv..."
-curl https://pyenv.run | bash
+# Create a virtual environment for additional packages
+echo "Creating virtual environment for Python packages..."
+python3 -m venv ~/ansible-env
 
-# Add pyenv to bashrc so that it's available in future shell sessions
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
-echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+# Activate the virtual environment
+source ~/ansible-env/bin/activate
 
-# Apply the changes to current session
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
-
-# Install Ansible
-echo "Installing Ansible via pyenv..."
-pyenv install 3.11.5  
-pyenv global 3.11.5
+# Install additional Python packages in the virtual environment
+echo "Installing additional Python packages..."
 pip install --upgrade pip
-pip install ansible
 pip install passlib
 
+# Add activation shortcut to bashrc
+echo 'alias ansible-env="source ~/ansible-env/bin/activate"' >> ~/.bashrc
+
+# Install Ansible collection (works with system Ansible)
+echo "Installing Ansible collections..."
 ansible-galaxy collection install ansible.posix
 
 # Verify installation
-echo "Verifying installations..."
-pyenv --version
+echo "Verifying installation..."
 ansible --version
+echo "Python packages installed in virtual environment: ~/ansible-env"
 
-echo "Setup complete. Pyenv and Ansible are installed."
+echo "Setup complete. Ansible is installed."
+echo "To activate the Python environment in new sessions, run: source ~/ansible-env/bin/activate"
+echo "Or use the alias: ansible-env"
+
+# Setup the VMs
+vagrant up

@@ -102,34 +102,37 @@
   tags: [build]
 
 - name: Deploy Applications
-  hosts: localhost
-  connection: local
+  hosts: master[0]
+  become: true
   gather_facts: false
-  vars:
-    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/k3s-kubeconfig.yaml"
   environment:
-    KUBECONFIG: "{{ kubeconfig_path }}"
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml  # Direct path on master
   tasks:
-    - name: Ensure Kubeconfig parent directory exists
-      file:
-        path: "{{ kubeconfig_path | dirname }}"
-        state: directory
-        mode: '0700'
+    - name: Ensure helm is installed
+      command: which helm
+      register: helm_check
+      failed_when: false
+      changed_when: false
 
-    - name: Create temporary kubeconfig file
-      copy:
-        content: "{{ shared_kubeconfig_content }}"    
-        dest: "{{ kubeconfig_path }}"
-        mode: '0600'
+    - name: Install helm if not present
+      shell: |
+        curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz -o helm.tar.gz
+        tar -zxvf helm.tar.gz
+        sudo mv linux-amd64/helm /usr/local/bin/helm
+        rm -rf helm.tar.gz linux-amd64
+      when: helm_check.rc != 0
+
+    - name: Get target applications from localhost
+      set_fact:
+        target_applications: "{{ hostvars['localhost']['shared_target_applications'] }}"
+        operation: "{{ hostvars['localhost']['shared_operation'] }}"
 
     - name: Loop over all target applications
       include_role:
         name: app_deploy
       vars:
         application: "{{ app_item }}"
-        operation: "{{ shared_operation }}"
-      loop: "{{ shared_target_applications }}"
+        operation: "{{ operation }}"
+      loop: "{{ target_applications }}"
       loop_control:
-        loop_var: app_item 
-
-  tags: [deploy]
+        loop_var: app_item

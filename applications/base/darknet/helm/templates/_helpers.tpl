@@ -1,16 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "arp.name" -}}
+{{- define "darknet.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
-{{- define "arp.fullname" -}}
+{{- define "darknet.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +24,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "arp.chart" -}}
+{{- define "darknet.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "arp.labels" -}}
-helm.sh/chart: {{ include "arp.chart" . }}
-{{ include "arp.selectorLabels" . }}
+{{- define "darknet.labels" -}}
+helm.sh/chart: {{ include "darknet.chart" . }}
+{{ include "darknet.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,18 +43,25 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "arp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "arp.name" . }}
+{{- define "darknet.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "darknet.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+Component-specific labels
 */}}
-{{- define "arp.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "arp.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- define "darknet.capture.labels" -}}
+{{ include "darknet.labels" . }}
+app.kubernetes.io/component: capture
 {{- end }}
+
+{{- define "darknet.arp.labels" -}}
+{{ include "darknet.labels" . }}
+app.kubernetes.io/component: arp
+{{- end }}
+
+{{- define "darknet.collector.labels" -}}
+{{ include "darknet.labels" . }}
+app.kubernetes.io/component: collector
 {{- end }}

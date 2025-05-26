@@ -1,0 +1,82 @@
+# applications/base/darknet/helm/values.yaml
+global:
+  namespace: darknet
+  registry: registry.local:30500
+  storageClass: manual
+
+# Default per-node capture configurations (empty - populated by Ansible)
+captureNodes: {}
+
+# Image configurations (shared)
+arpImages:
+  ipv4:
+    repository: registry.local:30500/public/ipv4
+    tag: latest
+  ipv6:
+    repository: registry.local:30500/public/ipv6
+    tag: latest
+
+captureImage:
+  repository: nicolaka/netshoot
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Collector defaults
+collector:
+  enabled: true
+  image:
+    repository: registry.local:30500/public/collector
+    tag: latest
+  nodeSelector:
+    node-role.kubernetes.io/master: "true"
+  config:
+    workerNodes: []  # Populated by Ansible
+    sshUsers: []     # Populated by Ansible
+    srcPath: "/data/darknet"
+    dstPath: "/data/collector"
+    collectionInterval: "3600"
+  storage:
+    hostPath: "/data/collector"
+    size: "50Gi"
+  sshKeySecret: collector-ssh-key
+
+# Network configuration
+network:
+  # Use host network for packet capture
+  hostNetwork: true
+  # DNS policy when using host network
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Security context
+securityContext:
+  # Required for packet capture
+  privileged: true
+  capabilities:
+    add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+
+# Network policy 
+networkPolicy:
+  enabled: false
+  allowedCidrs:
+    - "10.0.0.0/24"
+    - "10.10.0.0/24"
+
+# Resource limits (shared)
+resources:
+  capture:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  arp:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"

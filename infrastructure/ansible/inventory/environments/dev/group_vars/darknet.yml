@@ -1,0 +1,86 @@
+---
+# Development Darknet Application Configuration
+enabled: true
+namespace: darknet
+chart_path: "{{ project_root }}/../../applications/base/darknet/helm"
+
+# Deployment settings
+timeout: 300
+validate_deployment: true
+validate_service: false
+remove_namespace: false
+
+# Development-specific Helm chart values
+values:
+  global:
+    registry: "{{ local_registry }}"
+    storageClass: "{{ storage_class | default('manual') }}"
+    namespace: darknet
+
+  # Development node configurations (smaller scale)
+  captureNodes:
+    dev-worker-01:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 1800  # 30 minutes for faster testing
+        filter: "ip and (net 192.168.10.0/24)"
+        outputPath: "/data/darknet/dev-worker-01-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/dev-worker-01"
+        size: "2Gi"  # Smaller storage for dev
+      arp:
+        enabled: true
+        ipv4:
+          enabled: true
+        ipv6:
+          enabled: false  # Disable IPv6 for dev simplicity
+
+    dev-worker-02:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 1800
+        filter: "ip and (net 192.168.20.0/24)"
+        outputPath: "/data/darknet/dev-worker-02-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/dev-worker-02"
+        size: "2Gi"
+      arp:
+        enabled: false  # Test without ARP on second node
+        ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+
+  # Development collector configuration
+  collector:
+    enabled: true
+    config:
+      # Both dev workers
+      workerNodes: 
+        - "dev-worker-01"
+        - "dev-worker-02"
+      sshUsers: 
+        - "vagrant"
+        - "vagrant"
+      srcPath: "/data/darknet"
+      dstPath: "/data/collector"
+      collectionInterval: "1800"  # 30 minutes for dev (faster feedback)
+    storage:
+      hostPath: "/data/collector"
+      size: "10Gi"  # Smaller storage for dev
+    resources:
+      requests:
+        memory: "128Mi"  # Lower resources for dev
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  # Development network policy (disabled for easier debugging)
+  networkPolicy:
+    enabled: false
+    allowedCidrs:
+      - "192.168.0.0/16"  # Dev network range
+      - "10.0.0.0/8"      # Local development

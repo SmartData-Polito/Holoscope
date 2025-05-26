@@ -1,10 +1,12 @@
-# inventory/dev/group_vars/all.yml
+#infrastructure/ansible/inventory/group_vars/all.yml
 ---
 # Global variables for all hosts
 helm_version: "v3.7.0"
 k3s_version: "v1.30.4+k3s1"
 k3s_url: "https://10.0.0.100:6443"
-project_root: "{{ lookup('env', 'PWD') | regex_replace('/playbooks$', '') }}"
+
+project_root: "{{ playbook_dir | dirname | dirname }}"
+vagrant_key_dir: "{{ project_root }}/vagrant/.vagrant/machines"
 
 network_policy:
   allowed_cidrs:
@@ -12,26 +14,4 @@ network_policy:
 
 # Docker registry configuration
 local_registry: "registry.local:30500"
-image_tag: "latest"    
-
-# Registry of all available applications
-application_registry:
-  darknet:
-    namespace: "darknet"
-    requires_pv: true
-  cowrie:
-    namespace: "cowrie"
-    requires_pv: true
-  flower:
-    namespace: "flower"
-    requires_pv: true
-  arp:
-    namespace: "arp"
-    requires_pv: false
-
-# List of applications to deploy by default
-deployed_applications: 
-  - arp
-  - darknet
-
-  
+image_tag: "latest"
