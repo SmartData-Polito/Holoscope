@@ -1,8 +1,14 @@
-# roles/docker_build/tasks/main.yml
-- name: Ensure Docker is installed
+# docker_build/tasks/main.yml
+- name: Ensure Docker is installed on master
   ansible.builtin.package:
     name: docker
     state: present
+
+- name: Set required variables
+  set_fact:
+    local_registry: "{{ local_registry | default('registry.local:30500') }}"
+    image_tag: "{{ image_tag | default('latest') }}"
+    project_root: "{{ playbook_dir }}/../../.."
 
 - name: Initialize Docker images list
   set_fact:
@@ -10,15 +16,22 @@
 
 - name: Collect Docker images from target application groups
   set_fact:
-    all_docker_images: "{{ all_docker_images + (hostvars[groups[item][0]][item + '_images'] | default([])) }}"
+    all_docker_images: "{{ all_docker_images + (hostvars['localhost']['app_vars_' + item].docker_images | default([])) }}"
   loop: "{{ hostvars.localhost.shared_target_applications | default([]) }}"
   loop_control:
     label: "{{ item }}"
-  when: "item | length > 0 and groups[item] | default([]) | length > 0"
+  when: "item | length > 0"
 
 - name: Debug collected Docker images
   debug:
     var: all_docker_images
+
+- name: Debug variables
+  debug:
+    msg:
+      - "local_registry: {{ local_registry }}"
+      - "image_tag: {{ image_tag }}"
+      - "project_root: {{ project_root }}"
 
 - name: Create build directories on master
   file:
@@ -38,9 +51,9 @@
     label: "{{ item.name }}"
   when: all_docker_images | length > 0
 
-- name: Build Docker images
+- name: Build Docker images on master
   ansible.builtin.command:
-    cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ image_tag }} -f /tmp/docker-build/{{ item.name }}/Dockerfile /tmp/docker-build/{{ item.name }}
+    cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ item.tag }} -f /tmp/docker-build/{{ item.name }}/Dockerfile /tmp/docker-build/{{ item.name }}
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
@@ -48,7 +61,7 @@
 
 - name: Tag Docker images for local registry
   ansible.builtin.command:
-    cmd: docker tag {{ item.author }}/{{ item.name }}:{{ image_tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
+    cmd: docker tag {{ item.author }}/{{ item.name }}:{{ item.tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"
@@ -56,7 +69,7 @@
 
 - name: Push Docker images to local registry
   ansible.builtin.command:
-    cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ image_tag }}
+    cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
   loop: "{{ all_docker_images }}"
   loop_control:
     label: "{{ item.name }}"

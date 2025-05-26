@@ -1,12 +1,12 @@
 #infrastructure/ansible/inventory/group_vars/all.yml
 ---
-# Global variables for all hosts
 helm_version: "v3.7.0"
 k3s_version: "v1.30.4+k3s1"
 k3s_url: "https://10.0.0.100:6443"
 
-project_root: "{{ playbook_dir | dirname | dirname }}"
-vagrant_key_dir: "{{ project_root }}/vagrant/.vagrant/machines"
+# Project paths - using playbook_dir as base since that's where ansible runs from
+project_root: "{{ playbook_dir }}"
+vagrant_key_dir: "{{ playbook_dir }}/../vagrant/.vagrant/machines"
 
 network_policy:
   allowed_cidrs:

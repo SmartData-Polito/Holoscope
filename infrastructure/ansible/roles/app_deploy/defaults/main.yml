@@ -1,72 +1,19 @@
 ---
-- name: Wait for deployment to be ready
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: Deployment
-    namespace: "{{ app_namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/name={{ app_name }}"
-    wait: true
-    wait_condition:
-      type: Available
-      status: "True"
-    wait_timeout: "{{ app_config.readiness_timeout | default(300) }}"
-  register: deployment_status
-  when: app_config.validate_deployment | default(true) | bool
+# Default values for app_deploy role
+operation: install
+validate_deployment: true
+debug_mode: false
 
-- name: Get pod status
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
-    namespace: "{{ app_namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/name={{ app_name }}"
-  register: pod_status
-  when: app_config.validate_deployment | default(true) | bool
+# Default timeouts (in seconds)
+default_timeout: 300
+default_readiness_timeout: 300
 
-- name: Display pod information
-  debug:
-    msg:
-      - "Application: {{ app_name }}"
-      - "Pods running: {{ pod_status.resources | length }}"
-      - "Pod names: {{ pod_status.resources | map(attribute='metadata.name') | list }}"
-  when:
-    - app_config.validate_deployment | default(true) | bool
-    - pod_status.resources is defined
-
-- name: Validate service endpoints (if service exists)
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Service
-    namespace: "{{ app_namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/name={{ app_name }}"
-  register: service_info
-  when: app_config.validate_service | default(false) | bool
-
-- name: Display service information
-  debug:
-    msg:
-      - "Service: {{ service_info.resources[0].metadata.name }}"
-      - "Type: {{ service_info.resources[0].spec.type }}"
-      - "Ports: {{ service_info.resources[0].spec.ports }}"
-  when:
-    - app_config.validate_service | default(false) | bool
-    - service_info.resources | length > 0
-
-- name: Run custom health check
-  uri:
-    url: "{{ app_config.health_check_url }}"
-    method: GET
-    status_code: 200
-  register: health_check
-  when: app_config.health_check_url is defined
-  retries: 3
-  delay: 10
-
-- name: Display health check result
-  debug:
-    msg: "Health check passed for {{ app_name }}"
-  when:
-    - app_config.health_check_url is defined
-    - health_check is succeeded
+# Default application configuration
+default_app_config:
+  enabled: true
+  timeout: 300
+  readiness_timeout: 300
+  validate_deployment: true
+  validate_service: false
+  remove_namespace: false
+  values: {}

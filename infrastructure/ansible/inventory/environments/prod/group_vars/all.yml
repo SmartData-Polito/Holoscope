@@ -1,4 +1,0 @@
-# inventory/environments/prod/group_vars/all.yml
-storage_class: "local-storage"  
-darknet_collection_interval: "3600"  # 1 hour for prod
-

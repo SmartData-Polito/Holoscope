@@ -16,8 +16,8 @@
     app_name: "{{ application }}"
     app_namespace: "{{ app_config.namespace | default(application) }}"
     chart_path: "{{ app_config.chart_path }}"
-    app_values: "{{ app_config.values | default({}) }}"
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
+    helm_values: "{{ app_config['values'] | default({}) }}"
 
 - name: Debug application configuration
   debug:
@@ -25,30 +25,71 @@
       - "Application: {{ app_name }}"
       - "Namespace: {{ app_namespace }}"
       - "Chart Path: {{ chart_path }}"
-      - "Operation: {{ operation }}"
+      - "Operation: {{ action | default('install') }}"
       - "Enabled: {{ app_enabled }}"
   when: debug_mode | default(false) | bool
 
-- name: Skip disabled applications
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    name: "{{ app_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  when: app_enabled
+
+- name: Check if Helm release exists
+  kubernetes.core.helm_info:
+    name: "{{ app_name }}"
+    namespace: "{{ app_namespace }}"
+  register: helm_release_info
+  failed_when: false
+  when: app_enabled
+
+- name: Force fresh install if upgrade fails
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    chart_ref: "{{ chart_path }}"
+    namespace: "{{ app_namespace }}"
+    create_namespace: false
+    state: absent
+    wait: true
+    timeout: 300
+  when: 
+    - app_enabled
+    - helm_release_info.failed | default(false)
+    - (action | default('install')) == 'install'
+
+- name: Deploy Helm chart for {{ app_name }}
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    chart_ref: "{{ chart_path }}"
+    namespace: "{{ app_namespace }}"
+    create_namespace: false
+    state: present
+    wait: true
+    values: "{{ helm_values }}"
+    force: "{{ helm_release_info.failed | default(false) }}"
+  when: 
+    - app_enabled
+    - (action | default('install')) == 'install'
+  register: helm_result  
+
+- name: Remove Helm chart for {{ app_name }}
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    namespace: "{{ app_namespace }}"
+    state: absent
+    wait: true
+    timeout: "{{ app_config.timeout | default(300) }}"
+  when: 
+    - app_enabled
+    - (action | default('install')) == 'remove'
+  register: helm_remove_result
+
+- name: Display deployment result
   debug:
-    msg: "Skipping {{ app_name }} - application is disabled"
-  when: not app_enabled
-
-- name: Include installation tasks
-  include_tasks: install.yml
-  when:
-    - operation == 'install'
+    msg: "{{ 'Successfully deployed' if helm_result.changed else 'No changes needed for' }} {{ app_name }}"
+  when: 
     - app_enabled
-
-- name: Include removal tasks
-  include_tasks: remove.yml
-  when:
-    - operation == 'remove'
-    - app_enabled
-
-- name: Include validation tasks
-  include_tasks: validate.yml
-  when:
-    - operation == 'install'
-    - app_enabled
-    - validate_deployment | default(true) | bool
+    - (action | default('install')) == 'install'
+    - helm_result is defined

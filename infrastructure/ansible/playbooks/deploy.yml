@@ -43,7 +43,7 @@
       
     - name: Set shared facts
       set_fact:
-        shared_operation: "{{ operation }}"
+        shared_deploy_action: "{{ operation }}"
         shared_target_applications: "{{ target_applications }}"
         shared_build_images: "{{ build_images }}"
       
@@ -102,11 +102,12 @@
   tags: [build]
 
 - name: Deploy Applications
-  hosts: master[0]
-  become: true
-  gather_facts: false
+  hosts: localhost
+  connection: local
   environment:
-    KUBECONFIG: /etc/rancher/k3s/k3s.yaml  # Direct path on master
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  vars:
+    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/k3s-kubeconfig.yaml"
   tasks:
     - name: Ensure helm is installed
       command: which helm
@@ -125,14 +126,14 @@
     - name: Get target applications from localhost
       set_fact:
         target_applications: "{{ hostvars['localhost']['shared_target_applications'] }}"
-        operation: "{{ hostvars['localhost']['shared_operation'] }}"
+        deploy_action: "{{ hostvars['localhost']['shared_operation'] | default('install') }}"
 
     - name: Loop over all target applications
       include_role:
         name: app_deploy
       vars:
         application: "{{ app_item }}"
-        operation: "{{ operation }}"
+        deploy_action: "{{ deploy_action }}"
       loop: "{{ target_applications }}"
       loop_control:
-        loop_var: app_item
+        loop_var: app_item  
