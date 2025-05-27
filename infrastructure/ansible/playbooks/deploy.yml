@@ -2,14 +2,26 @@
 # Dynamic application deployment playbook
 - name: Set shared variables
   hosts: deployment
-  connection: local
   gather_facts: false
   vars:
     # Default to install if no action specified
     operation: "{{ action | default('install') }}"
     build_images: "{{ build | default(true) | bool }}"
     
-  tasks:
+  tasks:    
+    - name: Test fetch kubeconfig
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/test-kubeconfig.yaml
+        flat: yes
+      delegate_to: "{{ groups['master'][0] }}"
+      become: true
+      register: fetch_result
+    
+    - name: Debug fetch result
+      debug:
+        var: fetch_result
+
     - name: Discover application groups from inventory
       set_fact:
         discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
@@ -101,9 +113,9 @@
       when: hostvars[groups['deployment'][0]].shared_build_images | default(false) | bool
   tags: [build]
 
+
 - name: Deploy Applications
   hosts: deployment
-  connection: local
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
   vars:

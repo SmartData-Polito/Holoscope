@@ -40,7 +40,7 @@ spec:
         - name: NODE_NAME
           value: {{ $nodeName }}
         
-        command: ["/usr/src/arpd/farpd2", "-d", "-i"]
+        command: ["/usr/src/arpd/farpd2", "-d", "-i", "{{ $nodeConfig.config.interface }}"]
         
         resources:
           {{- toYaml $.Values.resources.arp | nindent 10 }}

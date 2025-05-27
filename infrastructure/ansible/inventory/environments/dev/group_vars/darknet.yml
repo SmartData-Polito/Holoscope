@@ -25,29 +25,29 @@ values:
 
   # Node configurations
   captureNodes:
-    worker-01:
+    worker-00:
       enabled: true
       config:
         interface: eth0
         rotate_seconds: 1800
         filter: "ip and (net 192.168.10.0/24)"
-        outputPath: "/data/darknet/worker-01/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        outputPath: "/data/darknet/worker-00/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
-        hostPath: "/data/darknet/worker-01"
+        hostPath: "/data/darknet/worker-00"
       arp:
         enabled: true
         ipv4:
           enabled: true
 
-    worker-02:
+    worker-01:
       enabled: true
       config:
         interface: eth0
         rotate_seconds: 1800
         filter: "ip and (net 192.168.20.0/24)"
-        outputPath: "/data/darknet/worker-02/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        outputPath: "/data/darknet/worker-01/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
-        hostPath: "/data/darknet/worker-02"
+        hostPath: "/data/darknet/worker-01"
       arp:
         enabled: false
         
@@ -56,8 +56,8 @@ values:
     enabled: true
     config:
       workerNodes: 
+        - "worker-00"
         - "worker-01"
-        - "worker-02"
       sshUsers: 
         - "vagrant"
         - "vagrant"

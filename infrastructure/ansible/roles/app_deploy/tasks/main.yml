@@ -19,16 +19,6 @@
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
     helm_values: "{{ app_config['values'] | default({}) }}"
 
-- name: Check if kubeconfig exists
-  stat:
-    path: "{{ kubeconfig_path }}"
-  register: kubeconfig_stat
-
-- name: Fail if kubeconfig not found
-  fail:
-    msg: "Kubeconfig not found at {{ kubeconfig_path }}. Run the registry playbook first."
-  when: not kubeconfig_stat.stat.exists
-
 - name: Debug application configuration
   debug:
     msg:
@@ -47,29 +37,7 @@
     state: present
   when: app_enabled
 
-- name: Check if Helm release exists
-  kubernetes.core.helm_info:
-    name: "{{ app_name }}"
-    namespace: "{{ app_namespace }}"
-  register: helm_release_info
-  failed_when: false
-  when: app_enabled
-
-- name: Force fresh install if upgrade fails
-  kubernetes.core.helm:
-    name: "{{ app_name }}"
-    chart_ref: "{{ chart_path }}"
-    namespace: "{{ app_namespace }}"
-    create_namespace: false
-    state: absent
-    wait: true
-    timeout: 300
-  when: 
-    - app_enabled
-    - helm_release_info.failed | default(false)
-    - (action | default('install')) == 'install'
-
-- name: Deploy Helm chart for {{ app_name }}
+- name: Deploy Helm chart for {{ app_name }} (fresh install)
   kubernetes.core.helm:
     name: "{{ app_name }}"
     chart_ref: "{{ chart_path }}"
@@ -78,11 +46,10 @@
     state: present
     wait: true
     values: "{{ helm_values }}"
-    force: "{{ helm_release_info.failed | default(false) }}"
   when: 
     - app_enabled
     - (action | default('install')) == 'install'
-  register: helm_result  
+  register: helm_result    
 
 - name: Remove Helm chart for {{ app_name }}
   kubernetes.core.helm:
