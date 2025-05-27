@@ -19,6 +19,16 @@
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
     helm_values: "{{ app_config['values'] | default({}) }}"
 
+- name: Check if kubeconfig exists
+  stat:
+    path: "{{ kubeconfig_path }}"
+  register: kubeconfig_stat
+
+- name: Fail if kubeconfig not found
+  fail:
+    msg: "Kubeconfig not found at {{ kubeconfig_path }}. Run the registry playbook first."
+  when: not kubeconfig_stat.stat.exists
+
 - name: Debug application configuration
   debug:
     msg:

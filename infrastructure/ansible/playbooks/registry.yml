@@ -29,10 +29,14 @@
         state: present
       run_once: true
 
-    - name: Modify the server URL in the YAML file using yq
+    - name: Modify the server URL and configure TLS settings in kubeconfig
       shell: |
+        # Update server URL
         yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
-      run_once: true
+        # Remove certificate-authority-data and set insecure-skip-tls-verify
+        yq -yi 'del(.clusters[0].cluster."certificate-authority-data")' {{ fetch_result.dest }}
+        yq -yi '.clusters[0].cluster."insecure-skip-tls-verify" = true' {{ fetch_result.dest }}
+      run_once: true   
 
     - name: Install helm if not exists
       become: true
@@ -49,7 +53,7 @@
 
     - name: Deploy Helm chart for Docker Registry on specific node
       command: >
-        helm upgrade -i registry-{{ item }} {{ project_root }}/helm-charts/registry --namespace registry --create-namespace
+        helm upgrade -i registry-{{ item }} {{ project_root }}/infrastructure/helm/registry --namespace registry --create-namespace
           --set name=registry-{{ item }}
           --set appName=registry-{{ item }}
           --set nodeAffinity.hostname.values[0]={{ item }}

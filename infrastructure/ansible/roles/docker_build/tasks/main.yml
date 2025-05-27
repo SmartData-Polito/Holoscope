@@ -8,8 +8,7 @@
   set_fact:
     local_registry: "{{ local_registry | default('registry.local:30500') }}"
     image_tag: "{{ image_tag | default('latest') }}"
-    project_root: "{{ playbook_dir }}/../../.."
-
+    
 - name: Initialize Docker images list
   set_fact:
     all_docker_images: []

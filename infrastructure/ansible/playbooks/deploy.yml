@@ -8,7 +8,7 @@
     # Default to install if no action specified
     operation: "{{ action | default('install') }}"
     build_images: "{{ build | default(true) | bool }}"
-  
+    
   tasks:
     - name: Discover application groups from inventory
       set_fact:
@@ -107,7 +107,7 @@
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
   vars:
-    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/k3s-kubeconfig.yaml"
+    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/kubeconfig.yaml"
   tasks:
     - name: Ensure helm is installed
       command: which helm

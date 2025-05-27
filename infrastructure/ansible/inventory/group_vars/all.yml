@@ -5,7 +5,7 @@ k3s_version: "v1.30.4+k3s1"
 k3s_url: "https://10.0.0.100:6443"
 
 # Project paths - using playbook_dir as base since that's where ansible runs from
-project_root: "{{ playbook_dir }}"
+project_root: "{{ playbook_dir }}/../../../"
 vagrant_key_dir: "{{ playbook_dir }}/../vagrant/.vagrant/machines"
 
 network_policy:
