@@ -1,6 +1,6 @@
 ---
 - name: Undo cluster setup
-  hosts: all:!localhost
+  hosts: all:!deployment
   become: true
   tasks:
     - name: Stop WireGuard 

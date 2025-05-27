@@ -1,6 +1,6 @@
 ---
 - name: Ensure master group is not empty
-  hosts: localhost
+  hosts: deployment
   gather_facts: false
   tasks:
     - name: Check if master group exists and is not empty
@@ -68,8 +68,8 @@
         node_was_configured: "{{ needs_config }}"
       
     # Keep track of configured hosts for summary
-    - name: Register configured host with localhost
-      delegate_to: localhost
+    - name: Register configured host with deployment
+      delegate_to: deployment
       set_fact:
         configured_hosts: "{{ configured_hosts | default([]) + [inventory_hostname] }}"
       when: needs_config
@@ -142,7 +142,7 @@
       when: hostvars[inventory_hostname].get('node_was_configured', false) | bool
 
 - name: Show summary
-  hosts: localhost
+  hosts: deployment
   gather_facts: false
   tasks:
     - name: Display configured nodes

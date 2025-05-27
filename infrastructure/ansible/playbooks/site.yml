@@ -1,6 +1,6 @@
 ---
 - name: Clean up SSH known hosts
-  hosts: localhost
+  hosts: deployment
   connection: local
   gather_facts: no
   tasks:

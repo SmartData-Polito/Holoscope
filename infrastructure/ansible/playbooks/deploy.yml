@@ -1,7 +1,7 @@
 ---
 # Dynamic application deployment playbook
 - name: Set shared variables
-  hosts: localhost
+  hosts: deployment
   connection: local
   gather_facts: false
   vars:
@@ -34,8 +34,8 @@
         enabled_applications: "{{ enabled_applications + [item] }}"
       loop: "{{ active_applications }}"
       when: 
-        - hostvars['localhost']['app_vars_' + item] is defined
-        - hostvars['localhost']['app_vars_' + item].enabled | default(true) | bool
+        - hostvars[groups['deployment'][0]]['app_vars_' + item] is defined
+        - hostvars[groups['deployment'][0]]['app_vars_' + item].enabled | default(true) | bool
       
     - name: Set target applications
       set_fact:
@@ -80,11 +80,11 @@
       set_fact:
         master_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
 
-    - name: Pass kubeconfig to localhost
+    - name: Pass kubeconfig
       set_fact:
         shared_kubeconfig_content: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
         shared_master_ip: "{{ master_ip }}"
-      delegate_to: localhost
+      delegate_to: deployment
       delegate_facts: true
       
   tags: [always, k8s]
@@ -98,11 +98,11 @@
     - name: Include Docker build role
       include_role:
         name: docker_build
-      when: hostvars.localhost.shared_build_images | default(false) | bool
+      when: hostvars[groups['deployment'][0]].shared_build_images | default(false) | bool
   tags: [build]
 
 - name: Deploy Applications
-  hosts: localhost
+  hosts: deployment
   connection: local
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
@@ -123,10 +123,10 @@
         rm -rf helm.tar.gz linux-amd64
       when: helm_check.rc != 0
 
-    - name: Get target applications from localhost
+    - name: Get target applications 
       set_fact:
-        target_applications: "{{ hostvars['localhost']['shared_target_applications'] }}"
-        deploy_action: "{{ hostvars['localhost']['shared_operation'] | default('install') }}"
+        target_applications: "{{ hostvars[groups['deployment'][0]]['shared_target_applications'] }}"
+        deploy_action: "{{ hostvars[groups['deployment'][0]]['shared_deploy_action'] | default('install') }}"
 
     - name: Loop over all target applications
       include_role:

@@ -15,11 +15,11 @@
 
 - name: Collect Docker images from target application groups
   set_fact:
-    all_docker_images: "{{ all_docker_images + (hostvars['localhost']['app_vars_' + item].docker_images | default([])) }}"
-  loop: "{{ hostvars.localhost.shared_target_applications | default([]) }}"
+    all_docker_images: "{{ all_docker_images + (hostvars[groups['deployment'][0]]['app_vars_' + item].docker_images | default([])) }}"
+  loop: "{{ hostvars[groups['deployment'][0]].shared_target_applications | default([]) }}"
   loop_control:
     label: "{{ item }}"
-  when: "item | length > 0"
+  when: "item | length > 0"  
 
 - name: Debug collected Docker images
   debug:
