@@ -10,7 +10,7 @@ services:
 
   pcap-collector:
     build:
-      context: .
+      context: collector
       dockerfile: Dockerfile
     image: pcap-collector:latest
     volumes:

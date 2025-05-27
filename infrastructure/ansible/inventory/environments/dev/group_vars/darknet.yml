@@ -31,7 +31,7 @@ values:
         interface: eth0
         rotate_seconds: 1800
         filter: "ip and (net 192.168.10.0/24)"
-        outputPath: "/data/darknet/worker-01-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        outputPath: "/data/darknet/worker-01/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
         hostPath: "/data/darknet/worker-01"
       arp:
@@ -45,7 +45,7 @@ values:
         interface: eth0
         rotate_seconds: 1800
         filter: "ip and (net 192.168.20.0/24)"
-        outputPath: "/data/darknet/worker-02-trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        outputPath: "/data/darknet/worker-02/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
         hostPath: "/data/darknet/worker-02"
       arp:
@@ -63,7 +63,7 @@ values:
         - "vagrant"
       srcPath: "/data/darknet"
       dstPath: "/data/collector"
-      collectionInterval: "1800"
+      collectionInterval: "60"
     storage:
       hostPath: "/data/collector"
       size: "10Gi"  
@@ -79,5 +79,4 @@ values:
   networkPolicy:
     enabled: true
     allowedCidrs:
-      - "192.168.0.0/16"
       - "10.0.0.0/8"

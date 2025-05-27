@@ -1,48 +1,19 @@
-# applications/darknet/helm/values.yaml
+# applications/l4responder/helm/values.yaml
 global:
-  namespace: darknet
+  namespace: l4responder
   storageClass: manual
 
 # Default per-node capture configurations (empty - populated by Ansible)
 captureNodes: {}
 
 # Image configurations
-arpImages:
-  ipv4:
-    repository: registry.local:30500/public/ipv4
-    tag: latest
-
-captureImage:
-  repository: nicolaka/netshoot
-  tag: latest
-  pullPolicy: IfNotPresent
-
-# Collector defaults
-collector:
+L4Images:
   enabled: true
   image:
-    repository: registry.local:30500/public/collector
+    repository: registry.local:30500/public/l4responder
     tag: latest
-    pullPolicy: IfNotPresent 
-  nodeSelector:
-    node-role.kubernetes.io/master: "true"
-  config:
-    workerNodes: []  # Populated by Ansible
-    sshUsers: []     # Populated by Ansible
-    srcPath: "/data/darknet"
-    dstPath: "/data/collector"
-    collectionInterval: "3600"
-  storage:
-    hostPath: "/data/collector"
-    size: "50Gi"
-  sshKeySecret: collector-ssh-key
-  resources: 
-    requests:
-      memory: "256Mi"
-      cpu: "200m"
-    limits:
-      memory: "512Mi"
-      cpu: "400m"
+    pullPolicy: IfNotPresent  
+
 
 # Network configuration
 network:
@@ -54,18 +25,20 @@ network:
 # Security context (container-level)
 securityContext:
   # Required for packet capture
-  privileged: false
+  privileged: true
   capabilities:
     add:
       - NET_ADMIN
       - NET_RAW
-  
+      - SYS_ADMIN
+
 # Network policy 
 networkPolicy:
   enabled: false
   allowedCidrs:
     - "10.0.0.0/24"
-    
+    - "10.10.0.0/24"
+
 # Resource limits (shared)
 resources:
   capture:
