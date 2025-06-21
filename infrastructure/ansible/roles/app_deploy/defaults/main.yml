@@ -15,5 +15,5 @@ default_app_config:
   readiness_timeout: 300
   validate_deployment: true
   validate_service: false
-  remove_namespace: false
+  remove_namespace: true
   values: {}

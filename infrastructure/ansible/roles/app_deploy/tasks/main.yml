@@ -19,16 +19,6 @@
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
     helm_values: "{{ app_config['values'] | default({}) }}"
 
-- name: Debug application configuration
-  debug:
-    msg:
-      - "Application: {{ app_name }}"
-      - "Namespace: {{ app_namespace }}"
-      - "Chart Path: {{ chart_path }}"
-      - "Operation: {{ action | default('install') }}"
-      - "Enabled: {{ app_enabled }}"
-  when: debug_mode | default(false) | bool
-
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     name: "{{ app_namespace }}"
@@ -37,7 +27,7 @@
     state: present
   when: app_enabled
 
-- name: Deploy Helm chart for {{ app_name }} (fresh install)
+- name: Deploy Helm chart for {{ app_name }}
   kubernetes.core.helm:
     name: "{{ app_name }}"
     chart_ref: "{{ chart_path }}"
@@ -48,8 +38,8 @@
     values: "{{ helm_values }}"
   when: 
     - app_enabled
-    - (action | default('install')) == 'install'
-  register: helm_result    
+    - (deploy_action | default('install')) in ['install', 'upgrade']
+  register: helm_result
 
 - name: Remove Helm chart for {{ app_name }}
   kubernetes.core.helm:
@@ -60,13 +50,13 @@
     timeout: "{{ app_config.timeout | default(300) }}"
   when: 
     - app_enabled
-    - (action | default('install')) == 'remove'
+    - (deploy_action | default('install')) == 'remove'
   register: helm_remove_result
 
 - name: Display deployment result
   debug:
-    msg: "{{ 'Successfully deployed' if helm_result.changed else 'No changes needed for' }} {{ app_name }}"
+    msg: "{{ 'Successfully deployed/upgraded' if helm_result.changed else 'No changes needed for' }} {{ app_name }}"
   when: 
     - app_enabled
-    - (action | default('install')) == 'install'
+    - (deploy_action | default('install')) in ['install', 'upgrade']
     - helm_result is defined
