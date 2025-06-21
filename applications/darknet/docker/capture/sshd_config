@@ -1,0 +1,49 @@
+# SSH daemon configuration for darknet capture container
+Port 22
+Protocol 2
+
+# Host keys
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Logging
+SyslogFacility AUTH
+LogLevel INFO
+
+# Authentication
+PermitRootLogin no
+MaxAuthTries 3
+MaxSessions 10
+
+# Password authentication (disabled for security)
+PasswordAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+
+# Public key authentication (enabled)
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# Other authentication methods
+KbdInteractiveAuthentication no
+UsePAM yes
+
+# Network settings
+X11Forwarding no
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+UsePrivilegeSeparation sandbox
+
+# Security settings
+AllowUsers capture
+DenyUsers root
+StrictModes yes
+
+# Subsystems
+Subsystem sftp /usr/lib/ssh/sftp-server
+
+# Performance settings
+ClientAliveInterval 60
+ClientAliveCountMax 3

@@ -1,24 +1,102 @@
 version: "3"
-
 services:
+  # SSH key generator service
+  ssh-keygen:
+    image: alpine:latest
+    container_name: darknet-keygen
+    volumes:
+      - ssh-keys:/tmp/ssh-keys
+    command: 
+      - /bin/sh
+      - -c
+      - |
+        echo 'Generating SSH keys...'
+        apk add --no-cache openssh-keygen
+        ssh-keygen -t rsa -b 2048 -f /tmp/ssh-keys/id_rsa -N '' -q
+        chown root:root /tmp/ssh-keys/*
+        chmod 600 /tmp/ssh-keys/id_rsa
+        chmod 600 /tmp/ssh-keys/id_rsa.pub
+        ls -la /tmp/ssh-keys/
+        cat /tmp/ssh-keys/id_rsa.pub
+        echo 'SSH key generation complete'
+        
+  # PCAP capture service with SSH server (custom image)
+  pcap-capture:
+    build:
+      context: ./capture
+      dockerfile: Dockerfile
+    image: darknet-capture:latest
+    container_name: darknet-capture
+    hostname: worker-capture
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - /tmp/darknet:/data/darknet
+      - ssh-keys:/etc/ssh-keys:ro
+    environment:
+      - INTERFACE=eth0
+      - FILTER=ip and (net 10.0.0.0/24)
+      - ROTATE_SECONDS=60
+      - NODE_NAME=worker
+    networks:
+      darknet-net:
+        aliases:
+          - worker-capture
+    depends_on:
+      ssh-keygen:
+        condition: service_completed_successfully
+        
+  # ARP service
   arp4:
     build: ./ipv4
-    network_mode: "host"
-    restart: always
-    entrypoint: "/usr/src/arpd/farpd2"
-    command: "-d -i eth0 10.0.0.0/24" 
-
+    container_name: darknet-arp4
+    hostname: worker-arp
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - darknet-net
+    command: ["/usr/src/arpd/farpd2", "-d", "-i", "eth0", "10.0.0.0/24"]
+    
+  # PCAP collector service
   pcap-collector:
     build:
-      context: collector
+      context: ./collector
       dockerfile: Dockerfile
     image: pcap-collector:latest
-    volumes:
-      #- ./ssh-key:/etc/ssh-keys:ro
-      - ./data:/data/collector
-    environment:
-      - WORKER_NODES=worker-00 worker-01
-      - SOURCE_PATH=/data/darknet
-      - SSH_USER=vagrant
-      - COLLECTION_INTERVAL=3600
+    container_name: darknet-collector
+    hostname: collector
     restart: unless-stopped
+    volumes:
+      - ssh-keys:/etc/ssh-keys:ro
+      - /tmp/collector:/data/collector
+    environment:
+      - WORKER_NODE=worker-capture
+      - SSH_USER=capture
+      - COLLECTION_INTERVAL=60
+      - LOG_LEVEL=INFO
+      - RUN_MODE=daemon  
+    networks:
+      - darknet-net
+    depends_on:
+      ssh-keygen:
+        condition: service_completed_successfully
+      pcap-capture:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "/collector.sh", "health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+volumes:
+  ssh-keys:
+    driver: local
+    
+networks:
+  darknet-net:
+    driver: bridge
