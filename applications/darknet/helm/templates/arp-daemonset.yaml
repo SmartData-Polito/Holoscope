@@ -31,7 +31,7 @@ spec:
       {{- if $nodeConfig.arp.ipv4.enabled }}
       - name: arp4
         image: "{{ $.Values.arpImages.ipv4.repository }}:{{ $.Values.arpImages.ipv4.tag }}"
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         
         securityContext:
           {{- toYaml $.Values.securityContext | nindent 10 }}
@@ -39,8 +39,17 @@ spec:
         env:
         - name: NODE_NAME
           value: {{ $nodeName }}
+        - name: INTERFACE
+          value: {{ $nodeConfig.config.interface }}
+        - name: SUBNET
+          value: {{ $nodeConfig.config.subnet }}
         
-        command: ["/usr/src/arpd/farpd2", "-d", "-i", "{{ $nodeConfig.config.interface }}"]
+        command: 
+          - "/usr/src/arpd/farpd2"
+          - "-d"
+          - "-i"
+          - "{{ $nodeConfig.config.interface }}"
+          - "{{ $nodeConfig.config.subnet }}"
         
         resources:
           {{- toYaml $.Values.resources.arp | nindent 10 }}
@@ -49,3 +58,4 @@ spec:
       restartPolicy: Always
 {{- end }}
 {{- end }}
+
