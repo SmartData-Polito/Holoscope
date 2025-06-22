@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.appName }}
+    app.kubernetes.io/instance: {{ .Values.appName }}
+    app.kubernetes.io/part-of: {{ .Values.appName }}
+spec: 
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.appName }}
+    spec:
+      initContainers:
+      - name: generate-tls-certs
+        image: alpine/openssl
+        command:
+        - sh
+        - -c
+        - |
+          echo "REGISTRY_DOMAIN is: ${REGISTRY_DOMAIN}"
+          if [ -z "${REGISTRY_DOMAIN}" ]; then
+            echo "REGISTRY_DOMAIN is not set. Using default value."
+            REGISTRY_DOMAIN="registry.local"
+          fi
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+            -keyout /certs/tls.key -out /certs/tls.crt -subj "/CN=${REGISTRY_DOMAIN}" \
+            -addext "subjectAltName=DNS:${REGISTRY_DOMAIN}"
+        env:
+        - name: REGISTRY_DOMAIN
+          value: "{{ .Values.registryDomain }}"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      containers:
+      - name: registry
+        image: {{ .Values.containers.registry.image }}
+        ports:
+          - name: https
+            containerPort: {{ .Values.service.port }}
+        env:
+          - name: REGISTRY_HTTP_TLS_CERTIFICATE
+            value: /certs/tls.crt
+          - name: REGISTRY_HTTP_TLS_KEY
+            value: /certs/tls.key
+          - name: REGISTRY_HTTP_ADDR
+            value: ":{{ .Values.service.port }}"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: {{ .Values.volumes.pv.name }}
+          mountPath: /var/lib/registry
+      volumes:
+        - name: {{ .Values.volumes.pv.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.volumes.pvc.name }}
+        - name: certs
+          emptyDir: {}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: 
+                    {{- range .Values.nodeAffinity.hostname.values }}
+                    - {{ . }}
+                    {{- end }}

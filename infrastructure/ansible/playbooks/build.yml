@@ -1,0 +1,75 @@
+---
+# Build Docker Images Playbook
+- name: Set build variables
+  hosts: deployment
+  gather_facts: false
+  vars:
+    # Which applications to build (default: all enabled)
+    build_applications: "{{ applications | default([]) }}"
+    
+  tasks:    
+    - name: Discover application groups from inventory
+      set_fact:
+        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
+      
+    - name: Filter for applications with hosts
+      set_fact:
+        active_applications: "{{ discovered_applications | select('in', groups) | select('regex', '.+') | map('regex_replace', '^(.*)$', '\\1') | list }}"
+    
+    - name: Pre-load all application group vars
+      include_vars:
+        file: "{{ inventory_dir }}/group_vars/{{ item }}.yml"
+        name: "app_vars_{{ item }}"
+      loop: "{{ active_applications }}"
+      ignore_errors: true
+    
+    - name: Initialize enabled applications list
+      set_fact:
+        enabled_applications: []
+
+    - name: Check which applications are enabled and have docker images
+      set_fact:
+        enabled_applications: "{{ enabled_applications + [item] }}"
+      loop: "{{ active_applications }}"
+      when: 
+        - hostvars[groups['deployment'][0]]['app_vars_' + item] is defined
+        - hostvars[groups['deployment'][0]]['app_vars_' + item].enabled | default(true) | bool
+        - hostvars[groups['deployment'][0]]['app_vars_' + item].docker_images is defined
+      
+    - name: Set target applications for building
+      set_fact:
+        target_build_applications: "{{ build_applications if build_applications | length > 0 else enabled_applications }}"
+      
+    - name: Debug build applications
+      debug:
+        msg: "Applications to build images for: {{ target_build_applications }}"
+
+- name: Build Docker Images
+  hosts: registry
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Get target applications from deployment host
+      set_fact:
+        target_applications: "{{ hostvars[groups['deployment'][0]]['target_build_applications'] }}"
+
+    - name: Build images for each application
+      include_role:
+        name: docker_build
+      vars:
+        application: "{{ app_item }}"
+      loop: "{{ target_applications }}"
+      loop_control:
+        loop_var: app_item
+      when: target_applications | length > 0
+
+    - name: Display build summary
+      debug:
+        msg: "Successfully built Docker images for: {{ target_applications | join(', ') }}"
+      when: target_applications | length > 0
+
+    - name: Display no build message
+      debug:
+        msg: "No applications found with docker_images configuration to build"
+      when: target_applications | length == 0

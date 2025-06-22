@@ -1,0 +1,40 @@
+---
+- name: Clean up SSH known hosts
+  hosts: deployment
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Remove known host keys for worker nodes
+      ansible.builtin.command: ssh-keygen -f ~/.ssh/known_hosts -R {{ hostvars[item].ansible_host | default(item) }}
+      loop: "{{ groups['agents'] | default([]) }}"
+      ignore_errors: yes
+      changed_when: true
+      
+- name: Configure agents first to collect WireGuard facts
+  hosts: agents
+  become: true
+  roles:
+    - common
+    - wireguard-client      
+
+- name: Configure master (WireGuard) with client information
+  hosts: master
+  become: true
+  roles:
+    - common
+    - wireguard-server
+  vars:
+    vpn_clients: "{{ groups['agents'] + groups['management'] }}"
+
+- name: Configure master (K3s)
+  hosts: master
+  become: true
+  roles:
+    - k3s-server
+  
+- name: Configure agents (K3s)
+  hosts: agents
+  become: true
+  roles:
+    - k3s-agent
+  

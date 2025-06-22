@@ -1,0 +1,80 @@
+# docker_build/tasks/main.yml
+- name: Ensure Docker is installed on master
+  ansible.builtin.package:
+    name: docker
+    state: present
+
+- name: Set required variables
+  set_fact:
+    local_registry: "{{ local_registry | default('registry.local:30500') }}"
+    image_tag: "{{ image_tag | default('latest') }}"
+    project_root: "{{ project_root | default(playbook_dir + '/../../../') }}"
+    
+- name: Load application variables
+  set_fact:
+    app_config: "{{ hostvars[groups['deployment'][0]]['app_vars_' + application] }}"
+
+- name: Get Docker images for this application
+  set_fact:
+    docker_images: "{{ app_config.docker_images | default([]) }}"
+
+- name: Debug collected Docker images
+  debug:
+    var: docker_images
+
+- name: Debug variables
+  debug:
+    msg:
+      - "Application: {{ application }}"
+      - "local_registry: {{ local_registry }}"
+      - "image_tag: {{ image_tag }}"
+      - "project_root: {{ project_root }}"
+
+- name: Create build directories on master
+  file:
+    path: "/tmp/docker-build/{{ item.name }}"
+    state: directory
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
+
+- name: Copy Docker context to master
+  copy:
+    src: "{{ project_root }}/{{ item.path }}/"
+    dest: "/tmp/docker-build/{{ item.name }}/"
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
+
+- name: Build Docker images on master
+  ansible.builtin.command:
+    cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ item.tag }} -f /tmp/docker-build/{{ item.name }}/{{ item.dockerfile }} /tmp/docker-build/{{ item.name }}
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
+  register: build_result
+
+- name: Tag Docker images for local registry
+  ansible.builtin.command:
+    cmd: docker tag {{ item.author }}/{{ item.name }}:{{ item.tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
+
+- name: Push Docker images to local registry
+  ansible.builtin.command:
+    cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
+  register: push_result
+
+- name: Display build results
+  debug:
+    msg: "Successfully built and pushed {{ docker_images | length }} images for {{ application }}"
+  when: docker_images | length > 0

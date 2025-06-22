@@ -1,0 +1,156 @@
+---
+- name: Ensure master group is not empty
+  hosts: deployment
+  gather_facts: false
+  tasks:
+    - name: Check if master group exists and is not empty
+      assert:
+        that:
+          - groups['master'] is defined
+          - groups['master'] | length > 0
+        fail_msg: "The 'master' group is empty or not defined in the inventory"
+
+- name: Post-installation steps on master
+  hosts: master
+  become: true
+  roles:
+    - role: k3s-server
+      tasks_from: post_install
+
+- name: Identify and configure new nodes
+  hosts: agents
+  gather_facts: true
+  tasks:
+    - name: Check if WireGuard key files exist and have content
+      shell: |
+        if [ -s /etc/wireguard/publickey ] && [ -s /etc/wireguard/privatekey ]; then
+          echo "valid"
+        else
+          echo "invalid"
+        fi
+      register: wg_keys_check
+      changed_when: false
+      become: true
+      
+    - name: Check if K3s agent is installed and running
+      shell: systemctl is-active k3s-agent || echo "not_running"
+      register: k3s_status_raw
+      changed_when: false
+      become: true
+
+    - name: Set clean k3s status
+      set_fact:
+        k3s_status: "{{ k3s_status_raw.stdout.split('\n')[0] }}"
+    
+    - name: Register if node needs configuration
+      set_fact:
+        needs_config: "{{ (wg_keys_check.stdout | trim == 'invalid') or (k3s_status == 'not_running' or k3s_status == 'inactive') }}"
+    
+    - name: Debug configuration status
+      debug:
+        msg: "Node {{ inventory_hostname }} needs configuration: {{ needs_config }}"
+    
+    # Configure nodes that need setup right here, in the same play
+    - name: Configure common role if needed
+      import_role:
+        name: common
+      become: true  
+      when: needs_config
+      
+    - name: Configure wireguard-client role if needed
+      import_role:
+        name: wireguard-client
+      become: true  
+      when: needs_config
+      
+    - name: Register node as configured
+      set_fact:
+        node_was_configured: "{{ needs_config }}"
+      
+    # Keep track of configured hosts for summary
+    - name: Register configured host with deployment
+      delegate_to: deployment
+      set_fact:
+        configured_hosts: "{{ configured_hosts | default([]) + [inventory_hostname] }}"
+      when: needs_config
+
+- name: Update all WireGuard facts and configurations
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check if WireGuard keys exist
+      stat:
+        path: /etc/wireguard/publickey
+      register: wg_pubkey_file
+
+    - name: Get public key from file if it exists
+      command: cat /etc/wireguard/publickey
+      register: publickey_contents
+      changed_when: False
+      when: wg_pubkey_file.stat.exists
+
+    - name: Get private key from file if it exists
+      command: cat /etc/wireguard/privatekey
+      register: privatekey_contents
+      changed_when: False
+      when: wg_pubkey_file.stat.exists
+      
+    - name: Set WireGuard public key fact for hosts with keys
+      set_fact:
+        wireguard_public_key: "{{ publickey_contents.stdout }}"
+      when: wg_pubkey_file.stat.exists
+      
+    - name: Set WireGuard private key fact for hosts with keys
+      set_fact:
+        wireguard_private_key: "{{ privatekey_contents.stdout }}"
+      when: wg_pubkey_file.stat.exists
+      
+    - name: Set WireGuard IP fact for hosts with keys
+      set_fact:
+        wireguard_ip: "{{ wireguard_ip }}"  
+      when: wg_pubkey_file.stat.exists and wireguard_ip is defined
+
+- name: Post-installation steps on WireGuard server
+  hosts: "{{ groups['master'][0] }}"
+  become: true
+  tasks:
+    - name: Find all hosts with wireguard_public_key
+      set_fact:
+        vpn_peers: []
+
+    - name: Collect wireguard peers
+      set_fact:
+        vpn_peers: "{{ vpn_peers + [item] }}"
+      when: 
+        - hostvars[item]['wireguard_public_key'] is defined
+        - item != inventory_hostname
+      loop: "{{ groups['all'] }}"
+      
+    - name: Include WireGuard server template task
+      include_role:
+        name: wireguard-server
+        tasks_from: update_config
+
+- name: Configure k3s-agent on configured nodes
+  hosts: agents
+  become: true
+  tasks:
+    - name: Include k3s-agent role if node was configured
+      include_role:
+        name: k3s-agent
+      when: hostvars[inventory_hostname].get('node_was_configured', false) | bool
+
+- name: Show summary
+  hosts: deployment
+  gather_facts: false
+  tasks:
+    - name: Display configured nodes
+      debug:
+        msg: "Successfully configured new nodes: {{ configured_hosts | default([]) | join(', ') }}"
+      when: configured_hosts is defined and configured_hosts | length > 0
+      
+    - name: Display no changes message
+      debug:
+        msg: "No new nodes were configured. All nodes already have WireGuard and K3s agent installed."
+      when: configured_hosts is not defined or configured_hosts | length == 0

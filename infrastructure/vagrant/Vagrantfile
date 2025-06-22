@@ -1,0 +1,160 @@
+require 'rexml/document'
+
+# Disable parallel execution of Vagrant commands
+ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+
+# Fetch the configuration file path from the environment variable
+CONFIG_FILE = ENV['CONFIG_FILE']
+# Fetch the Ansible playbook path from an environment variable with a default value
+ANSIBLE_PLAYBOOK = ENV['ANSIBLE_PLAYBOOK'] || 'basicsetup.yml'
+
+# get the memory and cpu count from the environment variables
+NODE_CPUS = ENV['NODE_CPUS'] || 2
+NODE_MEMORY = ENV['NODE_MEMORY'] || 2048
+
+# Define a Node class to encapsulate node properties: role, box, mac, and ip
+class Node
+  attr_reader :role, :box, :mac, :ip
+
+  def initialize(role, box, mac, ip)
+    @role = role
+    @box = box
+    @mac = mac
+    @ip = ip
+  end
+end
+
+# Function to determine the host OS (Linux, macOS, or Windows)
+def host_os
+  case RUBY_PLATFORM
+  when /linux/
+    :linux
+  when /darwin/
+    :macos
+  when /cygwin|mswin|mingw|bccwin|wince|emx/
+    :windows
+  else
+    raise "Unknown host OS: #{RUBY_PLATFORM}"
+  end
+end
+
+# Function to read nodes from a configuration XML file
+def read_nodes_from_file(config_file)
+  # Read and parse the XML file
+  file = File.read(config_file)
+  xml = REXML::Document.new(file)
+
+  nodes = []
+  # Iterate over the XML elements and extract node details
+  xml.elements.each('network/ip/dhcp/host') do |item|
+    # Add each node from the XML to the nodes array
+    nodes.push(Node.new(item.attributes['name'], "generic/ubuntu2204", item.attributes['mac'], item.attributes['ip']))
+  end
+
+  nodes
+end
+
+# Function to define hardcoded nodes if no configuration file is provided
+def define_hardcoded_nodes
+  [
+    Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.100"),
+    Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.101"),
+    Node.new("worker-01", "generic/ubuntu2204", "00:00:00:00:00:CC", "10.10.0.102"),
+    # Node.new("worker-02", "generic/ubuntu2204", "00:00:00:00:00:DD", "10.10.0.103"),
+  ]
+end
+
+# Function to configure VMs based on the host OS
+def configure_vm_provider(config, os)
+  case os
+  when :linux
+    # Use libvirt as the provider on Linux
+    config.vm.provider "libvirt" do |v|
+      v.cpus = NODE_CPUS
+      v.memory = NODE_MEMORY
+      v.mgmt_attach = false
+    end
+  when :macos
+    # Use VirtualBox on macOS (other providers are also possible)
+    config.vm.provider "virtualbox" do |v|
+      v.cpus = NODE_CPUS
+      v.memory = NODE_MEMORY
+      v.linked_clone = true
+      v.gui = true
+      v.customize [
+        "modifyvm", :id,
+        "--paravirtprovider", "minimal",
+        "--cpus", NODE_CPUS.to_s,
+        "--cableconnected1", "on"
+      ]
+    end
+  when :windows
+    # Use VirtualBox on Windows (libvirt is not supported)
+    config.vm.provider "virtualbox" do |v|
+      v.cpus = NODE_CPUS
+      v.memory = NODE_MEMORY
+      v.linked_clone = true
+      v.gui = true
+      v.customize [
+        "modifyvm", :id,
+        "--paravirtprovider", "minimal",
+        "--cpus", NODE_CPUS.to_s,
+        "--cableconnected1", "on",
+        "--cableconnected2", "on"
+      ]
+    end
+  end
+end
+
+# Function to configure nodes (VMs) for each host OS
+def configure_nodes(config, nodes, os, playbook)
+  nodes.each_with_index do |node, index|
+    config.vm.define node.role do |n|
+      n.vm.box = node.box
+      n.vm.hostname = node.role
+
+      # Set network configuration based on the host OS and whether we're using hardcoded nodes
+      if os == :linux
+        n.vm.network "private_network", mac: node.mac, libvirt__network_name: "honeynet"
+      elsif os == :windows
+        # On Windows, set the IP address (since MAC might not be supported by VirtualBox here)
+        n.vm.network "private_network", ip: node.ip, netmask: "255.255.255.0"
+      else
+        # For macOS, use the MAC address
+        n.vm.network "private_network", mac: node.mac
+      end
+
+      # Provision using Ansible if not on Windows
+      if os != :windows
+        n.vm.provision "ansible" do |ansible|
+          ansible.playbook = playbook
+          ansible.compatibility_mode = "2.0"
+        end
+      end
+    end
+  end
+end
+
+# Main block to execute the Vagrantfile
+Vagrant.configure("2") do |config|
+  config.trigger.before :up do |trigger|
+    trigger.info = "Creating the network before VM creation..."
+    trigger.run = {inline: "bash -c 'sudo virsh net-define honeynet.xml || true'"}
+  end
+
+  # Determine the host OS
+  os = host_os
+
+  # Get nodes either from a configuration file or from hardcoded values
+  nodes = if CONFIG_FILE.nil? || CONFIG_FILE.empty?
+            define_hardcoded_nodes
+          else
+            read_nodes_from_file(CONFIG_FILE)
+          end
+
+  # Configure the VM provider based on the host OS
+  configure_vm_provider(config, os)
+
+  # Configure nodes (VMs) with the Ansible playbook path
+  configure_nodes(config, nodes, os, ANSIBLE_PLAYBOOK)
+end

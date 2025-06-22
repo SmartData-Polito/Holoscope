@@ -1,0 +1,40 @@
+deploymentName: registry
+appName: registry
+namespace: registry
+
+containers:
+  registry:
+    image: registry:2
+    imagePullPolicy: IfNotPresent
+    monthPath: /var/lib/registry
+    
+nodeAffinity:
+  hostname:
+    values:
+      - master-00
+      
+volumes:
+  storageClassName: manual
+  capacity: 15Gi
+  hostPath: "/data/registry"
+  pv:
+    name: pv-volume-registry
+    accessModes:
+      - ReadWriteOnce
+  pvc:
+    name: pvc-registry
+    storageClassName: manual
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 5Gi
+
+service:
+  type: NodePort
+  port: 5000
+  nodePort: 30500
+
+networkPolicy:
+  allowedCidrs:
+    - 10.0.0.0/24

@@ -1,0 +1,44 @@
+---
+- name: Install WireGuard
+  apt:
+    name: wireguard
+    state: present
+  become: true
+
+- name: Create WireGuard folder
+  shell: mkdir -p /etc/wireguard/
+  failed_when: false 
+  
+- name: Find all hosts with wireguard_public_key
+  set_fact:
+    vpn_peers: []
+
+- name: Collect wireguard peers
+  set_fact:
+    vpn_peers: "{{ vpn_peers + [item] }}"
+  when: 
+    - hostvars[item]['wireguard_public_key'] is defined
+    - item != inventory_hostname
+  loop: "{{ groups['all'] }}"
+
+- name: Create WireGuard server configuration file
+  template:
+    src: server.conf.j2
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+
+- name: enable and persist ip forwarding
+  ansible.posix.sysctl: 
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    sysctl_set: yes
+    reload: yes
+
+- name: Activate Wireguard at boot
+  command: "{{ item }}"
+  loop:
+    - systemctl enable wg-quick@{{ wireguard_interface }}.service
+    - systemctl daemon-reload      
+
+- name: Include post-installation tasks
+  include_tasks: post_install.yml

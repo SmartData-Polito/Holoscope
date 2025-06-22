@@ -1,0 +1,14 @@
+---
+- name: Update WireGuard server configuration file
+  template:
+    src: server.conf.j2
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+  become: true
+
+- name: Reload WireGuard 
+  block:
+    - command: wg-quick  {{ item }} {{ wireguard_interface }} 
+      with_items:
+        - down
+        - up
+      failed_when: false

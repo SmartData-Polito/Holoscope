@@ -1,0 +1,111 @@
+---
+# Development Darknet Application Configuration
+enabled: true
+namespace: darknet
+chart_path: "{{ playbook_dir }}/../../../applications/darknet/helm"
+
+# Docker images to build
+docker_images:
+  - name: "ipv4"
+    author: "public" 
+    path: "applications/darknet/docker/ipv4"
+    dockerfile: "Dockerfile"
+    tag: "latest"
+    
+  - name: "capture"
+    author: "public"
+    path: "applications/darknet/docker/capture"
+    dockerfile: "Dockerfile" 
+    tag: "latest"
+    
+  - name: "collector"
+    author: "public"
+    path: "applications/darknet/docker/collector"
+    dockerfile: "Dockerfile" 
+    tag: "latest"
+    
+  - name: "ssh-keygen"
+    author: "public"
+    path: "applications/darknet/docker/ssh-keygen"
+    dockerfile: "Dockerfile" 
+    tag: "latest"
+
+# Helm chart values
+values:
+  global:
+    storageClass: "{{ storage_class | default('manual') }}"
+
+  # Node configurations
+  captureNodes:
+    worker-00:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 60
+        filter: "ip and (net 192.168.10.0/24)"
+        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/worker-00"
+      arp:
+        enabled: true
+        ipv4:
+          enabled: true
+
+    worker-01:
+      enabled: true
+      config:
+        interface: eth0
+        rotate_seconds: 60
+        filter: "ip and (net 192.168.20.0/24)"
+        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+      storage:
+        hostPath: "/data/darknet/worker-01"
+      arp:
+        enabled: false
+        
+  # Collector configuration - CronJobs on master collecting from workers
+  collector:
+    enabled: true
+    mode: "cronjob"
+    schedule: "*/1 * * * *"  # Every minute for testing
+    
+    # Create separate CronJob for each worker
+    workers:
+      worker-00:
+        enabled: true
+        target: "worker-00:65222"
+        sshUser: "capture"
+        srcPath: "/data/darknet"
+        dstPath: "/data/collector/worker-00"
+      worker-01:
+        enabled: true
+        target: "worker-01:65222"
+        sshUser: "capture"
+        srcPath: "/data/darknet"
+        dstPath: "/data/collector/worker-01"
+    
+    config:
+      collectionInterval: "60"
+      runMode: "cronjob"
+      logLevel: "INFO"
+    
+    # CronJobs run on master node
+    nodeSelector:
+      node-role.kubernetes.io/master: "true"
+      
+    storage:
+      hostPath: "/data/collector"
+      size: "10Gi"  
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+  # Network policy
+  networkPolicy:
+    enabled: true
+    allowedCidrs:
+      - "10.0.0.0/8"

@@ -1,0 +1,188 @@
+---
+- name: Copy and modify file from remote host
+  hosts: deployment
+  tasks:
+    - name: Fetch Kubeconfig from the remote host
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/kubeconfig.yaml
+        flat: yes
+      delegate_to: "{{ groups['master'][0] }}"
+      register: fetch_result
+
+    - name: Change Kubeconfig permissions
+      ansible.builtin.file:
+        path: "{{ fetch_result.dest }}"
+        mode: "go-r"
+
+    - name: Ensure yq is installed on the deployment
+      become: true
+      apt:
+        name: yq
+        state: present
+      run_once: true
+
+    - name: Install kubectl in the on deployment
+      become: true
+      apt:
+        name: kubernetes-client
+        state: present
+      run_once: true
+
+    - name: Modify the server URL and configure TLS settings in kubeconfig
+      shell: |
+        # Update server URL
+        yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
+        # Remove certificate-authority-data and set insecure-skip-tls-verify
+        yq -yi 'del(.clusters[0].cluster."certificate-authority-data")' {{ fetch_result.dest }}
+        yq -yi '.clusters[0].cluster."insecure-skip-tls-verify" = true' {{ fetch_result.dest }}
+      run_once: true   
+
+    - name: Install helm if not exists
+      become: true
+      unarchive:
+        src: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /usr/local/bin
+        extra_opts: "--strip-components=1"
+        owner: root
+        group: root
+        mode: 0755
+        remote_src: true
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Deploy Helm chart for Docker Registry on specific node
+      command: >
+        helm upgrade -i registry-{{ item }} {{ project_root }}/infrastructure/helm/registry --namespace registry --create-namespace
+          --set name=registry-{{ item }}
+          --set appName=registry-{{ item }}
+          --set nodeAffinity.hostname.values[0]={{ item }}
+          --set service.loadBalancerIP={{ hostvars[groups['registry'][0]]['wireguard_ip'] }}
+          --set service.nodePort={{ local_registry.split(':')[1] }}  
+          --set volumes.hostPath=/data/registry-{{ item }}
+          --set volumes.capacity=15Gi
+          --set networkPolicy.allowedCidrs={{"{"}}{{ network_policy.allowed_cidrs | join(',') }}{{"}"}}
+      environment:
+        KUBECONFIG: "{{ fetch_result.dest }}"
+      with_items: "{{ groups['registry'] }}"
+
+- name: Append to /etc/hosts file on all machines in a group
+  hosts: master:agents
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Append entry to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^.*\sregistry\.local\s*$'
+        line: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }} registry {{ local_registry.split(':')[0] }}"
+        state: present
+        insertafter: EOF
+
+- name: Configure K3s to trust insecure registry
+  hosts: master:agents
+  become: true
+  tasks:
+    - name: Create K3s registries directory
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+
+    - name: Configure K3s registries.yaml
+      copy:
+        content: |
+          mirrors:
+            "{{ local_registry }}":
+              endpoint:
+                - "https://{{ local_registry }}"
+          configs:
+            "{{ local_registry }}":
+              tls:
+                insecure_skip_verify: true
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: '0644'
+
+    - name: Restart K3s service
+      systemd:
+        name: "{{ 'k3s' if inventory_hostname in groups['master'] else 'k3s-agent' }}"
+        state: restarted
+
+- name: Setup registry certificates
+  hosts: deployment
+  environment:
+    KUBECONFIG: "{{ fetch_result.dest }}"
+  tasks:
+    - name: Block until registry pod is Ready
+      command: >
+        kubectl wait pod
+          -n registry
+          -l app.kubernetes.io/name=registry-{{ groups['registry'][0] }}
+          --for=condition=Ready=True
+          --timeout=300s
+      register: wait_result
+      failed_when: wait_result.rc != 0
+
+    - name: Get registry Pod name
+      command: >
+        kubectl get pods
+          -n registry
+          -l app.kubernetes.io/name=registry-{{ groups['registry'][0] }}
+          -o jsonpath='{.items[0].metadata.name}'
+      register: registry_pod
+      changed_when: false
+
+    - name: Extract registry certificate
+      shell: |
+        kubectl exec -n registry {{ registry_pod.stdout }} -- cat /certs/tls.crt > /tmp/registry.crt
+      args:
+        executable: /bin/bash
+      register: cert_extract
+
+    - name: Create certificate directory on all nodes
+      file:
+        path: /etc/docker/certs.d/{{ local_registry }}/
+        state: directory
+        mode: '0755'
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['master'] + groups['agents'] }}"
+      become: true
+
+    - name: Copy certificate to all nodes
+      copy:
+        src: /tmp/registry.crt
+        dest: /etc/docker/certs.d/{{ local_registry }}/ca.crt
+        mode: '0644'
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['master'] + groups['agents'] }}"
+      become: true
+
+- name: Verify registry accessibility
+  hosts: master[0]
+  become: true
+  tasks:
+    - name: Pull test image
+      shell: |
+        docker pull busybox:latest
+        docker tag busybox:latest {{ local_registry }}/busybox:latest
+        docker push {{ local_registry }}/busybox:latest
+    
+    - name: Test registry access with curl
+      shell: |
+        curl -k https://{{ local_registry }}/v2/_catalog
+      register: registry_catalog
+      
+    - name: Display registry catalog
+      debug:
+        var: registry_catalog.stdout
+
+    - name: Verify image can be pulled from registry
+      shell: |
+        docker rmi {{ local_registry }}/busybox:latest || true
+        docker pull {{ local_registry }}/busybox:latest
+      register: pull_result
+        
+    - name: Display pull result
+      debug:
+        var: pull_result.stdout_lines

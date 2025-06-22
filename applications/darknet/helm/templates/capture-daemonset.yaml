@@ -1,0 +1,70 @@
+{{- range $nodeName, $nodeConfig := .Values.captureNodes }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "darknet.fullname" $ }}-capture-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "darknet.capture.labels" $ | nindent 4 }}
+    darknet.io/node: {{ $nodeName }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "darknet.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: capture
+      darknet.io/node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        {{- include "darknet.capture.labels" $ | nindent 8 }}
+        darknet.io/node: {{ $nodeName }}
+    spec:
+      hostNetwork: {{ $.Values.network.hostNetwork }}
+      dnsPolicy: {{ $.Values.network.dnsPolicy }}
+      
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName }}
+      
+      containers:
+      - name: capture
+        image: "{{ $.Values.captureImage.repository }}:{{ $.Values.captureImage.tag }}"
+        imagePullPolicy: {{ $.Values.captureImage.pullPolicy }}
+        
+        securityContext:
+          {{- toYaml $.Values.securityContext | nindent 10 }}
+        
+        env:
+        - name: NODE_NAME
+          value: {{ $nodeName }}
+        - name: INTERFACE
+          value: {{ $nodeConfig.config.interface }}
+        - name: FILTER
+          value: {{ $nodeConfig.config.filter | quote }}
+        - name: ROTATE_SECONDS
+          value: {{ $nodeConfig.config.rotate_seconds | quote }}
+        
+        volumeMounts:
+        - name: capture-data
+          mountPath: /data/darknet
+        - name: ssh-keys
+          mountPath: /etc/ssh-keys
+          readOnly: true
+        
+        resources:
+          {{- toYaml $.Values.resources.capture | nindent 10 }}
+      
+      volumes:
+      - name: capture-data
+        hostPath:
+          path: {{ $nodeConfig.storage.hostPath }}
+          type: DirectoryOrCreate
+      - name: ssh-keys
+        secret:
+          secretName: {{ $.Values.collector.sshKeySecret }}
+          defaultMode: 0600
+      
+      restartPolicy: Always
+{{- end }}
+{{- end }}

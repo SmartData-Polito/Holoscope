@@ -1,3 +1,3 @@
-[submodule "cyborg-inventories"]
-	path = cyborg-inventories
+[submodule "infrastructure/ansible/inventory/environments/prod"]
+	path = infrastructure/ansible/inventory/environments/prod
 	url = git@github.com:SmartData-Polito/cyborg-inventories.git

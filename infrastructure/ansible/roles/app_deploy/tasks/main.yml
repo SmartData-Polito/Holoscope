@@ -1,0 +1,62 @@
+---
+- name: Load application variables
+  include_vars:
+    file: "{{ inventory_dir }}/group_vars/{{ application }}.yml"
+    name: app_config
+  failed_when: false
+  register: var_load_result
+
+- name: Fail if application config not found
+  fail:
+    msg: "Configuration file not found for application: {{ application }}"
+  when: var_load_result.failed | default(false)
+
+- name: Set application facts
+  set_fact:
+    app_name: "{{ application }}"
+    app_namespace: "{{ app_config.namespace | default(application) }}"
+    chart_path: "{{ app_config.chart_path }}"
+    app_enabled: "{{ app_config.enabled | default(true) | bool }}"
+    helm_values: "{{ app_config['values'] | default({}) }}"
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    name: "{{ app_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  when: app_enabled
+
+- name: Deploy Helm chart for {{ app_name }}
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    chart_ref: "{{ chart_path }}"
+    namespace: "{{ app_namespace }}"
+    create_namespace: false
+    state: present
+    wait: false
+    values: "{{ helm_values }}"
+  when: 
+    - app_enabled
+    - (deploy_action | default('install')) in ['install', 'upgrade']
+  register: helm_result
+
+- name: Remove Helm chart for {{ app_name }}
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    namespace: "{{ app_namespace }}"
+    state: absent
+    wait: false
+    timeout: "{{ app_config.timeout | default(300) }}"
+  when: 
+    - app_enabled
+    - (deploy_action | default('install')) == 'remove'
+  register: helm_remove_result
+
+- name: Display deployment result
+  debug:
+    msg: "{{ 'Successfully deployed/upgraded' if helm_result.changed else 'No changes needed for' }} {{ app_name }}"
+  when: 
+    - app_enabled
+    - (deploy_action | default('install')) in ['install', 'upgrade']
+    - helm_result is defined

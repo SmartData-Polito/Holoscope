@@ -1,0 +1,10 @@
+[Interface]
+    Address = {{ wireguard_ip }}/32
+    PrivateKey = {{ wireguard_private_key }}
+
+[Peer]
+    PublicKey = {{ server_public_key }}
+    Endpoint = {{ server_endpoint }}
+    AllowedIPs = {{ network_policy.allowed_cidrs | join(', ') }}
+    PersistentKeepalive = 20
+    

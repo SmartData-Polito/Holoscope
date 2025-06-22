@@ -1,0 +1,144 @@
+---
+# Deploy Applications Playbook
+- name: Set deployment variables
+  hosts: deployment
+  gather_facts: false
+  vars:
+    # Default to install if no action specified
+    operation: "{{ action | default('install') }}"
+    force_deploy: "{{ force | default(false) | bool }}"
+    
+  tasks:    
+    - name: Discover application groups from inventory
+      set_fact:
+        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
+      
+    - name: Filter for applications with hosts
+      set_fact:
+        active_applications: "{{ discovered_applications | select('in', groups) | select('regex', '.+') | map('regex_replace', '^(.*)$', '\\1') | list }}"
+    
+    - name: Pre-load all application group vars
+      include_vars:
+        file: "{{ inventory_dir }}/group_vars/{{ item }}.yml"
+        name: "app_vars_{{ item }}"
+      loop: "{{ active_applications }}"
+      ignore_errors: true
+    
+    - name: Initialize enabled applications list
+      set_fact:
+        enabled_applications: []
+
+    - name: Check which applications are enabled
+      set_fact:
+        enabled_applications: "{{ enabled_applications + [item] }}"
+      loop: "{{ active_applications }}"
+      when: 
+        - hostvars[groups['deployment'][0]]['app_vars_' + item] is defined
+        - hostvars[groups['deployment'][0]]['app_vars_' + item].enabled | default(true) | bool
+      
+    - name: Set target applications
+      set_fact:
+        target_applications: "{{ applications | default(enabled_applications) }}"
+      
+    - name: Set shared facts
+      set_fact:
+        shared_deploy_action: "{{ operation }}"
+        shared_target_applications: "{{ target_applications }}"
+        shared_force_deploy: "{{ force_deploy }}"
+      
+    - name: Debug applications
+      debug:
+        msg:
+          - "Applications to deploy: {{ target_applications }}"
+          - "Operation: {{ operation }}"
+          - "Force deploy: {{ force_deploy }}"
+
+- name: Prepare Kubernetes configuration
+  hosts: master[0]
+  become: true
+  tasks:
+    - name: Check if kubeconfig exists
+      stat:
+        path: /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig_stat
+
+    - name: Fail if kubeconfig not found
+      fail:
+        msg: "Kubeconfig file not found at /etc/rancher/k3s/k3s.yaml on master node"
+      when: not kubeconfig_stat.stat.exists
+
+    - name: Set kubeconfig environment variable
+      set_fact:
+        kube_config: "/etc/rancher/k3s/k3s.yaml"
+  
+    - name: Set kubeconfig content as fact 
+      slurp:
+        src: "/etc/rancher/k3s/k3s.yaml"
+      register: kubeconfig_content
+      
+    - name: Set master IP for kubectl access
+      set_fact:
+        master_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
+
+    - name: Set kubeconfig content for deployment
+      set_fact:
+        kubeconfig_for_deployment: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
+
+    - name: Pass kubeconfig to deployment host
+      set_fact:
+        shared_kubeconfig_content: "{{ hostvars[groups['master'][0]]['kubeconfig_for_deployment'] }}"
+        shared_master_ip: "{{ hostvars[groups['master'][0]]['master_ip'] }}"
+      delegate_to: "{{ groups['deployment'][0] }}"
+
+- name: Deploy Applications
+  hosts: deployment
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  vars:
+    kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/kubeconfig.yaml"
+  tasks:
+    - name: Get kubeconfig from master
+      slurp:
+        src: "/etc/rancher/k3s/k3s.yaml"
+      register: kubeconfig_content
+      delegate_to: "{{ groups['master'][0] }}"
+      become: true
+
+    - name: Get master IP
+      set_fact:
+        master_ip: "{{ hostvars[groups['master'][0]].ansible_host }}"
+
+    - name: Create kubeconfig file
+      copy:
+        content: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
+        dest: "{{ kubeconfig_path }}"
+        mode: '0600'
+      
+    - name: Ensure helm is installed
+      command: which helm
+      register: helm_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install helm if not present
+      shell: |
+        curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz -o helm.tar.gz
+        tar -zxvf helm.tar.gz
+        sudo mv linux-amd64/helm /usr/local/bin/helm
+        rm -rf helm.tar.gz linux-amd64
+      when: helm_check.rc != 0
+
+    - name: Deploy each application
+      include_role:
+        name: app_deploy
+      vars:
+        application: "{{ app_item }}"
+        deploy_action: "{{ shared_deploy_action | default('install') }}"
+        force_deploy: "{{ shared_force_deploy | default(false) }}"
+      loop: "{{ shared_target_applications }}"
+      loop_control:
+        loop_var: app_item
+
+    - name: Display deployment summary
+      debug:
+        msg: "Successfully processed applications: {{ shared_target_applications | join(', ') }}"

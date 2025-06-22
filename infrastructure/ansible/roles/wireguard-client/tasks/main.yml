@@ -1,0 +1,68 @@
+---
+- name: Install WireGuard
+  apt:
+    name: wireguard
+    state: present
+  become: true
+
+- name: Create WireGuard folder
+  shell: mkdir -p /etc/wireguard/
+  failed_when: false 
+
+- name: Generate WireGuard keys
+  shell: |
+    umask 077 && wg genkey | tee privatekey | wg pubkey > publickey
+  args:
+    chdir: /etc/wireguard
+    creates: /etc/wireguard/publickey
+  become: true
+
+- name: Get public key
+  command: cat /etc/wireguard/publickey
+  register: publickey_contents
+  changed_when: False
+  become: true
+
+- name: Get private key
+  command: cat /etc/wireguard/privatekey
+  register: privatekey_contents
+  changed_when: False
+  become: true
+
+- name: Set WireGuard public key fact for current host
+  set_fact:
+    wireguard_public_key: "{{ publickey_contents.stdout }}"
+  delegate_facts: true
+
+- name: Set WireGuard private key fact for current host
+  set_fact:
+    wireguard_private_key: "{{ privatekey_contents.stdout }}"
+  delegate_facts: true
+
+- name: Create WireGuard client configuration file
+  template:
+    src: client.conf.j2
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+  become: true
+  vars:
+    server_public_key: "{{ hostvars[groups['master'][0]]['wireguard_public_key'] }}"
+    server_endpoint: "{{ hostvars[groups['master'][0]]['wireguard_endpoint'] }}"
+
+- name: Activate Wireguard at boot
+  command: "{{ item }}"
+  loop:
+    - systemctl enable wg-quick@{{ wireguard_interface }}.service
+    - systemctl daemon-reload      
+
+- name: Reload WireGuard 
+  block:
+    - command: wg-quick {{ item }} {{ wireguard_interface }} 
+      with_items:
+        - down
+        - up
+      failed_when: false
+
+- name: Set WireGuard IP fact for current host
+  set_fact:
+    wireguard_ip: "{{ wireguard_ip }}"  
+  delegate_facts: true
