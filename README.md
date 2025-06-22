@@ -111,25 +111,25 @@ infrastructure/ansible/inventory/environments/prod/hosts.yml
 Deploy K3s cluster and basic infrastructure:
 ```bash
 cd infrastructure/ansible
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/site.yml --ask-vault-password
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/site.yml --ask-vault-password
 ```
 
 #### Step 3: Deploy Container Registry
 Set up local container registry for storing application images:
 ```bash
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/registry.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/registry.yml
 ```
 
 #### Step 4: Build Application Images
 Build and push all application Docker images to the registry:
 ```bash
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/build.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/build.yml
 ```
 
 #### Step 5: Deploy Applications
 Deploy selected applications based on your `hosts.yml` configuration:
 ```bash
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/deploy.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/deploy.yml
 ```
 
 ## Configuration
@@ -157,12 +157,12 @@ The platform requires various network configurations:
 
 ### Add New Nodes
 ```bash
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/add_node.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/add_node.yml
 ```
 
 ### Reset Cluster
 ```bash
-ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/reset.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/reset.yml
 ```
 
 ## Maintainers

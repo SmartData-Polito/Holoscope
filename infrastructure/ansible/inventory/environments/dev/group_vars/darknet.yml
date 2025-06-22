@@ -73,13 +73,13 @@ values:
     workers:
       worker-00:
         enabled: true
-        target: "worker-00:65222"  # Include the port
+        target: "worker-00:65222"
         sshUser: "capture"
         srcPath: "/data/darknet"
         dstPath: "/data/collector/worker-00"
       worker-01:
         enabled: true
-        target: "worker-01:65222"  # Include the port
+        target: "worker-01:65222"
         sshUser: "capture"
         srcPath: "/data/darknet"
         dstPath: "/data/collector/worker-01"

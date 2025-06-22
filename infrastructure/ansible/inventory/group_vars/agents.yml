@@ -1,4 +1,0 @@
-#infrastructure/ansible/inventory/group_vars/vpn.yml
----
-# VPN configuration
-wireguard_interface: "wg0"
