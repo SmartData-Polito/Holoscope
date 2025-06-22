@@ -16,80 +16,158 @@
 
 This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automated deployment and configuration.
 
-**If you are interested in joining the network contact the maintainers**  
+**If you are interested in joining the network contact the maintainers**
 
 ---
+
 ## Why the Name **CyBorg**?
 
 The name **CyBorg** is inspired by the **Borg**, a collective race from the _Star Trek_ universe. The Borg are known for their interconnected, hive-mind system where each individual unit contributes to the greater whole. Similarly, **CyBorg** reflects the idea of multiple distributed nodes working together to form a powerful, collective platform for cybersecurity.
 
 ---
+
+## Project Structure
+
+```
+├── applications/             # Containerized applications
+│   ├── cowrie/               # SSH/Telnet honeypot
+│   ├── darknet/              # Darknet monitoring probes
+│   ├── idarkvec/             # Federated learning IP reputation application
+│   └── l4responder/          # Layer 4 response simulator
+├── infrastructure/           # Platform infrastructure
+│   ├── ansible/              # Ansible automation
+│   │   ├── inventory/        # Environment configurations
+│   │   ├── playbooks/        # Deployment playbooks
+│   │   └── roles/            # Ansible roles
+│   ├── helm/                 # Helm charts for Kubernetes
+│   └── vagrant/              # Local development environment
+└── README.md
+```
+
 ## Architecture
 
-- **K3s**: A lightweight Kubernetes distribution for running services on edge nodes.
-- **Ansible**: Automation tool for managing deployment and configuration.
+- **K3s**: A lightweight Kubernetes distribution for running services on edge nodes
+- **Ansible**: Automation tool for managing deployment and configuration
+- **Docker**: Containerization of applications
+- **Helm**: Kubernetes package manager for application deployment
+- **Vagrant**: Local development environment setup
+
+## Available Applications
+
+### Security Monitoring
+- **Darknet**: Passive network monitoring and scanning detection
+- **L4Responder**: Layer 4 protocol response simulation
+- **honeypots**: External honeypots included as modules (see Cowrie)
+
+### Machine Learning
+- **IDarkVec**: Federated learning platform with flower server/client architecture
 
 ## Prerequisites
 
-### Single Node Setup (for development):
+### Development Environment (Single Node)
 - **Operating System**: Linux (e.g., Ubuntu 24.04)
 - **Resources**: Adequate CPU and memory for running at least 3 VMs for testing
-- **Dependencies**: Docker installed
+- **Dependencies**: 
+  - Vagrant
+  - VirtualBox or Libvirt
+  - Ansible
+  - Docker
 
-### Multiple Nodes Setup (Master and Agents):
+### Production Environment (Multiple Nodes)
 - **Operating System**: Linux on all nodes
 - **Resources**: 
-  - Master: at least 2 CPUs, 16 GB of memory, and sufficient storage (e.g, ~20 GBs for the retention of some days of honeypot logs)
-  - Agents: similar to master
+  - **Master**: At least 2 CPUs, 16 GB of memory, and sufficient storage (~20 GBs for retention of honeypot logs)
+  - **Agents**: Similar to master requirements
+- **Network**: Secure connectivity between nodes (WireGuard VPN supported)
 
-## Deployment
+## Quick Start
 
-### Set Up Hosts
+### 1. Development Environment Setup
+
+For local development using Vagrant:
+
 ```bash
-ansible-playbook playbooks/site.yml --ask-vault-password
+cd infrastructure/vagrant
+./install.sh  # Automated setup on Linux
+# or manually:
+vagrant up
 ```
 
-### Deploy Local Registry
+See [Vagrant README](infrastructure/vagrant/README.md) for detailed setup instructions.
+
+### 2. Production Deployment
+
+#### Step 1: Configure Inventory
+Edit the inventory files to match your environment:
 ```bash
-ansible-playbook playbooks/deploy_registry.yml 
+# Development environment
+infrastructure/ansible/inventory/environments/dev/hosts.yml
+
+# Production environment  
+infrastructure/ansible/inventory/environments/prod/hosts.yml
 ```
 
-### Build and Push Images
+#### Step 2: Initialize Infrastructure
+Deploy K3s cluster and basic infrastructure:
 ```bash
-ansible-playbook playbooks/build_and_push_images.yml 
+cd infrastructure/ansible
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/site.yml --ask-vault-password
 ```
 
-### Install/Uninstall Applications
-Refer to `host.yml` to define which applications to deploy.
-- To install applications:
-  ```bash
-  ansible-playbook  playbooks/deploy_applications.yml
-  ```
-- To uninstall applications:
-  ```bash
-  ansible-playbook  playbooks/deploy_applications.yml -e "action=remove"
-  ```
-
----
-
-### Deploy scripts for data sync
+#### Step 3: Deploy Container Registry
+Set up local container registry for storing application images:
 ```bash
-ansible-playbook  playbooks/set_data_sync.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/registry.yml
 ```
 
-# Provisioning VMs for the Testing Environment
+#### Step 4: Build Application Images
+Build and push all application Docker images to the registry:
+```bash
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/build.yml
+```
 
-See [vm-provisioning/README.md](vm-provisioning/README.md)
+#### Step 5: Deploy Applications
+Deploy selected applications based on your `hosts.yml` configuration:
+```bash
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/deploy.yml
+```
 
----
-## WireGuard and K3s Installation
+## Configuration
 
-See [k3s-ansible/README.md](k3s-ansible/README.md)
+### Environment Selection
+The platform supports multiple environments:
+- **Development**: `inventory/environments/dev/`
+- **Production**: `inventory/environments/prod/`
 
+### Application Selection
+Configure which applications to deploy by editing the group variables in your inventory:
+```yaml
+# Example: infrastructure/ansible/inventory/environments/dev/group_vars/all.yml
+deploy_applications:
+  - cowrie
+  - darknet
+  - idarkvec
+```
+
+### Network Configuration
+The platform requires various network configurations:
+- **WireGuard VPN**: For secure inter-node communication
+- **Darknet Monitoring**: For passive/active network experiments
+- **Network Policies**: Kubernetes network policies for application isolation
+
+### Add New Nodes
+```bash
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/add_node.yml
+```
+
+### Reset Cluster
+```bash
+ansible-playbook -i inventory/environments/dev/hosts.yml -i inventory/ playbooks/reset.yml
+```
 
 ## Maintainers
 
-- Rodolfo Vieira Valentim
-- Andrea Sordello
 - Idilio Drago
-- Alejandro Ayala Gil 
+- Andrea Sordello  
+- Rodolfo Vieira Valentim
+
