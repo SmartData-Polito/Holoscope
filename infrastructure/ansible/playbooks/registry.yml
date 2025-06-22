@@ -22,13 +22,6 @@
         state: present
       run_once: true
 
-    - name: Install kubectl in the on deployment
-      become: true
-      apt:
-        name: kubernetes-client
-        state: present
-      run_once: true
-
     - name: Modify the server URL and configure TLS settings in kubeconfig
       shell: |
         # Update server URL

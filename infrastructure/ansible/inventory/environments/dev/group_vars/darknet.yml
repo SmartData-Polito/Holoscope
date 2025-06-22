@@ -44,6 +44,7 @@ values:
         rotate_seconds: 60
         filter: "ip and (net 192.168.10.0/24)"
         outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        subnet: "192.168.10.0/24"
       storage:
         hostPath: "/data/darknet/worker-00"
       arp:
@@ -58,6 +59,7 @@ values:
         rotate_seconds: 60
         filter: "ip and (net 192.168.20.0/24)"
         outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        subnet: "192.168.20.0/24"
       storage:
         hostPath: "/data/darknet/worker-01"
       arp:

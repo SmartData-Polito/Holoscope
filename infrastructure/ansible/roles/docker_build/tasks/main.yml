@@ -1,9 +1,4 @@
 # docker_build/tasks/main.yml
-- name: Ensure Docker is installed on master
-  ansible.builtin.package:
-    name: docker
-    state: present
-
 - name: Set required variables
   set_fact:
     local_registry: "{{ local_registry | default('registry.local:30500') }}"
