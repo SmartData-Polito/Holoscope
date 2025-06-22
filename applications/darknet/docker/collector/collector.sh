@@ -16,19 +16,39 @@ log() {
     shift
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     case $level in
-        DEBUG) [[ "$LOG_LEVEL" == "DEBUG" ]] && echo "[$timestamp] [DEBUG] $*" ;;
+        DEBUG) 
+            if [[ "$LOG_LEVEL" == "DEBUG" ]]; then
+                echo "[$timestamp] [DEBUG] $*"
+            fi
+            ;;
         INFO)  echo "[$timestamp] [INFO] $*" ;;
         WARN)  echo "[$timestamp] [WARN] $*" ;;
         ERROR) echo "[$timestamp] [ERROR] $*" >&2 ;;
     esac
 }
 
-# Validate required variables
+parse_worker_node() {
+    log "INFO" "Parsing WORKER_NODE: $WORKER_NODE"
+    if [[ "$WORKER_NODE" == *:* ]]; then
+        SSH_HOST="${WORKER_NODE%:*}"
+        SSH_PORT="${WORKER_NODE#*:}"
+    else
+        SSH_HOST="$WORKER_NODE"
+        SSH_PORT="65222"
+    fi
+    
+    log "INFO" "Parsed connection: host=$SSH_HOST, port=$SSH_PORT"
+}
+
+
 validate_env() {
+    log "INFO" "Validating environment variables"
     if [[ -z "$WORKER_NODE" ]] || [[ -z "$SSH_USER" ]]; then
         log "ERROR" "WORKER_NODE and SSH_USER environment variables are required"
         exit 1
     fi
+    parse_worker_node
+    
 }
 
 # Setup SSH
@@ -45,7 +65,18 @@ setup_ssh() {
     cp "$ssh_key" /root/.ssh/id_rsa
     chmod 600 /root/.ssh/id_rsa
     
-    cat > /root/.ssh/config << 'EOF'
+    # Parse hostname and port from WORKER_NODE
+    local ssh_host
+    local ssh_port=65222
+    
+    if [[ "$WORKER_NODE" == *:* ]]; then
+        ssh_host="${WORKER_NODE%:*}"
+        ssh_port="${WORKER_NODE#*:}"
+    else
+        ssh_host="$WORKER_NODE"
+    fi
+    
+    cat > /root/.ssh/config << EOF
 Host *
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
@@ -55,14 +86,17 @@ Host *
     BatchMode yes
     PasswordAuthentication no
     PubkeyAuthentication yes
+
+Host $ssh_host
+    Port $ssh_port
 EOF
     chmod 600 /root/.ssh/config
 }
 
 # Test SSH connection
 test_ssh() {
-    log "INFO" "Testing SSH connection to $SSH_USER@$WORKER_NODE"
-    if ssh "$SSH_USER@$WORKER_NODE" 'echo "Connected"' >/dev/null 2>&1; then
+    log "INFO" "Testing SSH connection to $SSH_USER@$SSH_HOST:$SSH_PORT"
+    if ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'echo "Connected"' >/dev/null 2>&1; then
         log "INFO" "SSH connection successful"
     else
         log "WARN" "SSH connection failed, collection may fail"
@@ -99,12 +133,12 @@ collect_files() {
     
     # Get list of files to collect (excluding most recent ones)
     local exclude_files
-    exclude_files=$(ssh "$SSH_USER@$WORKER_NODE" "ls -t $SOURCE_PATH/*.pcap 2>/dev/null | head -n2" 2>/dev/null || echo "")
+    exclude_files=$(ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "ls -t $SOURCE_PATH/*.pcap 2>/dev/null | head -n2" 2>/dev/null || echo "")
     
     # Get all files
     local all_files
-    all_files=$(ssh "$SSH_USER@$WORKER_NODE" "ls -1 $SOURCE_PATH/*.pcap $SOURCE_PATH/*.pcap.gz 2>/dev/null" || echo "")
-    
+    all_files=$(ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "ls -1 $SOURCE_PATH/*.pcap $SOURCE_PATH/*.pcap.gz 2>/dev/null" || echo "")
+      
     if [[ -z "$all_files" ]]; then
         log "INFO" "No PCAP files to collect"
         return 0
@@ -145,7 +179,8 @@ collect_files() {
         
         set +e
         local rsync_output
-        rsync_output=$(rsync -azP --timeout=300 "$SSH_USER@$WORKER_NODE:$file" "$temp_file" 2>&1)
+        rsync_output=$(rsync -azP --timeout=300 -e "ssh -p $SSH_PORT" "$SSH_USER@$SSH_HOST:$file" "$temp_file" 2>&1)
+
         local exit_code=$?
         set -e
         
@@ -156,16 +191,28 @@ collect_files() {
             mkdir -p "$destination_dir"
             
             if [[ "$basename_file" == *.pcap ]]; then
-                log "INFO" "Compressing $basename_file"
-                gzip "$temp_file"
+                log "INFO" "Compressing $basename_file (size: $(du -h "$temp_file" | cut -f1))"
+                
+                # Check available disk space before compression
+                local available_space
+                available_space=$(df "$DEST_PATH" | awk 'NR==2 {print $4}')
+                log "DEBUG" "Available disk space: ${available_space}KB"
+                
+                if ! gzip "$temp_file"; then
+                    log "ERROR" "Failed to compress $basename_file"
+                    rm -f "$temp_file" 2>/dev/null
+                    continue
+                fi
+                
                 temp_file="${temp_file}.gz"
                 basename_file="${basename_file}.gz"
+                log "INFO" "Compression completed (new size: $(du -h "$temp_file" | cut -f1))"
             fi
             
             if mv "$temp_file" "$destination_dir/$basename_file"; then
                 log "INFO" "Organized $basename_file to $destination_dir"
                 
-                if ssh "$SSH_USER@$WORKER_NODE" "rm '$file'" 2>/dev/null; then
+                if ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm '$file'" 2>/dev/null; then
                     log "INFO" "Deleted from source: $(basename "$file")"
                     copied_count=$((copied_count + 1))
                 else
@@ -191,8 +238,15 @@ collect_files() {
 
 # Signal handler for daemon mode
 shutdown() {
-    log "INFO" "Shutting down"
+    log "WARN" "Received shutdown signal during operation"
+    
+    # Clean up any temporary files
+    rm -f "$DEST_PATH"/temp_* 2>/dev/null || true
+    
+    # Close SSH connections
     ssh -O exit "$SSH_USER@$WORKER_NODE" 2>/dev/null || true
+    
+    log "INFO" "Shutdown complete"
     exit 0
 }
 

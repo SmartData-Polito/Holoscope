@@ -34,7 +34,7 @@
     namespace: "{{ app_namespace }}"
     create_namespace: false
     state: present
-    wait: true
+    wait: false
     values: "{{ helm_values }}"
   when: 
     - app_enabled
@@ -46,7 +46,7 @@
     name: "{{ app_name }}"
     namespace: "{{ app_namespace }}"
     state: absent
-    wait: true
+    wait: false
     timeout: "{{ app_config.timeout | default(300) }}"
   when: 
     - app_enabled

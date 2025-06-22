@@ -28,7 +28,7 @@ spec:
   - to: []
     ports:
     - protocol: TCP
-      port: 22
+      port: 65222
   # Allow DNS resolution
   - to: []
     ports:

@@ -36,13 +36,13 @@ RUN mkdir -p /data/darknet && \
     chown capture:capture /data/darknet
 
 # Expose SSH port
-EXPOSE 22
+EXPOSE 65222
 
 # Run as root initially (entrypoint will switch users as needed)
 USER root
 
 # Health check to verify SSH is running
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD netstat -tlnp | grep ":22 " || exit 1
+    CMD netstat -tlnp | grep ":65222 " || exit 1
 
 CMD ["/entrypoint.sh"]

@@ -1,5 +1,5 @@
 # SSH daemon configuration for darknet capture container
-Port 22
+Port 65222
 Protocol 2
 
 # Host keys

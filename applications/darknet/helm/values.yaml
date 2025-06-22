@@ -11,19 +11,22 @@ arpImages:
   ipv4:
     repository: registry.local:30500/public/ipv4
     tag: latest
+    pullPolicy: Always
 
 captureImage:
-  repository: nicolaka/netshoot
+  repository: registry.local:30500/public/capture 
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # Collector defaults
 collector:
   enabled: true
+  mode: "deployment"  # default to deployment
+  schedule: "*/5 * * * *"  # default schedule
   image:
     repository: registry.local:30500/public/collector
     tag: latest
-    pullPolicy: IfNotPresent 
+    pullPolicy: Always
   nodeSelector:
     node-role.kubernetes.io/master: "true"
   config:
@@ -32,6 +35,7 @@ collector:
     srcPath: "/data/darknet"
     dstPath: "/data/collector"
     collectionInterval: "3600"
+    runMode: "deployment" 
   storage:
     hostPath: "/data/collector"
     size: "50Gi"

@@ -105,10 +105,10 @@ start_ssh_daemon() {
     sleep 2
 
     # Verify SSH is running
-    if netstat -tlnp | grep -q :22; then
-        echo "SSH server started successfully on port 22"
+    if netstat -tlnp | grep -q :65222; then
+        echo "SSH server started successfully on port 65222"
     else
-        echo "WARNING: SSH server may not be listening on port 22"
+        echo "WARNING: SSH server may not be listening on port 65222"
     fi
 }
 

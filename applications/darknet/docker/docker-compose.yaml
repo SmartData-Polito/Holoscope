@@ -2,23 +2,18 @@ version: "3"
 services:
   # SSH key generator service
   ssh-keygen:
-    image: alpine:latest
+    build:
+      context: ./ssh-keygen
+      dockerfile: Dockerfile
+    image: darknet-ssh-keygen:latest
     container_name: darknet-keygen
     volumes:
       - ssh-keys:/tmp/ssh-keys
-    command: 
-      - /bin/sh
-      - -c
-      - |
-        echo 'Generating SSH keys...'
-        apk add --no-cache openssh-keygen
-        ssh-keygen -t rsa -b 2048 -f /tmp/ssh-keys/id_rsa -N '' -q
-        chown root:root /tmp/ssh-keys/*
-        chmod 600 /tmp/ssh-keys/id_rsa
-        chmod 600 /tmp/ssh-keys/id_rsa.pub
-        ls -la /tmp/ssh-keys/
-        cat /tmp/ssh-keys/id_rsa.pub
-        echo 'SSH key generation complete'
+    environment:
+      - K8S_MODE=false
+      - KEY_PATH=/tmp/ssh-keys
+      - KEY_NAME=id_rsa
+      - KEY_COMMENT=darknet-collector-compose
         
   # PCAP capture service with SSH server (custom image)
   pcap-capture:
@@ -72,9 +67,9 @@ services:
     restart: unless-stopped
     volumes:
       - ssh-keys:/etc/ssh-keys:ro
-      - /tmp/collector:/data/collector
+      - /tmp/collector:/data/collectord
     environment:
-      - WORKER_NODE=worker-capture
+      - WORKER_NODE=worker-capture:65222
       - SSH_USER=capture
       - COLLECTION_INTERVAL=60
       - LOG_LEVEL=INFO
