@@ -211,7 +211,6 @@ collect_files() {
             
             if mv "$temp_file" "$destination_dir/$basename_file"; then
                 log "INFO" "Organized $basename_file to $destination_dir"
-                
                 if ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm '$file'" 2>/dev/null; then
                     log "INFO" "Deleted from source: $(basename "$file")"
                     copied_count=$((copied_count + 1))
