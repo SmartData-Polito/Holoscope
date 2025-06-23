@@ -87,7 +87,6 @@ values:
         dstPath: "/data/collector/worker-01"
     
     config:
-      collectionInterval: "60"
       runMode: "cronjob"
       logLevel: "INFO"
     
