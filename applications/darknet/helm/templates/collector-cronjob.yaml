@@ -37,7 +37,7 @@ spec:
   
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 600
+      activeDeadlineSeconds: 3600
       template:
         metadata:
           labels:

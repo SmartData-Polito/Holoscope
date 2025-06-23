@@ -1,6 +1,6 @@
 ---
 - name: Ensure master group is not empty
-  hosts: deployment
+  hosts: registry
   gather_facts: false
   tasks:
     - name: Check if master group exists and is not empty
@@ -69,7 +69,7 @@
       
     # Keep track of configured hosts for summary
     - name: Register configured host with deployment
-      delegate_to: deployment
+      delegate_to: registry
       set_fact:
         configured_hosts: "{{ configured_hosts | default([]) + [inventory_hostname] }}"
       when: needs_config

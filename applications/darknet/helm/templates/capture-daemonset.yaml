@@ -38,6 +38,10 @@ spec:
         env:
         - name: NODE_NAME
           value: {{ $nodeName }}
+        - name: SSH_LISTEN_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: INTERFACE
           value: {{ $nodeConfig.config.interface }}
         - name: FILTER

@@ -1,7 +1,7 @@
 ---
-# Build Docker Images Playbook
-- name: Set build variables
-  hosts: deployment
+# Build Docker Images Playbook - Simple Version Running on Registry Host
+- name: Build Docker Images
+  hosts: registry
   gather_facts: false
   vars:
     # Which applications to build (default: all enabled)
@@ -10,7 +10,7 @@
   tasks:    
     - name: Discover application groups from inventory
       set_fact:
-        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
+        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|registry$|all$|ungrouped$).*') | list }}"
       
     - name: Filter for applications with hosts
       set_fact:
@@ -32,44 +32,41 @@
         enabled_applications: "{{ enabled_applications + [item] }}"
       loop: "{{ active_applications }}"
       when: 
-        - hostvars[groups['deployment'][0]]['app_vars_' + item] is defined
-        - hostvars[groups['deployment'][0]]['app_vars_' + item].enabled | default(true) | bool
-        - hostvars[groups['deployment'][0]]['app_vars_' + item].docker_images is defined
+        - vars['app_vars_' + item] is defined
+        - vars['app_vars_' + item].enabled | default(true) | bool
+        - vars['app_vars_' + item].docker_images is defined
       
     - name: Set target applications for building
       set_fact:
         target_build_applications: "{{ build_applications if build_applications | length > 0 else enabled_applications }}"
       
-    - name: Debug build applications
+    - name: Debug applications
       debug:
-        msg: "Applications to build images for: {{ target_build_applications }}"
+        msg:
+          - "Applications to build: {{ target_build_applications }}"
 
-- name: Build Docker Images
-  hosts: registry
-  become: true
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-  tasks:
-    - name: Get target applications from deployment host
-      set_fact:
-        target_applications: "{{ hostvars[groups['deployment'][0]]['target_build_applications'] }}"
+    - name: Copy applications directory to registry host
+      copy:
+        src: "{{ playbook_dir }}/../../../applications/"
+        dest: "/tmp/applications/"
+      when: target_build_applications | length > 0
 
     - name: Build images for each application
       include_role:
         name: docker_build
       vars:
         application: "{{ app_item }}"
-      loop: "{{ target_applications }}"
+      loop: "{{ target_build_applications }}"
       loop_control:
         loop_var: app_item
-      when: target_applications | length > 0
+      when: target_build_applications | length > 0
 
     - name: Display build summary
       debug:
-        msg: "Successfully built Docker images for: {{ target_applications | join(', ') }}"
-      when: target_applications | length > 0
+        msg: "Successfully built Docker images for: {{ target_build_applications | join(', ') }}"
+      when: target_build_applications | length > 0
 
     - name: Display no build message
       debug:
         msg: "No applications found with docker_images configuration to build"
-      when: target_applications | length == 0
+      when: target_build_applications | length == 0

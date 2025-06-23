@@ -1,11 +1,110 @@
 ---
-- name: Install and configure K3s
+- name: Configure kernel parameters for K3s security
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: 'vm.overcommit_memory', value: '1' }
+    - { name: 'kernel.panic', value: '10' }
+    - { name: 'kernel.panic_on_oops', value: '1' }
+
+- name: Download K3s installation script
+  get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: '0755'
+
+- name: Install and configure K3s agent with secure settings
   shell: |
-    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - agent \
+    INSTALL_K3S_VERSION="{{ k3s_version }}" \
+    K3S_TOKEN="{{ hostvars[groups['master'][0]].k3s_token }}" \
+    K3S_URL="{{ k3s_url }}" \
+    K3S_NODE_NAME="{{ inventory_hostname }}" \
+    /tmp/k3s-install.sh agent \
     --flannel-iface={{ wireguard_interface }} \
     --node-ip={{ wireguard_ip }} \
-    --token="{{ hostvars[groups['master'][0]].k3s_token }}" \
-    --server="{{ k3s_url }}" \
-    --node-name="{{ inventory_hostname }}" \
-    --debug \
-    --docker
+    --docker \
+    --protect-kernel-defaults \
+    --kubelet-arg="protect-kernel-defaults=true" \
+    --kubelet-arg="system-reserved=cpu=200m,memory=200Mi" \
+    --kubelet-arg="kube-reserved=cpu=200m,memory=200Mi" \
+    --kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%"
+  register: k3s_agent_install
+  no_log: true
+  failed_when: false
+
+- name: Check K3s agent installation result
+  debug:
+    msg:
+      - "K3s agent installation return code: {{ k3s_agent_install.rc }}"
+      - "Installation successful: {{ k3s_agent_install.rc == 0 }}"
+  when: k3s_agent_install.rc != 0
+
+- name: Fail if agent installation failed
+  fail:
+    msg: "K3s agent installation failed with return code {{ k3s_agent_install.rc }}"
+  when: k3s_agent_install.rc != 0
+
+- name: Verify K3s agent service is running and enabled
+  systemd:
+    name: k3s-agent
+    state: started
+    enabled: yes
+
+- name: Wait for K3s agent service to become active
+  command: systemctl is-active k3s-agent.service
+  register: k3s_agent_status
+  changed_when: false
+  retries: 30
+  delay: 10
+  until: k3s_agent_status.stdout == "active"
+
+- name: Wait for kubelet to be ready
+  wait_for:
+    port: 10250
+    host: "{{ wireguard_ip }}"
+    delay: 10
+    timeout: 180
+
+- name: Wait additional time for node registration
+  pause:
+    seconds: 15
+    prompt: "Waiting for node to fully register with cluster..."
+
+- name: Verify node joined cluster (from master)
+  command: kubectl get nodes {{ inventory_hostname }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['master'][0] }}"
+  register: node_status
+  retries: 10
+  delay: 15
+  until: node_status.rc == 0
+  changed_when: false
+
+- name: Display node status
+  debug:
+    msg: "Node {{ inventory_hostname }} status: {{ node_status.stdout_lines }}"
+  when: node_status.rc == 0
+
+- name: Remove installation script
+  file:
+    path: /tmp/k3s-install.sh
+    state: absent
+
+- name: Verify node is Ready (not just registered)
+  command: kubectl get nodes {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['master'][0] }}"
+  register: node_ready_status
+  retries: 5
+  delay: 10
+  until: node_ready_status.stdout == "True"
+  changed_when: false
+
+- name: Display final node readiness
+  debug:
+    msg: "Node {{ inventory_hostname }} is Ready: {{ node_ready_status.stdout == 'True' }}"

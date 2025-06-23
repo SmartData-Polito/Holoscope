@@ -1,7 +1,7 @@
 ---
 # Deploy Applications Playbook
-- name: Set deployment variables
-  hosts: deployment
+- name: Set variables
+  hosts: registry
   gather_facts: false
   vars:
     # Default to install if no action specified
@@ -11,7 +11,7 @@
   tasks:    
     - name: Discover application groups from inventory
       set_fact:
-        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|deployment$|registry$|all$|ungrouped$).*') | list }}"
+        discovered_applications: "{{ groups | select('match', '^(?!master$|agents$|registry$|all$|ungrouped$).*') | list }}"
       
     - name: Filter for applications with hosts
       set_fact:
@@ -33,8 +33,8 @@
         enabled_applications: "{{ enabled_applications + [item] }}"
       loop: "{{ active_applications }}"
       when: 
-        - hostvars[groups['deployment'][0]]['app_vars_' + item] is defined
-        - hostvars[groups['deployment'][0]]['app_vars_' + item].enabled | default(true) | bool
+        - hostvars[groups['registry'][0]]['app_vars_' + item] is defined
+        - hostvars[groups['registry'][0]]['app_vars_' + item].enabled | default(true) | bool
       
     - name: Set target applications
       set_fact:
@@ -53,45 +53,45 @@
           - "Operation: {{ operation }}"
           - "Force deploy: {{ force_deploy }}"
 
-- name: Prepare Kubernetes configuration
-  hosts: master[0]
-  become: true
-  tasks:
-    - name: Check if kubeconfig exists
-      stat:
-        path: /etc/rancher/k3s/k3s.yaml
-      register: kubeconfig_stat
+# - name: Prepare Kubernetes configuration
+#   hosts: master[0]
+#   become: true
+#   tasks:
+#     - name: Check if kubeconfig exists
+#       stat:
+#         path: /etc/rancher/k3s/k3s.yaml
+#       register: kubeconfig_stat
 
-    - name: Fail if kubeconfig not found
-      fail:
-        msg: "Kubeconfig file not found at /etc/rancher/k3s/k3s.yaml on master node"
-      when: not kubeconfig_stat.stat.exists
+#     - name: Fail if kubeconfig not found
+#       fail:
+#         msg: "Kubeconfig file not found at /etc/rancher/k3s/k3s.yaml on master node"
+#       when: not kubeconfig_stat.stat.exists
 
-    - name: Set kubeconfig environment variable
-      set_fact:
-        kube_config: "/etc/rancher/k3s/k3s.yaml"
+#     - name: Set kubeconfig environment variable
+#       set_fact:
+#         kube_config: "/etc/rancher/k3s/k3s.yaml"
   
-    - name: Set kubeconfig content as fact 
-      slurp:
-        src: "/etc/rancher/k3s/k3s.yaml"
-      register: kubeconfig_content
+#     - name: Set kubeconfig content as fact 
+#       slurp:
+#         src: "/etc/rancher/k3s/k3s.yaml"
+#       register: kubeconfig_content
       
-    - name: Set master IP for kubectl access
-      set_fact:
-        master_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
+#     - name: Set master IP for kubectl access
+#       set_fact:
+#         master_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
 
-    - name: Set kubeconfig content for deployment
-      set_fact:
-        kubeconfig_for_deployment: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
+#     - name: Set kubeconfig content for deployment
+#       set_fact:
+#         kubeconfig_for_deployment: "{{ kubeconfig_content.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + master_ip + ':6443') }}"
 
-    - name: Pass kubeconfig to deployment host
-      set_fact:
-        shared_kubeconfig_content: "{{ hostvars[groups['master'][0]]['kubeconfig_for_deployment'] }}"
-        shared_master_ip: "{{ hostvars[groups['master'][0]]['master_ip'] }}"
-      delegate_to: "{{ groups['deployment'][0] }}"
+#     - name: Pass kubeconfig to deployment host
+#       set_fact:
+#         shared_kubeconfig_content: "{{ hostvars[groups['master'][0]]['kubeconfig_for_deployment'] }}"
+#         shared_master_ip: "{{ hostvars[groups['master'][0]]['master_ip'] }}"
+#       delegate_to: "{{ groups['deployment'][0] }}"
 
 - name: Deploy Applications
-  hosts: deployment
+  hosts: registry
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
   vars:
