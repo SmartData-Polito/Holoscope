@@ -53,6 +53,16 @@
       run_once: true
       when: target_build_applications | length > 0
 
+    - name: Create application directories on target hosts
+      file:
+        path: "/tmp/applications/{{ app_item }}/docker"
+        state: directory
+        mode: '0755'
+      loop: "{{ target_build_applications }}"
+      loop_control:
+        loop_var: app_item
+      when: target_build_applications | length > 0
+
     - name: Sync only Docker contexts for target applications using rsync
       synchronize:
         src: "{{ playbook_dir }}/../../../applications/{{ app_item }}/docker/"
