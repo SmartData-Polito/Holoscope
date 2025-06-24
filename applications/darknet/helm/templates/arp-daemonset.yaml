@@ -41,14 +41,16 @@ spec:
         - name: INTERFACE
           value: {{ $nodeConfig.config.interface }}
         - name: SUBNET
-          value: {{ $nodeConfig.arp.subnet }}
+          value: {{ join " " $nodeConfig.arp.subnet | quote }}
         
         command: 
           - "/usr/src/arpd/farpd2"
           - "-d"
           - "-i"
           - "{{ $nodeConfig.config.interface }}"
-          - "{{ $nodeConfig.arp.subnet }}"
+          {{- range $nodeConfig.arp.subnet }}
+          - {{ . | quote }}
+          {{- end }}
         
         resources:
           {{- toYaml $.Values.resources.arp | nindent 10 }}
@@ -56,4 +58,3 @@ spec:
       restartPolicy: Always
 {{- end }}
 {{- end }}
-
