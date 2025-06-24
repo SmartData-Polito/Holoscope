@@ -4,10 +4,6 @@ operation: install
 validate_deployment: true
 debug_mode: false
 
-# Default timeouts (in seconds)
-default_timeout: 300
-default_readiness_timeout: 300
-
 # Default application configuration
 default_app_config:
   enabled: true

@@ -1,13 +1,21 @@
-# docker_build/tasks/main.yml
-- name: Set required variables
+---
+# roles/docker_build/tasks/main.yml
+- name: Validate required variables
+  assert:
+    that:
+      - application is defined
+      - local_registry is defined
+    fail_msg: "Missing required variables: application or local_registry"
+
+- name: Use pre-loaded application configuration
   set_fact:
-    local_registry: "{{ local_registry | default('registry.local:30500') }}"
-    image_tag: "{{ image_tag | default('latest') }}"
-    project_root: "{{ project_root | default(playbook_dir + '/../../../') }}"
-    
-- name: Load application variables
-  set_fact:
-    app_config: "{{ hostvars[groups['deployment'][0]]['app_vars_' + application] }}"
+    app_config: "{{ vars['app_vars_' + application] }}"
+  when: vars['app_vars_' + application] is defined
+
+- name: Fail if application config not found
+  fail:
+    msg: "No configuration found for application '{{ application }}'. Check that group_vars/{{ application }}.yml exists."
+  when: app_config is not defined
 
 - name: Get Docker images for this application
   set_fact:
@@ -17,57 +25,110 @@
   debug:
     var: docker_images
 
-- name: Debug variables
+- name: Debug build context
   debug:
     msg:
       - "Application: {{ application }}"
-      - "local_registry: {{ local_registry }}"
-      - "image_tag: {{ image_tag }}"
-      - "project_root: {{ project_root }}"
+      - "Local registry: {{ local_registry }}"
+      - "Images to build: {{ docker_images | length }}"
 
-- name: Create build directories on master
+- name: Verify Docker build contexts exist
+  stat:
+    path: "/tmp/{{ item.path }}"
+  register: context_check
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  failed_when: not context_check.stat.exists
+  when: docker_images | length > 0
+
+- name: Verify Dockerfiles exist
+  stat:
+    path: "/tmp/{{ item.path }}/{{ item.dockerfile }}"
+  register: dockerfile_check
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  failed_when: not dockerfile_check.stat.exists
+  when: docker_images | length > 0
+
+- name: Create build directories
   file:
     path: "/tmp/docker-build/{{ item.name }}"
     state: directory
+    mode: '0755'
   loop: "{{ docker_images }}"
   loop_control:
     label: "{{ item.name }}"
   when: docker_images | length > 0
 
-- name: Copy Docker context to master
+- name: Copy Docker context for building
   copy:
-    src: "{{ project_root }}/{{ item.path }}/"
+    src: "/tmp/{{ item.path }}/"
     dest: "/tmp/docker-build/{{ item.name }}/"
+    remote_src: true
   loop: "{{ docker_images }}"
   loop_control:
     label: "{{ item.name }}"
   when: docker_images | length > 0
 
-- name: Build Docker images on master
-  ansible.builtin.command:
-    cmd: docker build -t {{ item.author }}/{{ item.name }}:{{ item.tag }} -f /tmp/docker-build/{{ item.name }}/{{ item.dockerfile }} /tmp/docker-build/{{ item.name }}
+- name: Install pip and required Python libraries
+  apt:
+    name:
+      - python3-pip
+      - python3-requests
+      - python3-docker
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Add current user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+  become: true
+
+- name: Reset ssh connection to allow user changes to affect ansible user
+  meta: reset_connection
+
+- name: Build Docker images
+  command: |
+    docker build -t {{ item.author }}/{{ item.name }}:{{ item.tag }} 
+    -f /tmp/docker-build/{{ item.name }}/{{ item.dockerfile }} 
+    /tmp/docker-build/{{ item.name }}
   loop: "{{ docker_images }}"
   loop_control:
     label: "{{ item.name }}"
   when: docker_images | length > 0
   register: build_result
 
-- name: Tag Docker images for local registry
-  ansible.builtin.command:
-    cmd: docker tag {{ item.author }}/{{ item.name }}:{{ item.tag }} {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+- name: Tag images for local registry
+  command: |
+    docker tag {{ item.author }}/{{ item.name }}:{{ item.tag }} 
+    {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
   loop: "{{ docker_images }}"
   loop_control:
     label: "{{ item.name }}"
   when: docker_images | length > 0
 
-- name: Push Docker images to local registry
-  ansible.builtin.command:
-    cmd: docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+- name: Push images to local registry
+  command: |
+    docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
   loop: "{{ docker_images }}"
   loop_control:
     label: "{{ item.name }}"
   when: docker_images | length > 0
   register: push_result
+
+- name: Cleanup build directories
+  file:
+    path: "/tmp/docker-build/{{ item.name }}"
+    state: absent
+  loop: "{{ docker_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: docker_images | length > 0
 
 - name: Display build results
   debug:

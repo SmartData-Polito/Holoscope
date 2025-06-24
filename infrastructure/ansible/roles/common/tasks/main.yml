@@ -18,29 +18,25 @@
       - runc
     state: absent
 
-- name: Ensure required variables are set
+- name: Set Docker repository variables
   ansible.builtin.set_fact:
-    os_name: "{{ ansible_distribution | default('debian') | lower }}"
-    os_release: "{{ ansible_distribution_release | default('bookworm') }}"
+    docker_os_name: "{{ ansible_distribution | lower }}"
+    docker_os_release: "{{ ansible_distribution_release }}"
+    docker_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
 
 - name: Add Docker's official GPG key
   ansible.builtin.apt_key:
-    url: "https://download.docker.com/linux/{{ os_name }}/gpg"
+    url: "https://download.docker.com/linux/{{ docker_os_name }}/gpg"
     state: present
-
-- name: Determine repository
-  ansible.builtin.set_fact:
-    docker_repo: >-
-      deb https://download.docker.com/linux/{{ os_name }} {{ os_release }} stable
 
 - name: Add Docker repository
   ansible.builtin.apt_repository:
-    repo: "{{ docker_repo }}"
+    repo: "deb [arch={{ docker_arch }}] https://download.docker.com/linux/{{ docker_os_name }} {{ docker_os_release }} stable"
     state: present
     filename: docker
     update_cache: yes
 
-- name: Install Docker packages
+- name: Install Docker and other required packages
   ansible.builtin.apt:
     name:
       - docker-ce
@@ -48,6 +44,9 @@
       - containerd.io
       - docker-buildx-plugin
       - docker-compose-plugin
+      - python3-kubernetes
+      - python3-yaml
+      - python3-jsonpatch
     state: present
     update_cache: yes
 

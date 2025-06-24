@@ -1,8 +1,55 @@
 ---
-- name: Retrive K3S token for adding future node   
+- name: Verify K3s service is running and enabled
+  systemd:
+    name: k3s
+    state: started
+    enabled: yes
+
+- name: Wait for K3s service to become active
+  command: systemctl is-active k3s.service
+  register: k3s_service_status
+  changed_when: false
+  retries: 30
+  delay: 10
+  until: k3s_service_status.stdout == "active"
+
+- name: Wait for K3s API server to be ready (extended timeout)
+  wait_for:
+    port: 6443
+    host: "{{ wireguard_ip }}"
+    delay: 15
+    timeout: 600
+
+- name: Verify cluster is accessible with kubectl
+  command: kubectl get nodes
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: kubectl_result
+  retries: 5
+  delay: 10
+  until: kubectl_result.rc == 0
+  changed_when: false
+
+- name: Display cluster status
+  debug:
+    msg: "Cluster nodes: {{ kubectl_result.stdout_lines }}"
+
+- name: Retrieve K3s token for adding future nodes
   ansible.builtin.slurp:
     src: /var/lib/rancher/k3s/server/node-token
-  register: k3s_token
+  register: k3s_token_raw
+  no_log: true
 
-- set_fact:
-    k3s_token : "{{ k3s_token['content'] | b64decode | replace('\n', '')}}"
+- name: Set K3s token fact
+  set_fact:
+    k3s_token: "{{ k3s_token_raw['content'] | b64decode | trim }}"
+  no_log: true
+
+- name: Verify token was retrieved successfully
+  assert:
+    that:
+      - k3s_token is defined
+      - k3s_token | length > 0
+    fail_msg: "Failed to retrieve K3s node token"
+    success_msg: "K3s node token retrieved successfully"
+  no_log: true

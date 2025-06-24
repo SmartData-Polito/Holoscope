@@ -1,6 +1,6 @@
 ---
 - name: Ensure master group is not empty
-  hosts: deployment
+  hosts: localhost
   gather_facts: false
   tasks:
     - name: Check if master group exists and is not empty
@@ -10,12 +10,29 @@
           - groups['master'] | length > 0
         fail_msg: "The 'master' group is empty or not defined in the inventory"
 
-- name: Post-installation steps on master
-  hosts: master
+- name: Clean SSH host keys
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Remove old host keys to avoid conflicts
+      shell: ssh-keygen -f ~/.ssh/known_hosts -R {{ hostvars[item]['ansible_host'] }} || true
+      loop: "{{ groups['agents'] }}"
+      when: hostvars[item]['ansible_host'] is defined
+
+- name: Get K3s token from master
+  hosts: master[0]
   become: true
-  roles:
-    - role: k3s-server
-      tasks_from: post_install
+  tasks:
+    - name: Retrieve K3s token for new nodes
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+      no_log: true
+
+    - name: Set K3s token fact
+      set_fact:
+        k3s_token: "{{ k3s_token_raw['content'] | b64decode | trim }}"
+      no_log: true
 
 - name: Identify and configure new nodes
   hosts: agents
@@ -31,7 +48,7 @@
       register: wg_keys_check
       changed_when: false
       become: true
-      
+
     - name: Check if K3s agent is installed and running
       shell: systemctl is-active k3s-agent || echo "not_running"
       register: k3s_status_raw
@@ -50,7 +67,6 @@
       debug:
         msg: "Node {{ inventory_hostname }} needs configuration: {{ needs_config }}"
     
-    # Configure nodes that need setup right here, in the same play
     - name: Configure common role if needed
       import_role:
         name: common
@@ -63,16 +79,21 @@
       become: true  
       when: needs_config
       
+    - name: Set K3s token from master
+      set_fact:
+        k3s_token: "{{ hostvars[groups['master'][0]]['k3s_token'] }}"
+      when: needs_config
+      no_log: true
+      
     - name: Register node as configured
       set_fact:
         node_was_configured: "{{ needs_config }}"
       
-    # Keep track of configured hosts for summary
-    - name: Register configured host with deployment
-      delegate_to: deployment
+    - name: Add to configured hosts list
       set_fact:
-        configured_hosts: "{{ configured_hosts | default([]) + [inventory_hostname] }}"
+        configured_hosts: "{{ ansible_play_hosts | select('match', inventory_hostname) | list }}"
       when: needs_config
+      run_once: true
 
 - name: Update all WireGuard facts and configurations
   hosts: all
@@ -111,46 +132,50 @@
         wireguard_ip: "{{ wireguard_ip }}"  
       when: wg_pubkey_file.stat.exists and wireguard_ip is defined
 
-- name: Post-installation steps on WireGuard server
-  hosts: "{{ groups['master'][0] }}"
+- name: Update WireGuard server configuration
+  hosts: master[0]
   become: true
   tasks:
-    - name: Find all hosts with wireguard_public_key
+    - name: Collect all hosts with WireGuard keys
       set_fact:
-        vpn_peers: []
-
-    - name: Collect wireguard peers
-      set_fact:
-        vpn_peers: "{{ vpn_peers + [item] }}"
+        vpn_peers: "{{ vpn_peers | default([]) + [item] }}"
       when: 
         - hostvars[item]['wireguard_public_key'] is defined
         - item != inventory_hostname
       loop: "{{ groups['all'] }}"
       
-    - name: Include WireGuard server template task
+    - name: Update WireGuard server configuration
       include_role:
         name: wireguard-server
         tasks_from: update_config
 
-- name: Configure k3s-agent on configured nodes
+- name: Configure K3s agent on new nodes
   hosts: agents
   become: true
   tasks:
-    - name: Include k3s-agent role if node was configured
+    - name: Configure K3s agent if node was newly configured
       include_role:
         name: k3s-agent
       when: hostvars[inventory_hostname].get('node_was_configured', false) | bool
 
 - name: Show summary
-  hosts: deployment
+  hosts: localhost
   gather_facts: false
   tasks:
+    - name: Gather configured nodes from all agent hosts
+      set_fact:
+        all_configured_hosts: "{{ all_configured_hosts | default([]) + [item] }}"
+      loop: "{{ groups['agents'] }}"
+      when: 
+        - hostvars[item] is defined
+        - hostvars[item].get('node_was_configured', false) | bool
+
     - name: Display configured nodes
       debug:
-        msg: "Successfully configured new nodes: {{ configured_hosts | default([]) | join(', ') }}"
-      when: configured_hosts is defined and configured_hosts | length > 0
+        msg: "Successfully configured new nodes: {{ all_configured_hosts | default([]) | join(', ') }}"
+      when: all_configured_hosts is defined and all_configured_hosts | length > 0
       
     - name: Display no changes message
       debug:
         msg: "No new nodes were configured. All nodes already have WireGuard and K3s agent installed."
-      when: configured_hosts is not defined or configured_hosts | length == 0
+      when: all_configured_hosts is not defined or all_configured_hosts | length == 0

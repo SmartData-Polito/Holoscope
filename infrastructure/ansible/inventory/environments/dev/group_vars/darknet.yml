@@ -44,13 +44,11 @@ values:
         rotate_seconds: 60
         filter: "ip and (net 192.168.10.0/24)"
         outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-        subnet: "192.168.10.0/24"
       storage:
         hostPath: "/data/darknet/worker-00"
       arp:
         enabled: true
-        ipv4:
-          enabled: true
+        subnet: "192.168.10.0/24"
 
     worker-01:
       enabled: true
@@ -59,11 +57,22 @@ values:
         rotate_seconds: 60
         filter: "ip and (net 192.168.20.0/24)"
         outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-        subnet: "192.168.20.0/24"
       storage:
         hostPath: "/data/darknet/worker-01"
       arp:
         enabled: false
+
+    # worker-02:
+    #   enabled: true
+    #   config:
+    #     interface: eth0
+    #     rotate_seconds: 60
+    #     filter: "ip and (net 192.168.20.0/24)"
+    #     outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+    #   storage:
+    #     hostPath: "/data/darknet/worker-02"
+    #   arp:
+    #     enabled: false        
         
   # Collector configuration - CronJobs on master collecting from workers
   collector:
@@ -85,6 +94,12 @@ values:
         sshUser: "capture"
         srcPath: "/data/darknet"
         dstPath: "/data/collector/worker-01"
+      # worker-02:
+      #   enabled: true
+      #   target: "worker-02:65222"
+      #   sshUser: "capture"
+      #   srcPath: "/data/darknet"
+      #   dstPath: "/data/collector/worker-02"        
     
     config:
       runMode: "cronjob"
