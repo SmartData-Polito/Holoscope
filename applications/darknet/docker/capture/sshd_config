@@ -27,14 +27,11 @@ AuthorizedKeysFile .ssh/authorized_keys
 
 # Other authentication methods
 KbdInteractiveAuthentication no
-UsePAM yes
 
 # Network settings
 X11Forwarding no
 PrintMotd no
-PrintLastLog yes
 TCPKeepAlive yes
-UsePrivilegeSeparation sandbox
 
 # Security settings
 AllowUsers capture
