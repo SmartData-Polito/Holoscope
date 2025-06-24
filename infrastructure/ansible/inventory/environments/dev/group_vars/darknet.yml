@@ -45,7 +45,8 @@ values:
         hostPath: "/data/darknet/worker-00"
       arp:
         enabled: true
-        subnet: "192.168.10.0/24"
+        subnet: 
+          - "192.168.10.0/24"
 
     worker-01:
       enabled: true
