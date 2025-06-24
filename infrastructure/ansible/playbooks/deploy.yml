@@ -49,6 +49,16 @@
           - "Operation: {{ operation }}"
           - "Force deploy: {{ force_deploy }}"
 
+    - name: Create application directories on target hosts
+      file:
+        path: "/tmp/applications/{{ app_item }}/helm"
+        state: directory
+        mode: '0755'
+      loop: "{{ target_applications }}"
+      loop_control:
+        loop_var: app_item
+      when: target_applications | length > 0
+
     - name: Copy Helm charts to registry host
       synchronize:
         src: "{{ playbook_dir }}/../../../applications/{{ app_item }}/helm/"

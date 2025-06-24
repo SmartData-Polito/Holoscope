@@ -32,9 +32,6 @@ docker_images:
 
 # Helm chart values
 values:
-  global:
-    storageClass: "{{ storage_class | default('manual') }}"
-
   # Node configurations
   captureNodes:
     worker-00:
