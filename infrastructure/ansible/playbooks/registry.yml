@@ -1,62 +1,74 @@
 ---
-- name: Copy and modify file from remote host
-  hosts: deployment
+- name: Copy file from master to registry hosts
+  hosts: registry
   tasks:
-    - name: Fetch Kubeconfig from the remote host
-      fetch:
+    - name: Read kubeconfig from master
+      slurp:
         src: /etc/rancher/k3s/k3s.yaml
-        dest: ~/.kube/kubeconfig.yaml
-        flat: yes
+      register: kubeconfig_content
       delegate_to: "{{ groups['master'][0] }}"
-      register: fetch_result
-
-    - name: Change Kubeconfig permissions
-      ansible.builtin.file:
-        path: "{{ fetch_result.dest }}"
-        mode: "go-r"
-
-    - name: Ensure yq is installed on the deployment
       become: true
-      apt:
-        name: yq
-        state: present
       run_once: true
 
-    - name: Modify the server URL and configure TLS settings in kubeconfig
-      shell: |
-        # Update server URL
-        yq -yi '.clusters[0].cluster.server = "https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443"' {{ fetch_result.dest }}
-        # Remove certificate-authority-data and set insecure-skip-tls-verify
-        yq -yi 'del(.clusters[0].cluster."certificate-authority-data")' {{ fetch_result.dest }}
-        yq -yi '.clusters[0].cluster."insecure-skip-tls-verify" = true' {{ fetch_result.dest }}
-      run_once: true   
+    - name: Ensure .kube directory exists
+      file:
+        path: ~/.kube
+        state: directory
+        mode: '0755'
 
-    - name: Install helm if not exists
-      become: true
-      unarchive:
-        src: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
-        dest: /usr/local/bin
-        extra_opts: "--strip-components=1"
-        owner: root
-        group: root
-        mode: 0755
-        remote_src: true
-      args:
-        creates: /usr/local/bin/helm
+    - name: Parse and modify kubeconfig
+      set_fact:
+        modified_kubeconfig: "{{ kubeconfig_parsed | combine(kubeconfig_modifications, recursive=True) | to_nice_yaml }}"
+      vars:
+        kubeconfig_parsed: "{{ kubeconfig_content.content | b64decode | from_yaml }}"
+        kubeconfig_modifications:
+          clusters:
+            - cluster:
+                server: "{{ k3s_url }}"
+                insecure-skip-tls-verify: true
+              name: "{{ kubeconfig_parsed.clusters[0].name }}"
 
-    - name: Deploy Helm chart for Docker Registry on specific node
-      command: >
-        helm upgrade -i registry-{{ item }} {{ project_root }}/infrastructure/helm/registry --namespace registry --create-namespace
-          --set name=registry-{{ item }}
-          --set appName=registry-{{ item }}
-          --set nodeAffinity.hostname.values[0]={{ item }}
-          --set service.loadBalancerIP={{ hostvars[groups['registry'][0]]['wireguard_ip'] }}
-          --set service.nodePort={{ local_registry.split(':')[1] }}  
-          --set volumes.hostPath=/data/registry-{{ item }}
-          --set volumes.capacity=15Gi
-          --set networkPolicy.allowedCidrs={{"{"}}{{ network_policy.allowed_cidrs | join(',') }}{{"}"}}
-      environment:
-        KUBECONFIG: "{{ fetch_result.dest }}"
+    - name: Write modified kubeconfig to registry hosts
+      copy:
+        content: "{{ modified_kubeconfig }}"
+        dest: ~/.kube/kubeconfig.yaml
+        mode: '0600'
+      become: false
+
+    - name: Create helm charts directory
+      file:
+        path: ~/helm-charts
+        state: directory
+        mode: '0755'
+
+    - name: Copy Helm chart to registry host
+      copy:
+        src: "{{ project_root }}/infrastructure/helm/registry/"
+        dest: ~/helm-charts/registry/
+        mode: '0644'
+
+    - name: Deploy registry with Helm module
+      kubernetes.core.helm:
+        name: "registry-{{ item }}"
+        chart_ref: "~/helm-charts/registry"
+        release_namespace: registry
+        create_namespace: true
+        kubeconfig: "~/.kube/kubeconfig.yaml"
+        values:
+          name: "registry-{{ item }}"
+          appName: "registry-{{ item }}"
+          nodeAffinity:
+            hostname:
+              values:
+                - "{{ item }}"
+          service:
+            loadBalancerIP: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }}"
+            nodePort: "{{ local_registry.split(':')[1] | int }}"
+          volumes:
+            hostPath: "/data/registry-{{ item }}"
+            capacity: "100Gi"
+          networkPolicy:
+            allowedCidrs: "{{ network_policy.allowed_cidrs }}"
       with_items: "{{ groups['registry'] }}"
 
 - name: Append to /etc/hosts file on all machines in a group
@@ -103,9 +115,9 @@
         state: restarted
 
 - name: Setup registry certificates
-  hosts: deployment
+  hosts: registry
   environment:
-    KUBECONFIG: "{{ fetch_result.dest }}"
+    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/kubeconfig.yaml"
   tasks:
     - name: Block until registry pod is Ready
       command: >
@@ -142,9 +154,14 @@
       loop: "{{ groups['master'] + groups['agents'] }}"
       become: true
 
+    - name: Read certificate content from registry host
+      slurp:
+        src: /tmp/registry.crt
+      register: registry_cert_content
+
     - name: Copy certificate to all nodes
       copy:
-        src: /tmp/registry.crt
+        content: "{{ registry_cert_content.content | b64decode }}"
         dest: /etc/docker/certs.d/{{ local_registry }}/ca.crt
         mode: '0644'
       delegate_to: "{{ item }}"

@@ -98,17 +98,27 @@ setup_data_directory() {
 # Start SSH daemon
 start_ssh_daemon() {
     echo "Starting SSH daemon..."
-    /usr/sbin/sshd -D &
+    
+    # Build sshd command with listen address
+    local sshd_opts="-D"
+    if [[ -n "${SSH_LISTEN_ADDRESS:-}" ]]; then
+        echo "Configuring SSH to listen on: $SSH_LISTEN_ADDRESS"
+        sshd_opts="$sshd_opts -o ListenAddress=$SSH_LISTEN_ADDRESS"
+    fi
+    
+    /usr/sbin/sshd $sshd_opts &
     SSH_PID=$!
 
     # Wait a moment for SSH to start
     sleep 2
 
-    # Verify SSH is running
-    if netstat -tlnp | grep -q :65222; then
-        echo "SSH server started successfully on port 65222"
+    # Verify SSH is running on the correct address
+    local expected_addr="${SSH_LISTEN_ADDRESS:-0.0.0.0}"
+    if netstat -tlnp | grep -q "$expected_addr:65222"; then
+        echo "SSH server started successfully on $expected_addr:65222"
     else
-        echo "WARNING: SSH server may not be listening on port 65222"
+        echo "WARNING: SSH server may not be listening on expected address"
+        netstat -tlnp | grep :65222 || echo "No SSH process found on port 65222"
     fi
 }
 

@@ -17,7 +17,6 @@ data:
   SSH_USER: {{ $workerConfig.sshUser | quote }}
   SOURCE_PATH: {{ $workerConfig.srcPath | quote }}
   DEST_PATH: {{ $workerConfig.dstPath | quote }}
-  COLLECTION_INTERVAL: {{ $.Values.collector.config.collectionInterval | quote }}
   LOG_LEVEL: {{ $.Values.collector.config.logLevel | quote }}
   RUN_MODE: {{ $.Values.collector.config.runMode | quote }}
 ---
@@ -38,7 +37,7 @@ spec:
   
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 600
+      activeDeadlineSeconds: 3600
       template:
         metadata:
           labels:
@@ -65,7 +64,7 @@ spec:
               mountPath: /etc/ssh-keys
               readOnly: true
             - name: collector-storage
-              mountPath: /data/collector  # Mount base collector directory
+              mountPath: {{ $.Values.collector.storage.hostPath }}
             
             resources:
               {{- toYaml $.Values.collector.resources | nindent 14 }}

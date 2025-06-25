@@ -28,7 +28,6 @@ spec:
         kubernetes.io/hostname: {{ $nodeName }}
       
       containers:
-      {{- if $nodeConfig.arp.ipv4.enabled }}
       - name: arp4
         image: "{{ $.Values.arpImages.ipv4.repository }}:{{ $.Values.arpImages.ipv4.tag }}"
         imagePullPolicy: Always
@@ -42,20 +41,20 @@ spec:
         - name: INTERFACE
           value: {{ $nodeConfig.config.interface }}
         - name: SUBNET
-          value: {{ $nodeConfig.config.subnet }}
+          value: {{ join " " $nodeConfig.arp.subnet | quote }}
         
         command: 
           - "/usr/src/arpd/farpd2"
           - "-d"
           - "-i"
           - "{{ $nodeConfig.config.interface }}"
-          - "{{ $nodeConfig.config.subnet }}"
+          {{- range $nodeConfig.arp.subnet }}
+          - {{ . | quote }}
+          {{- end }}
         
         resources:
           {{- toYaml $.Values.resources.arp | nindent 10 }}
-      {{- end }}
       
       restartPolicy: Always
 {{- end }}
 {{- end }}
-
