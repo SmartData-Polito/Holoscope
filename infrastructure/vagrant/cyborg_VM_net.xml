@@ -9,6 +9,8 @@
   <bridge name='virbr10' stp='on' delay='0'/>
   <mac address='52:54:00:38:27:36'/>
   <dns>
+    <forwarder addr='8.8.8.8'/>
+    <forwarder addr='8.8.4.4'/>
     <host ip='10.10.0.100'>
       <hostname>master-00.local</hostname>
     </host>    
