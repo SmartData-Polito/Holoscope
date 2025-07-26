@@ -1,0 +1,40 @@
+---
+# Development l4responder Application Configuration
+enabled: true
+namespace: l4responder
+chart_path: "{{ playbook_dir }}/../../../applications/l4responder/helm"
+
+# Docker images to build
+docker_images:
+  - name: "l4responder_server"
+    author: "public" 
+    path: "applications/l4responder/docker/l4responder_server"
+    dockerfile: "Dockerfile"
+    tag: "latest"
+    
+  - name: "l4responder_toolbox"
+    author: "public"
+    path: "applications/darknet/docker/l4responder_toolbox"
+    dockerfile: "Dockerfile" 
+    tag: "latest"
+    
+# Helm chart values
+values:
+  # Node configurations
+  captureNodes:
+    worker-00:
+      enabled: true
+      config:
+        portRanges:
+          - start: 10000
+            end: 20000
+          - start: 30000
+            end: 40000
+        ipRanges:  # IP ranges to respond to
+          - 10.10.0.101/24
+      
+  # Network policy
+  networkPolicy:
+    enabled: true
+    allowedCidrs:
+      - "10.0.0.0/8"
