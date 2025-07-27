@@ -14,7 +14,7 @@ docker_images:
     
   - name: "l4responder_toolbox"
     author: "public"
-    path: "applications/darknet/docker/l4responder_toolbox"
+    path: "applications/l4responder/docker/l4responder_toolbox"
     dockerfile: "Dockerfile" 
     tag: "latest"
     

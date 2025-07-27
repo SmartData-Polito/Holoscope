@@ -1,6 +1,6 @@
 ---
 # Development Darknet Application Configuration
-enabled: true
+enabled: false
 namespace: darknet
 chart_path: "{{ playbook_dir }}/../../../applications/darknet/helm"
 
@@ -34,7 +34,7 @@ docker_images:
 values:
   # Node configurations
   captureNodes:
-    worker-00:
+   # worker-00:
       enabled: true
       config:
         interface: eth0
@@ -48,17 +48,17 @@ values:
         subnet: 
           - "192.168.10.0/24"
 
-    worker-01:
-      enabled: true
-      config:
-        interface: eth0
-        rotate_seconds: 60
-        filter: "ip and (net 192.168.20.0/24)"
-        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-      storage:
-        hostPath: "/data/darknet/worker-01"
-      arp:
-        enabled: false
+    #worker-01:
+    #  enabled: true
+    #  config:
+    #    interface: eth0
+    #    rotate_seconds: 60
+    #    filter: "ip and (net 192.168.20.0/24)"
+    #    outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+    #  storage:
+    #    hostPath: "/data/darknet/worker-01"
+    #  arp:
+    #    enabled: false
 
     # worker-02:
     #   enabled: true
