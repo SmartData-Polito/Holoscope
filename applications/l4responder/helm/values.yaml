@@ -1,39 +1,47 @@
 global:
   namespace: l4responder
   storageClass: manual
-l4responder:
-  enabled: true
-# Default per-node capture configurations (empty - populated by Ansible)
-captureNodes: {}
-
-# Image configurations
-l4responder_server:
-  repository: registry.local:30500/public/l4responder_server 
-  tag: latest
-  pullPolicy: Always
 
 
 l4responder_toolbox:
-  repository: registry.local:30500/public/l4responder_toolbox 
-  tag: latest
-  pullPolicy: Always
-  config:
-    portRanges:
-      - start: 10000
-        end: 20000
-      - start: 30000
-        end: 40000
-
-  # Network configuration
+  name: l4responder-toolbox
+  labels:
+     app: l4responder-toolbox
+  container:
+    name: toolbox
+    image:
+      repository: registry.local:30500/public/l4responder_toolbox
+      tag: latest
+      pullPolicy: Always
+  serviceAccount:
+    name: toolbox-sa
+  securityContext:
+    privileged: true
   network:
-    # Use host network for packet capture
     hostNetwork: true
-    # DNS policy when using host network
-    dnsPolicy: ClusterFirstWithHostNet
+  terminationGracePeriodSeconds: 10
+  rbac:
+    clusterRole:
+      name: pod-reader
+      rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch"]
+          
+    clusterRoleBinding:
+        name: toolbox-sa-binding
 
-
-
-# Network policy 
+l4responder_server:
+  labels:
+     app: l4responder-server
+  container:
+    name: responder
+    image:
+      repository: registry.local:30500/public/l4responder_server 
+      tag: latest
+      pullPolicy: Always
+    containerPort: 60000
+    hostPort: 60000 
 networkPolicy:
   enabled: false
   allowedCidrs:

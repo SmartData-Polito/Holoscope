@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "darknet.name" -}}
+{{- define "l4responder.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "darknet.fullname" -}}
+{{- define "l4responder.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "darknet.chart" -}}
+{{- define "l4responder.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "darknet.labels" -}}
-helm.sh/chart: {{ include "darknet.chart" . }}
-{{ include "darknet.selectorLabels" . }}
+{{- define "l4responder.labels" -}}
+helm.sh/chart: {{ include "l4responder.chart" . }}
+{{ include "l4responder.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,25 +43,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "darknet.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "darknet.name" . }}
+{{- define "l4responder.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "l4responder.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{/*
-Component-specific labels
-*/}}
-{{- define "darknet.capture.labels" -}}
-{{ include "darknet.labels" . }}
-app.kubernetes.io/component: capture
-{{- end }}
-
-{{- define "darknet.arp.labels" -}}
-{{ include "darknet.labels" . }}
-app.kubernetes.io/component: arp
-{{- end }}
-
-{{- define "darknet.collector.labels" -}}
-{{ include "darknet.labels" . }}
-app.kubernetes.io/component: collector
-{{- end }}

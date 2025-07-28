@@ -1,0 +1,32 @@
+{{- range $nodeName, $nodeConfig := .Values.l4responder_server.workers }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "l4responder.fullname" $ }}-l4server-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: {{ $.Values.l4responder_server.labels.app }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $.Values.l4responder_server.labels.app }}
+      l4responderserver.io/node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $.Values.l4responder_server.labels.app }}
+        l4responderserver.io/node: {{ $nodeName }}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName }}
+      containers:
+        - name: {{ $.Values.l4responder_server.container.name }}
+          image: "{{ $.Values.l4responder_server.container.image.repository }}:{{ $.Values.l4responder_server.container.image.tag }}"
+          imagePullPolicy: {{ $.Values.l4responder_server.container.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $.Values.l4responder_server.container.containerPort }}
+              hostPort: {{ $.Values.l4responder_server.container.hostPort }}
+{{- end }}
+{{- end }}

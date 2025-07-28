@@ -1,30 +1,49 @@
-
+{{- range $nodeName, $nodeConfig := .Values.l4responder_toolbox.workers }}
+{{- if $nodeConfig.enabled }}
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: toolbox
-  namespace: {{.Values.global.namespace}}
+  name: {{ include "l4responder.fullname" $ }}-toolbox-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
   labels:
-    app: toolbox
+    app: {{ $.Values.l4responder_toolbox.labels.app }}
+    l4respondertoolbox.io/node: {{ $nodeName }}
 spec:
+ 
   selector:
     matchLabels:
-      app: toolbox
+      app: {{ $.Values.l4responder_toolbox.labels.app }}
+      l4respondertoolbox.io/node: {{ $nodeName }}
   template:
     metadata:
       labels:
-        app: toolbox
+        app: {{ $.Values.l4responder_toolbox.labels.app }}
+        l4respondertoolbox.io/node: {{ $nodeName }}
     spec:
-      serviceAccountName: toolbox-sa
-      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName }}
+      serviceAccountName: {{ $.Values.l4responder_toolbox.serviceAccount.name }}
+      hostNetwork: {{ $.Values.l4responder_toolbox.network.hostNetwork }}
+      terminationGracePeriodSeconds: {{ $.Values.l4responder_toolbox.terminationGracePeriodSeconds }}
       containers:
-        - name: toolbox
-          image: {{  .Values.l4responder_toolbox.repository  }}
-          imagePullPolicy: Always
+        - name: {{ $.Values.l4responder_toolbox.container.name }}
+          image: "{{ $.Values.l4responder_toolbox.container.image.repository }}:{{ $.Values.l4responder_toolbox.container.image.tag }}"
+          imagePullPolicy: {{ $.Values.l4responder_toolbox.container.image.pullPolicy }}
           securityContext:
-            privileged: true
+            privileged: {{ $.Values.l4responder_toolbox.securityContext.privileged }}
           env:
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: CONTAINER_PORT
+              value: "{{ $.Values.l4responder_server.containerPort }}"
+            - name: INTERFACE
+              value: "{{ $nodeConfig.interface }}"
+              {{- range $index, $range := $nodeConfig.portRanges }}
+            - name: PORT_RANGE_{{ $index }}
+              value: "{{ $range.start }}-{{ $range.end }}"
+              {{- end }}
+{{- end }}
+{{- end }}
