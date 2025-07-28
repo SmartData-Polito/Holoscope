@@ -33,17 +33,25 @@ spec:
           securityContext:
             privileged: {{ $.Values.l4responder_toolbox.securityContext.privileged }}
           env:
+
+            - name: L4_SERVER_APP_NAME
+              value: "{{ $.Values.l4responder_server.labels.app }}" 
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: CONTAINER_PORT
-              value: "{{ $.Values.l4responder_server.containerPort }}"
-            - name: INTERFACE
-              value: "{{ $nodeConfig.interface }}"
+              value: "{{ $.Values.l4responder_server.container.hostPort }}"
+
+              {{- range $index, $ip := $nodeConfig.ipRanges }}
+            - name: IP_RANGE_{{ $index }}
+              value: "{{ $ip.network }}"
+              {{- end }}
+             
               {{- range $index, $range := $nodeConfig.portRanges }}
             - name: PORT_RANGE_{{ $index }}
               value: "{{ $range.start }}-{{ $range.end }}"
               {{- end }}
+            
 {{- end }}
 {{- end }}

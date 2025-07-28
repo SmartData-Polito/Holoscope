@@ -20,6 +20,7 @@ l4responder_toolbox:
   network:
     hostNetwork: true
   terminationGracePeriodSeconds: 10
+  
   rbac:
     clusterRole:
       name: pod-reader

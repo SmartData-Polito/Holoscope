@@ -25,7 +25,9 @@ values:
               end: 10100
             - start: 30000
               end: 30100
-        interface: "eth0"
+        ipRanges:
+            - network: "10.0.0.0/24"
+            - network: "10.10.0.0/24"
   l4responder_server:
     enabled: true
     workers:

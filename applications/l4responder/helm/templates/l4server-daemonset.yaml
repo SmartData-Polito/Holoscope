@@ -8,6 +8,7 @@ metadata:
   namespace: {{ $.Values.global.namespace }}
   labels:
     app: {{ $.Values.l4responder_server.labels.app }}
+    l4responderserver.io/node: {{ $nodeName }}
 spec:
   selector:
     matchLabels:
