@@ -25,7 +25,6 @@ spec:
         kubernetes.io/hostname: {{ $nodeName }}
       serviceAccountName: {{ $.Values.l4responder_toolbox.serviceAccount.name }}
       hostNetwork: {{ $.Values.l4responder_toolbox.network.hostNetwork }}
-      terminationGracePeriodSeconds: {{ $.Values.l4responder_toolbox.terminationGracePeriodSeconds }}
       containers:
         - name: {{ $.Values.l4responder_toolbox.container.name }}
           image: "{{ $.Values.l4responder_toolbox.container.image.repository }}:{{ $.Values.l4responder_toolbox.container.image.tag }}"

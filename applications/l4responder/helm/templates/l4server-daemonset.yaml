@@ -22,6 +22,7 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: {{ $nodeName }}
+      terminationGracePeriodSeconds: 0
       containers:
         - name: {{ $.Values.l4responder_server.container.name }}
           image: "{{ $.Values.l4responder_server.container.image.repository }}:{{ $.Values.l4responder_server.container.image.tag }}"
@@ -29,5 +30,6 @@ spec:
           ports:
             - containerPort: {{ $.Values.l4responder_server.container.containerPort }}
               hostPort: {{ $.Values.l4responder_server.container.hostPort }}
+          
 {{- end }}
 {{- end }}
