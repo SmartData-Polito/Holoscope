@@ -1,6 +1,6 @@
 ---
 # Development Darknet Application Configuration
-enabled: false
+enabled: true
 namespace: darknet
 chart_path: "{{ playbook_dir }}/../../../applications/darknet/helm"
 
@@ -34,7 +34,7 @@ docker_images:
 values:
   # Node configurations
   captureNodes:
-   # worker-00:
+    worker-00:
       enabled: true
       config:
         interface: eth0

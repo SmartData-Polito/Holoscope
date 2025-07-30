@@ -35,9 +35,6 @@ service:
   port: 5000
   targetPort: 5000
 
-networkPolicy:
-  allowedCidrs:
-    - 10.0.0.0/24
 
 securityContext:
   runAsNonRoot: true

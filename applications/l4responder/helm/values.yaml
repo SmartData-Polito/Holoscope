@@ -44,7 +44,3 @@ l4responder_server:
       pullPolicy: Always
     containerPort: 60000
     hostPort: 60000 
-networkPolicy:
-  enabled: false
-  allowedCidrs:
-    - "10.0.0.0/24"

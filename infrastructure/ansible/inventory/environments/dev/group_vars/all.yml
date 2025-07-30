@@ -10,8 +10,4 @@ project_root: "{{ playbook_dir }}/../../../"
 # Docker registry configuration
 local_registry: "registry.local:5000"
 image_tag: "latest"
-
-# This policy applies to the registry service
-network_policy:
-  allowed_cidrs:
-    - 10.0.0.0/24  
+  

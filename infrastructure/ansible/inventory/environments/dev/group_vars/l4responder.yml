@@ -1,6 +1,6 @@
 ---
 # Development l4responder Application Configuration
-enabled: true
+enabled: false
 namespace: l4responder
 chart_path: "{{ playbook_dir }}/../../../applications/l4responder/helm"
 docker_images:
@@ -35,7 +35,3 @@ values:
           enabled: true
       worker-01:
           enabled: false
-networkPolicy:
-    enabled: false
-    allowedCidrs:
-      - "10.0.0.0/8"

@@ -9,22 +9,26 @@ captureNodes: {}
 # Image configurations
 arpImages:
   ipv4:
-    repository: registry.local:30500/public/ipv4
+    repository: registry.local:5000/public/ipv4
     tag: latest
     pullPolicy: Always
 
 captureImage:
-  repository: registry.local:30500/public/capture 
+  repository: registry.local:5000/public/capture 
   tag: latest
   pullPolicy: Always
 
+sshKeygenImage:
+  repository: registry.local:5000/public/ssh-keygen
+  tag: latest
+  pullPolicy: Always
 # Collector defaults
 collector:
   enabled: true
   mode: "deployment"  # default to deployment
   schedule: "*/5 * * * *"  # default schedule
   image:
-    repository: registry.local:30500/public/collector
+    repository: registry.local:5000/public/collector
     tag: latest
     pullPolicy: Always
   nodeSelector:

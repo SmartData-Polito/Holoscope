@@ -67,34 +67,42 @@
           volumes:
             hostPath: "/data/registry-{{ item }}"
             capacity: "100Gi"
-          networkPolicy:
-            allowedCidrs: "{{ network_policy.allowed_cidrs }}"
       with_items: "{{ groups['registry'] }}"
 
 
-- name: Append to /etc/hosts file on all machines in a group
-  hosts: master:agents
+- name: Get registry-master-00 service IP on master only
+  hosts: master
   become: true
+  gather_facts: false
   vars:
     ansible_python_interpreter: /usr/bin/python3
   tasks:
-
     - name: Get registry-master-00 service IP
       shell: kubectl get svc -A | grep registry-master-00 | awk '{print $4}'
       register: registry_ip
-      become: true
       changed_when: false
 
-    - name: Show the extracted IP
-      debug:
-        msg: "Registry IP is {{ registry_ip.stdout }}"  
+    - name: Set fact for all hosts
+      set_fact:
+        registry_ip_global: "{{ registry_ip.stdout }}"
+      delegate_to: localhost
+      run_once: true
+
+- name: Append to /etc/hosts file on all machines
+  hosts: master:agents
+  become: true
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
     - name: Append entry to /etc/hosts
       lineinfile:
-              path: /etc/hosts
-              regexp: '^.*\sregistry\.local\s*$'
-              line: "{{ registry_ip.stdout }} registry {{ local_registry.split(':')[0] }}"
-              state: present
-              insertafter: EOF
+        path: /etc/hosts
+        regexp: '^.*\sregistry\.local\s*$'
+        line: "{{ hostvars['master-00'].registry_ip_global }} registry {{ local_registry.split(':')[0] }}"
+        state: present
+        insertafter: EOF
+
 
 - name: Configure K3s to trust insecure registry
   hosts: master:agents
@@ -180,7 +188,7 @@
       become: true
 
 - name: Verify registry accessibility
-  hosts: master[0]
+  hosts: master:agents
   become: true
   tasks:
     - name: Pull test image
