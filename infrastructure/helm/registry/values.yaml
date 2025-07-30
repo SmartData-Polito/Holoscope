@@ -31,9 +31,9 @@ volumes:
         storage: 5Gi
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 5000
-  nodePort: 30500
+  targetPort: 5000
 
 networkPolicy:
   allowedCidrs:

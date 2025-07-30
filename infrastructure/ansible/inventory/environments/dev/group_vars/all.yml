@@ -8,7 +8,7 @@ k3s_url: "https://10.0.0.100:6443"
 project_root: "{{ playbook_dir }}/../../../"
 
 # Docker registry configuration
-local_registry: "registry.local:30500"
+local_registry: "registry.local:5000"
 image_tag: "latest"
 
 # This policy applies to the registry service

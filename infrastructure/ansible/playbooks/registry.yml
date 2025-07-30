@@ -62,8 +62,8 @@
               values:
                 - "{{ item }}"
           service:
-            loadBalancerIP: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }}"
-            nodePort: "{{ local_registry.split(':')[1] | int }}"
+            type: ClusterIP  # Changed from NodePort to ClusterIP
+            port: 5000
           volumes:
             hostPath: "/data/registry-{{ item }}"
             capacity: "100Gi"
@@ -71,19 +71,30 @@
             allowedCidrs: "{{ network_policy.allowed_cidrs }}"
       with_items: "{{ groups['registry'] }}"
 
+
 - name: Append to /etc/hosts file on all machines in a group
   hosts: master:agents
   become: true
   vars:
     ansible_python_interpreter: /usr/bin/python3
   tasks:
+
+    - name: Get registry-master-00 service IP
+      shell: kubectl get svc -A | grep registry-master-00 | awk '{print $4}'
+      register: registry_ip
+      become: true
+      changed_when: false
+
+    - name: Show the extracted IP
+      debug:
+        msg: "Registry IP is {{ registry_ip.stdout }}"  
     - name: Append entry to /etc/hosts
       lineinfile:
-        path: /etc/hosts
-        regexp: '^.*\sregistry\.local\s*$'
-        line: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }} registry {{ local_registry.split(':')[0] }}"
-        state: present
-        insertafter: EOF
+              path: /etc/hosts
+              regexp: '^.*\sregistry\.local\s*$'
+              line: "{{ registry_ip.stdout }} registry {{ local_registry.split(':')[0] }}"
+              state: present
+              insertafter: EOF
 
 - name: Configure K3s to trust insecure registry
   hosts: master:agents
@@ -145,7 +156,7 @@
         executable: /bin/bash
       register: cert_extract
 
-    - name: Create certificate directory on all nodes
+    - name: Create certificate directory on all nodes for ClusterIP access
       file:
         path: /etc/docker/certs.d/{{ local_registry }}/
         state: directory
