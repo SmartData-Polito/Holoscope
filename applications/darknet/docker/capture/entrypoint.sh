@@ -79,8 +79,8 @@ setup_data_directory() {
     local env=$(detect_environment)
     
     echo "Setting up data directory for environment: $env"
-    mkdir -p /data/darknet
-    
+    mkdir -p /data/darknet/
+    chmod 777 /data/darknet 
     
     if [[ "$env" == "kubernetes" ]]; then
         # In K8s, might use fsGroup for permissions, so be more permissive
@@ -137,7 +137,7 @@ start_packet_capture() {
     echo "Interface: $INTERFACES"
     echo "Filter: $FILTER"
     echo "Rotation: $ROTATE_SECONDS seconds"
-    echo "Output: /data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+    echo "Output: /data/darknet/"
 
 
 
@@ -153,7 +153,7 @@ start_packet_capture() {
 
     fix_permissions_loop() {
         while true; do
-            chmod 666 /data/darknet/*
+            find /data/darknet -type f -exec chmod 666 {} \; 2>/dev/null
             sleep 5
         done
     }
