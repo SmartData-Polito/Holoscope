@@ -10,7 +10,7 @@ l4responder_toolbox:
   container:
     name: toolbox
     image:
-      repository: registry.local:30500/public/l4responder_toolbox
+      repository: registry.local:5000/public/l4responder_toolbox
       tag: latest
       pullPolicy: Always
   serviceAccount:
@@ -39,7 +39,7 @@ l4responder_server:
   container:
     name: responder
     image:
-      repository: registry.local:30500/public/l4responder_server 
+      repository: registry.local:5000/public/l4responder_server 
       tag: latest
       pullPolicy: Always
     containerPort: 60000
