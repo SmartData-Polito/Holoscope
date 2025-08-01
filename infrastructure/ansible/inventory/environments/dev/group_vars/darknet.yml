@@ -89,7 +89,7 @@ values:
         srcPath: "/data/darknet"
         dstPath: "/data/collector/worker-00"
       worker-01:
-        enabled: true
+        enabled: false
         target: "worker-01:65222"
         sshUser: "capture"
         srcPath: "/data/darknet"
@@ -103,7 +103,7 @@ values:
     
     config:
       runMode: "cronjob"
-      logLevel: "INFO"
+      logLevel: "DEBUG"
     
     # CronJobs run on master node
     nodeSelector:
@@ -122,6 +122,6 @@ values:
 
   # Network policy
   networkPolicy:
-    enabled: true
+    enabled: false
     allowedCidrs:
       - "10.0.0.0/8"

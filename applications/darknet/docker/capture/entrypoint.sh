@@ -80,7 +80,8 @@ setup_data_directory() {
     
     echo "Setting up data directory for environment: $env"
     mkdir -p /data/darknet
-    chmod 777 /data/darknet
+    
+    
     if [[ "$env" == "kubernetes" ]]; then
         # In K8s, might use fsGroup for permissions, so be more permissive
         chown capture:capture /data/darknet || {
@@ -130,7 +131,7 @@ start_packet_capture() {
 
     FILTER=${FILTER:-ip}
     ROTATE_SECONDS=${ROTATE_SECONDS:-60}
-
+    
     echo "=== Starting Packet Capture ==="
     echo "Environment: $env"
     echo "Interface: $INTERFACES"
@@ -148,19 +149,31 @@ start_packet_capture() {
     }
 
     trap cleanup SIGTERM SIGINT
+    # Background thread to fix permissions
 
+    fix_permissions_loop() {
+        while true; do
+            chmod 666 /data/darknet/*
+            sleep 5
+        done
+    }
 
+    # Start permission fixer in background
+    fix_permissions_loop &
+    FIX_PID=$!
 
-    # Build the rotated file path
-   
- 
+    # Start dumpcap in background
+    dumpcap $INTERFACES \
+        -b duration:$ROTATE_SECONDS \
+        -w "/data/darknet/trace.pcap" \
+        -f "$FILTER" &
+    DUMP_PID=$!
 
-    exec  tshark $INTERFACES \
-            -b duration:"$ROTATE_SECONDS" \
-            -w "/data/darknet/trace-$(date +%Y%m%d_%H-%M-%S_%s).pcap" \
-            "$FILTER"
-
-
+    # Optionally wait on either or both
+    wait $DUMP_PID
+    wait $FIX_PID
+    
+    
 }
 
 # Main execution flow

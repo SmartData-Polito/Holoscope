@@ -2,7 +2,8 @@
 ---
 # Master-specific configuration
 wireguard_private_key: uLwGL/dGtjAu4EY7HrEBPUbnGWZQRxWvI4ZfZoonHVY=
-wireguard_public_key: 
+wireguard_public_key: lXJYCrvay2sgqHVqdwkMKQ1oDr7mZWXAeMPpAN9CRhc=
 wireguard_listen_port: "51820"
 wireguard_endpoint: "10.10.0.100:51820"
+server_ip: "10.0.0.100"
 wireguard_interface: "wg0"

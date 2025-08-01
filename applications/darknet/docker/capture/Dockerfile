@@ -5,14 +5,22 @@ RUN apk add --no-cache \
     openssh-server \
     openssh-keygen \
     rsync \
-    tshark \
+    wireshark-common \
     shadow \
-    su-exec
+    su-exec \
+    libcap
 
 # Create capture user with proper settings
 RUN adduser -D -s /bin/bash -h /home/capture capture && \
     echo "capture:*" | chpasswd -e
 
+# Create wireshark group and add capture user to it
+RUN  adduser capture wireshark
+RUN  adduser capture wheel
+RUN  adduser capture root
+RUN chmod 750 /usr/bin/dumpcap && \
+    chgrp wireshark /usr/bin/dumpcap && \
+    setcap cap_net_raw,cap_net_admin=eip /usr/bin/dumpcap
 # Configure SSH directories with proper permissions
 RUN mkdir -p /run/sshd && \
     mkdir -p /home/capture/.ssh && \

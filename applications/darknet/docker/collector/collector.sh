@@ -108,7 +108,14 @@ get_destination_dir() {
     local filename=$1
     local date_string
     
-    if [[ $filename =~ [0-9]{10} ]]; then
+    if [[ $filename =~ _[0-9]+_([0-9]{4})([0-9]{2})([0-9]{2})[0-9]{6}\.pcap ]]; then
+        local year=${BASH_REMATCH[1]}
+        local month=${BASH_REMATCH[2]}
+        local day=${BASH_REMATCH[3]}
+        date_string="$year/$month/$day"
+        #log "INFO" "Full date: $date_string"
+    
+    elif [[ $filename =~ [0-9]{10} ]]; then
         local unix_time=${BASH_REMATCH[0]}
         date_string=$(date -d @"$unix_time" +"%Y/%m/%d")
     elif [[ $filename =~ 20[0-9]{6} ]]; then
@@ -121,7 +128,7 @@ get_destination_dir() {
         log "WARN" "Unable to extract date from filename: $filename, using default"
         date_string=$(date +"%Y/%m/%d")
     fi
-    
+    #log "INFO" "Destination directory for $filename: $DEST_PATH/$date_string"
     echo "$DEST_PATH/$date_string"
 }
 
@@ -177,6 +184,10 @@ collect_files() {
         local basename_file=$(basename "$file")
         local temp_file="$DEST_PATH/temp_$basename_file"
         
+        # Add debugging information
+        log "DEBUG" "Attempting to copy: $SSH_USER@$SSH_HOST:$file -> $temp_file"
+        log "DEBUG" "SSH command: ssh -p $SSH_PORT"
+        
         set +e
         local rsync_output
         rsync_output=$(rsync -azP --timeout=300 -e "ssh -p $SSH_PORT" "$SSH_USER@$SSH_HOST:$file" "$temp_file" 2>&1)
@@ -186,8 +197,10 @@ collect_files() {
         
         if [[ $exit_code -eq 0 ]]; then
             local destination_dir
-            destination_dir=$(get_destination_dir "$basename_file")
+            log "DEBUG" "file name: $basename_file"
             
+            destination_dir=$(get_destination_dir "$basename_file")
+            log "DEBUG" "destination $destination_dir"
             mkdir -p "$destination_dir"
             
             if [[ "$basename_file" == *.pcap ]]; then
@@ -222,7 +235,24 @@ collect_files() {
                 rm -f "$temp_file" 2>/dev/null
             fi
         else
-            log "ERROR" "Failed to copy: $basename_file"
+            log "ERROR" "Failed to copy: $basename_file (exit code: $exit_code)"
+            log "ERROR" "Rsync output: $rsync_output"
+            
+            # Additional debugging - test SSH connectivity
+            log "DEBUG" "Testing SSH connectivity..."
+            if ssh -p "$SSH_PORT" -o ConnectTimeout=10 "$SSH_USER@$SSH_HOST" "echo 'SSH connection successful'" 2>/dev/null; then
+                log "DEBUG" "SSH connection is working"
+                # Test if the file actually exists
+                if ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "test -f '$file'" 2>/dev/null; then
+                    log "DEBUG" "File exists on remote server: $file"
+                    # Check file permissions
+                    ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "ls -la '$file'" 2>/dev/null || log "DEBUG" "Could not get file permissions"
+                else
+                    log "DEBUG" "File does not exist on remote server: $file"
+                fi
+            else
+                log "ERROR" "SSH connection failed to $SSH_USER@$SSH_HOST:$SSH_PORT"
+            fi
         fi
     done
     
@@ -231,6 +261,7 @@ collect_files() {
     else
         log "INFO" "No files were processed this cycle"
     fi
+
     
     return 0
 }
