@@ -39,7 +39,7 @@ spec:
         - name: NODE_NAME
           value: {{ $nodeName }}
         - name: INTERFACE
-          value: {{ $nodeConfig.config.interface }}
+          value: {{ (index $nodeConfig.config.interfaces 0).interface }}
         - name: SUBNET
           value: {{ join " " $nodeConfig.arp.subnet | quote }}
         
@@ -47,7 +47,7 @@ spec:
           - "/usr/src/arpd/farpd2"
           - "-d"
           - "-i"
-          - "{{ $nodeConfig.config.interface }}"
+          - "{{ (index $nodeConfig.config.interfaces 0).interface }}"
           {{- range $nodeConfig.arp.subnet }}
           - {{ . | quote }}
           {{- end }}

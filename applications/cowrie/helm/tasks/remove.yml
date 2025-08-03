@@ -1,7 +1,0 @@
-- name: Uninstall Helm chart for Cowrie honeypot on each agent node
-  command: >
-    helm uninstall cowrie-ansible-{{ item }} --namespace {{ namespace }}
-  environment:
-    KUBECONFIG: "{{ fetch_result.dest }}"
-  with_items: "{{ groups['cowrie'] }}"
-  ignore_errors: yes

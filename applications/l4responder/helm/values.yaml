@@ -2,7 +2,6 @@ global:
   namespace: l4responder
   storageClass: manual
 
-
 l4responder_toolbox:
   name: l4responder-toolbox
   labels:
@@ -19,7 +18,6 @@ l4responder_toolbox:
     privileged: true
   network:
     hostNetwork: true
-  
   
   rbac:
     clusterRole:

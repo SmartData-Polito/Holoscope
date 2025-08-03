@@ -1,10 +1,37 @@
+# templates/pvc.yaml  
+{{- if .Values.cowrie.persistence.enabled }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.volumes.pvc.name }}
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}-pvc
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "cowrie.labels" $ | nindent 4 }}
+    cowrie.io/node: {{ $nodeName }}
+    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 spec:
-  storageClassName: {{ .Values.volumes.pvc.storageClassName }}
-  accessModes: {{ .Values.volumes.pvc.accessModes }}
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.volumes.pvc.resources.requests.storage }}
+      storage: {{ $.Values.cowrie.persistence.size }}
+  {{- if eq $.Values.cowrie.persistence.type "hostPath" }}
+  storageClassName: ""
+  selector:
+    matchLabels:
+      {{- include "cowrie.labels" $ | nindent 6 }}
+      cowrie.io/node: {{ $nodeName }}
+      cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
+  {{- else }}
+  {{- if $.Values.cowrie.persistence.storageClass }}
+  storageClassName: {{ $.Values.cowrie.persistence.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

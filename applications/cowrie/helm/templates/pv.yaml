@@ -1,13 +1,38 @@
+# templates/pv.yaml
+{{- if .Values.cowrie.persistence.enabled }}
+{{- if eq .Values.cowrie.persistence.type "hostPath" }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.volumes.pv.name }}
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}-pv
   labels:
-    type: local
+    {{- include "cowrie.labels" $ | nindent 4 }}
+    cowrie.io/node: {{ $nodeName }}
+    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 spec:
-  storageClassName: {{ .Values.volumes.pv.storageClassName }}
   capacity:
-    storage: {{ .Values.volumes.pv.capacity }}
-  accessModes: {{ .Values.volumes.pv.accessModes }}
+    storage: {{ $.Values.cowrie.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
   hostPath:
-    path: {{ .Values.volumes.pv.hostPath.path }}
+    path: {{ $nodeConfig.storage.hostPath }}/{{ $exposedIP | replace "." "-" | replace "/" "-" }}
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ $nodeConfig.nodeSelector }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

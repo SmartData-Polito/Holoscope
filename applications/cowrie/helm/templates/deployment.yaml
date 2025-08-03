@@ -1,74 +1,83 @@
+# templates/deployment.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.appName }}
-  namespace: {{ .Values.namespace }}
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}
+  namespace: {{ $.Values.global.namespace }}
   labels:
-    app.kubernetes.io/name: {{ .Values.appName }}
-    app.kubernetes.io/instance: {{ .Values.appName }}
-    app.kubernetes.io/part-of: {{ .Values.appName }}
-spec: 
+    {{- include "cowrie.labels" $ | nindent 4 }}
+    cowrie.io/node: {{ $nodeName }}
+    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
+spec:
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.appName }}
+      {{- include "cowrie.selectorLabels" $ | nindent 6 }}
+      cowrie.io/node: {{ $nodeName }}
+      cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Values.appName }}
+        {{- include "cowrie.selectorLabels" $ | nindent 8 }}
+        cowrie.io/node: {{ $nodeName }}
+        cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
+      
+      # Initialize required directories
+      initContainers:
+      - name: setup-cowrie-dirs
+        image: busybox
+        command: ['sh', '-c']
+        args:
+          - |
+            mkdir -p /cowrie/cowrie-git/var/log/cowrie
+            mkdir -p /cowrie/cowrie-git/var/lib/cowrie
+            mkdir -p /cowrie/cowrie-git/var/lib/cowrie/tty
+            mkdir -p /cowrie/cowrie-git/var/lib/cowrie/downloads
+            chown -R 999:999 /cowrie/cowrie-git/var
+            chmod -R 755 /cowrie/cowrie-git/var
+        {{- if $.Values.cowrie.persistence.enabled }}
+        volumeMounts:
+        - name: cowrie-data
+          mountPath: /cowrie/cowrie-git/var
+        {{- end }}
+      
       containers:
-        - name: cowrie
-          image: {{ .Values.containers.cowrie.image }}
-          imagePullPolicy: {{ .Values.containers.cowrie.imagePullPolicy }}
-          securityContext:
-            runAsUser: 999
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - all
-          ports:
-            - name: {{ .Values.service.ports.sshPort.name }}
-              containerPort: {{ .Values.service.ports.sshPort.port }}
-            - name: {{ .Values.service.ports.telnetPort.name }}
-              containerPort: {{ .Values.service.ports.telnetPort.port }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.ports.sshPort.name }}
-            initialDelaySeconds: 5
-            periodSeconds: 60
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.ports.sshPort.name }}
-            initialDelaySeconds: 15
-            periodSeconds: 60
-        - name: tcpdump
-          securityContext:
-            privileged: true
-          image: {{ .Values.containers.tcpdump.image }}
-          imagePullPolicy: {{ .Values.containers.tcpdump.imagePullPolicy }}
-          command: {{ .Values.containers.tcpdump.command | toJson }}
-          args:
-            - "tcpdump -i {{ .Values.containers.tcpdump.interface }} -nn -tt '{{ .Values.containers.tcpdump.filter }}' -G {{ .Values.containers.tcpdump.rotate_seconds }} -w {{ .Values.containers.tcpdump.outputPath }}"
-          volumeMounts:
-            - mountPath: {{ .Values.containers.tcpdump.monthPath }}
-              name: {{ .Values.volumes.pv.name }}
+      - name: {{ $.Values.cowrie.container.name }}
+        image: "{{ $.Values.cowrie.image.repository }}:{{ $.Values.cowrie.image.tag }}"
+        imagePullPolicy: {{ $.Values.cowrie.image.pullPolicy }}
+        
+        ports:
+        - containerPort: {{ $.Values.cowrie.container.port }}
+          name: ssh
+        
+        env:
+        - name: COWRIE_HOSTNAME
+          value: "{{ $exposedIP }}"
+        - name: COWRIE_LISTEN_ENDPOINTS
+          value: "tcp:port={{ $.Values.cowrie.container.port }}:interface=0.0.0.0"
+        
+        resources:
+          {{- toYaml $.Values.cowrie.resources | nindent 10 }}
+        
+        {{- if $.Values.cowrie.persistence.enabled }}
+        volumeMounts:
+        - name: cowrie-data
+          mountPath: /cowrie/cowrie-git/var
+        {{- end }}
+      
+      {{- if $.Values.cowrie.persistence.enabled }}
       volumes:
-        - name: {{ .Values.volumes.pv.name }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.volumes.pvc.name }}
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: 
-                    {{- range .Values.nodeAffinity.hostname.values }}
-                    - {{ . }}
-                    {{- end }}
-
-
-
-
+      - name: cowrie-data
+        persistentVolumeClaim:
+          claimName: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}-pvc
+      {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
