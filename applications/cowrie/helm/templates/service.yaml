@@ -1,22 +1,29 @@
+# templates/service.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.appName }}
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}
+  namespace: {{ $.Values.global.namespace }}
   labels:
-    app.kubernetes.io/name: {{ .Values.appName }}
-    app.kubernetes.io/instance: {{ .Values.appName }}
-    app.kubernetes.io/part-of: {{ .Values.appName }}
+    {{- include "cowrie.labels" $ | nindent 4 }}
+    cowrie.io/node: {{ $nodeName }}
+    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 spec:
-  selector:
-    app.kubernetes.io/name: {{ .Values.appName }}
-  ports:
-    {{- range .Values.service.ports }}
-    - name: {{ .name }}
-      protocol: {{ .protocol }}
-      port: {{ .port }}
-      targetPort: {{ .targetPort }}
-    {{- end }}
+  type: ClusterIP
   externalIPs:
-    {{- range .Values.service.externalIPs }}
-    - {{ . }}
-    {{- end }}
+    - {{ $exposedIP }}
+  ports:
+    - port: 22
+      targetPort: {{ $.Values.cowrie.container.port }}
+      protocol: TCP
+      name: ssh
+  selector:
+    {{- include "cowrie.selectorLabels" $ | nindent 4 }}
+    cowrie.io/node: {{ $nodeName }}
+{{- end }}
+{{- end }}
+{{- end }}

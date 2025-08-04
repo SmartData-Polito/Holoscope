@@ -1,5 +1,5 @@
 <network>
-  <name>honeynet</name>
+  <name>cyborg_VM_net</name>
   <uuid>0bf68fe9-27f1-4409-95c2-17fb3c8b81f5</uuid>
   <forward mode='nat'>
     <nat>
@@ -9,6 +9,8 @@
   <bridge name='virbr10' stp='on' delay='0'/>
   <mac address='52:54:00:38:27:36'/>
   <dns>
+    <forwarder addr='8.8.8.8'/>
+    <forwarder addr='8.8.4.4'/>
     <host ip='10.10.0.100'>
       <hostname>master-00.local</hostname>
     </host>    

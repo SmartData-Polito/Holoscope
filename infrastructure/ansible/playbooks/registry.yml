@@ -61,19 +61,15 @@
             hostname:
               values:
                 - "{{ item }}"
-          service:
-            loadBalancerIP: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }}"
-            nodePort: "{{ local_registry.split(':')[1] | int }}"
           volumes:
             hostPath: "/data/registry-{{ item }}"
             capacity: "100Gi"
-          networkPolicy:
-            allowedCidrs: "{{ network_policy.allowed_cidrs }}"
       with_items: "{{ groups['registry'] }}"
 
-- name: Append to /etc/hosts file on all machines in a group
+- name: Append to /etc/hosts file on all machines
   hosts: master:agents
   become: true
+  gather_facts: false
   vars:
     ansible_python_interpreter: /usr/bin/python3
   tasks:
@@ -81,7 +77,7 @@
       lineinfile:
         path: /etc/hosts
         regexp: '^.*\sregistry\.local\s*$'
-        line: "{{ hostvars[groups['registry'][0]]['wireguard_ip'] }} registry {{ local_registry.split(':')[0] }}"
+        line: "10.0.0.100 registry {{ local_registry.split(':')[0] }}" #FIXME: should not be hardcoded
         state: present
         insertafter: EOF
 
@@ -145,7 +141,7 @@
         executable: /bin/bash
       register: cert_extract
 
-    - name: Create certificate directory on all nodes
+    - name: Create certificate directory on all nodes for ClusterIP access
       file:
         path: /etc/docker/certs.d/{{ local_registry }}/
         state: directory
@@ -169,7 +165,7 @@
       become: true
 
 - name: Verify registry accessibility
-  hosts: master[0]
+  hosts: master:agents
   become: true
   tasks:
     - name: Pull test image

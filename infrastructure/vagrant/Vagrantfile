@@ -115,7 +115,7 @@ def configure_nodes(config, nodes, os, playbook)
 
       # Set network configuration based on the host OS and whether we're using hardcoded nodes
       if os == :linux
-        n.vm.network "private_network", mac: node.mac, libvirt__network_name: "honeynet"
+        n.vm.network "private_network", mac: node.mac, libvirt__network_name: "cyborg_VM_net"
       elsif os == :windows
         # On Windows, set the IP address (since MAC might not be supported by VirtualBox here)
         n.vm.network "private_network", ip: node.ip, netmask: "255.255.255.0"
@@ -123,6 +123,27 @@ def configure_nodes(config, nodes, os, playbook)
         # For macOS, use the MAC address
         n.vm.network "private_network", mac: node.mac
       end
+
+
+
+
+      # Find any .pub file in ./dev_admin_pub_ssh_key, pick the first one or nil if none
+      ssh_pub_key_path = Dir.glob("./dev_admin_pub_ssh_key/*.pub").first
+
+      # Read the public key content (if file exists)
+      ssh_pub_key_content = ssh_pub_key_path && File.exist?(ssh_pub_key_path) ? File.read(ssh_pub_key_path).strip : nil
+      if ssh_pub_key_content
+        n.vm.provision "shell", privileged: false do |s|
+          # Use a heredoc to inject the key content safely
+          s.inline = <<-SHELL
+            echo "Injecting SSH public key #{ssh_pub_key_content[0,20]}... into ~/.ssh/authorized_keys"
+            mkdir -p ~/.ssh
+            grep -qxF '#{ssh_pub_key_content}' ~/.ssh/authorized_keys || echo '#{ssh_pub_key_content}' >> ~/.ssh/authorized_keys
+            chmod 600 ~/.ssh/authorized_keys
+          SHELL
+        end
+      end
+
 
       # Provision using Ansible if not on Windows
       if os != :windows
@@ -139,7 +160,7 @@ end
 Vagrant.configure("2") do |config|
   config.trigger.before :up do |trigger|
     trigger.info = "Creating the network before VM creation..."
-    trigger.run = {inline: "bash -c 'sudo virsh net-define honeynet.xml || true'"}
+    trigger.run = {inline: "bash -c 'sudo virsh net-define cyborg_VM_net.xml || true'"}
   end
 
   # Determine the host OS

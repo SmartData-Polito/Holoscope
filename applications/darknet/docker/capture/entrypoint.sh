@@ -79,20 +79,8 @@ setup_data_directory() {
     local env=$(detect_environment)
     
     echo "Setting up data directory for environment: $env"
-    mkdir -p /data/darknet
-    
-    if [[ "$env" == "kubernetes" ]]; then
-        # In K8s, might use fsGroup for permissions, so be more permissive
-        chown capture:capture /data/darknet || {
-            echo "Warning: Could not change ownership in K8s environment (this may be normal)"
-            chmod 777 /data/darknet
-        }
-    else
-        # Docker Compose - standard ownership
-        chown capture:capture /data/darknet
-    fi
-    
-    echo "Data directory ready: /data/darknet"
+    mkdir -p /data/darknet 
+    chown capture:capture /data/darknet
 }
 
 # Start SSH daemon
@@ -127,24 +115,16 @@ start_packet_capture() {
     local env=$(detect_environment)
     
     # Set default values for environment variables
-    INTERFACE=${INTERFACE:-eth0}
+
     FILTER=${FILTER:-ip}
     ROTATE_SECONDS=${ROTATE_SECONDS:-60}
 
     echo "=== Starting Packet Capture ==="
     echo "Environment: $env"
-    echo "Interface: $INTERFACE"
+    echo "Interface: $INTERFACES"
     echo "Filter: $FILTER"
     echo "Rotation: $ROTATE_SECONDS seconds"
-    echo "Output: /data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-
-    # Verify interface exists
-    if ! ip link show "$INTERFACE" >/dev/null 2>&1; then
-        echo "ERROR: Network interface '$INTERFACE' not found"
-        echo "Available interfaces:"
-        ip link show
-        exit 1
-    fi
+    echo "Output: /data/darknet/"
 
     # Cleanup function
     cleanup() {
@@ -155,23 +135,16 @@ start_packet_capture() {
 
     trap cleanup SIGTERM SIGINT
 
-    # Start packet capture with environment-specific options
-    if [[ "$env" == "kubernetes" ]]; then
-        echo "Starting tcpdump for Kubernetes environment..."
-        # In K8s, -Z flag might behave differently, so we'll handle file ownership separately
-        exec tcpdump -i "$INTERFACE" \
-            -G "$ROTATE_SECONDS" \
-            -w "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap" \
-            -v \
-            "$FILTER"
-    else
-        echo "Starting tcpdump for Docker Compose environment..."
-        exec tcpdump -i "$INTERFACE" \
-            -G "$ROTATE_SECONDS" \
-            -w "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap" \
-            -v \
-            "$FILTER"
-    fi
+    # Start dumpcap in background
+    su - capture -c "dumpcap \
+        -b duration:$ROTATE_SECONDS \
+        -w \"/data/darknet/trace.pcap\" \
+        -f \"$FILTER\" \
+        $INTERFACES " &
+
+    DUMPCAP_PID=$!  
+    echo "Packet capture started with PID: $DUMPCAP_PID"
+    wait $DUMPCAP_PID
 }
 
 # Main execution flow

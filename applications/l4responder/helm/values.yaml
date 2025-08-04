@@ -1,57 +1,44 @@
-# applications/l4responder/helm/values.yaml
 global:
   namespace: l4responder
   storageClass: manual
 
-# Default per-node capture configurations (empty - populated by Ansible)
-captureNodes: {}
+l4responder_toolbox:
+  name: l4responder-toolbox
+  labels:
+     app: l4responder-toolbox
+  container:
+    name: toolbox
+    image:
+      repository: registry.local:5000/public/l4responder_toolbox
+      tag: latest
+      pullPolicy: Always
+  serviceAccount:
+    name: toolbox-sa
+  securityContext:
+    privileged: true
+  network:
+    hostNetwork: true
+  
+  rbac:
+    clusterRole:
+      name: pod-reader
+      rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch"]
+          
+    clusterRoleBinding:
+        name: toolbox-sa-binding
 
-# Image configurations
-L4Images:
-  enabled: true
-  image:
-    repository: registry.local:30500/public/l4responder
-    tag: latest
-    pullPolicy: IfNotPresent  
-
-
-# Network configuration
-network:
-  # Use host network for packet capture
-  hostNetwork: true
-  # DNS policy when using host network
-  dnsPolicy: ClusterFirstWithHostNet
-
-# Security context (container-level)
-securityContext:
-  # Required for packet capture
-  privileged: true
-  capabilities:
-    add:
-      - NET_ADMIN
-      - NET_RAW
-      - SYS_ADMIN
-
-# Network policy 
-networkPolicy:
-  enabled: false
-  allowedCidrs:
-    - "10.0.0.0/24"
-    - "10.10.0.0/24"
-
-# Resource limits (shared)
-resources:
-  capture:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
-  arp:
-    requests:
-      memory: "64Mi"
-      cpu: "50m"
-    limits:
-      memory: "128Mi"
-      cpu: "100m"
+l4responder_server:
+  labels:
+     app: l4responder-server
+  terminationGracePeriodSeconds: 0
+  container:
+    name: responder
+    image:
+      repository: registry.local:5000/public/l4responder_server 
+      tag: latest
+      pullPolicy: Always
+    containerPort: 60000
+    hostPort: 60000 

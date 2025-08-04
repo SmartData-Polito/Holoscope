@@ -1,59 +1,36 @@
-deploymentName: cowrie
-appName: cowrie
-namespace: ansible-managed
-hostNetwork: true
+global:
+  namespace: cowrie
 
-containers:
-  cowrie:
-    image: cowrie/cowrie:latest
-    imagePullPolicy: IfNotPresent
-  tcpdump:
-    image: nicolaka/netshoot
-    imagePullPolicy: IfNotPresent
-    monthPath: /etc/tcpdump
-    command:
-      - "/bin/bash"
-      - "-c"
-    interface: eth0
-    rotate_seconds: 3600
-    filter: "ip and (net 10.10.0.0/24)"
-    outputPath: "/etc/tcpdump/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+cowrie:
+  image:
+    repository: cowrie/cowrie
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Container configuration
+  container:
+    name: cowrie
+    port: 2222  # Cowrie runs on port 2222 internally
+  
+  # Service configuration
+  service:
+    type: NodePort
+    port: 22    # External SSH port
+    targetPort: 2222
+  
+  # Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Storage for logs
+  persistence:
+    enabled: true
+    storageClass: "manual"
+    accessMode: ReadWriteOnce
+    size: 5Gi
 
-nodeAffinity:
-  hostname:
-    values:
-      - poli-worker-00
-
-volumes:
-  pv:
-    name: pv-volume-tcpdump-cowrie
-    storageClassName: manual
-    capacity: 5Gi
-    accessModes:
-      - ReadWriteOnce
-    hostPath:
-      path: "/mnt/data/tcpdump"
-  pvc:
-    name: pvc-tcpdump-cowrie
-    storageClassName: manual
-    accessModes:
-      - ReadWriteOnce
-    resources:
-      requests:
-        storage: 5Gi
-
-service:
-  ports:
-    sshPort:
-      name: ssh-port
-      protocol: TCP
-      port: 2222
-      targetPort: 2222
-    telnetPort:
-      name: telnet-port
-      protocol: TCP
-      port: 2223
-      targetPort: 2223
-  externalIPs:
-    - 198.51.100.32
-    - 198.51.100.33

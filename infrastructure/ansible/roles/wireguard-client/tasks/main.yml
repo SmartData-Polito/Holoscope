@@ -47,6 +47,7 @@
   vars:
     server_public_key: "{{ hostvars[groups['master'][0]]['wireguard_public_key'] }}"
     server_endpoint: "{{ hostvars[groups['master'][0]]['wireguard_endpoint'] }}"
+    AllowedIPs: "{{ hostvars[groups['master'][0]]['wireguard_ip'] }}"
 
 - name: Activate Wireguard at boot
   command: "{{ item }}"

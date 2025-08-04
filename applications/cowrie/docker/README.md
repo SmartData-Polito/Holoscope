@@ -1,0 +1,1 @@
+Using the official Cowrie image for now. 

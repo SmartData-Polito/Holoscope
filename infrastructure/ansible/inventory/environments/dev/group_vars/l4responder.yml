@@ -1,0 +1,40 @@
+---
+# Development l4responder Application Configuration
+enabled: true
+namespace: l4responder
+chart_path: "{{ playbook_dir }}/../../../applications/l4responder/helm"
+
+docker_images:
+  - name: "l4responder_server"
+    author: "public"
+    path: "applications/l4responder/docker/l4responder_server"
+    dockerfile: "Dockerfile"
+    tag: "latest"
+
+  - name: "l4responder_toolbox"
+    author: "public"
+    path: "applications/l4responder/docker/l4responder_toolbox"
+    dockerfile: "Dockerfile"
+    tag: "latest"
+
+values:
+  l4responder_toolbox:
+    enabled: true
+    workers:
+      worker-00:
+        enabled: true
+        portRanges:
+            - start: 10000
+              end: 10100
+            - start: 30000
+              end: 30100
+        ipRanges:
+            - network: "192.168.10.0/24"
+
+  l4responder_server:
+    enabled: true
+    workers:
+      worker-00:
+          enabled: true
+      worker-01:
+          enabled: false

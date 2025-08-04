@@ -59,7 +59,8 @@
     --kube-apiserver-arg="audit-log-path=/var/log/k3s-audit.log" \
     --kube-apiserver-arg="audit-policy-file=/etc/k3s-audit-policy.yaml" \
     --kube-apiserver-arg="enable-admission-plugins=NodeRestriction" \
-    --kubelet-arg="protect-kernel-defaults=true"
+    --kubelet-arg="protect-kernel-defaults=true" \
+    --disable="traefik"
   register: k3s_install_result
 
 - name: Check if K3s service started successfully

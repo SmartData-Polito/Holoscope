@@ -37,10 +37,10 @@ values:
     worker-00:
       enabled: true
       config:
-        interface: eth0
+        interfaces: 
+        - interface: eth0
         rotate_seconds: 60
         filter: "ip and (net 192.168.10.0/24)"
-        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
         hostPath: "/data/darknet/worker-00"
       arp:
@@ -49,21 +49,22 @@ values:
           - "192.168.10.0/24"
 
     worker-01:
-      enabled: true
-      config:
-        interface: eth0
-        rotate_seconds: 60
-        filter: "ip and (net 192.168.20.0/24)"
-        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-      storage:
-        hostPath: "/data/darknet/worker-01"
-      arp:
-        enabled: false
+     enabled: true
+     config:
+       interfaces: 
+        - interface: eth0
+       rotate_seconds: 60
+       filter: "ip and (net 192.168.20.0/24)"
+     storage:
+       hostPath: "/data/darknet/worker-01"
+     arp:
+       enabled: false
 
     # worker-02:
     #   enabled: true
     #   config:
-    #     interface: eth0
+    #    interfaces: 
+    #     - interface: eth0
     #     rotate_seconds: 60
     #     filter: "ip and (net 192.168.20.0/24)"
     #     outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
@@ -87,7 +88,7 @@ values:
         srcPath: "/data/darknet"
         dstPath: "/data/collector/worker-00"
       worker-01:
-        enabled: true
+        enabled: false
         target: "worker-01:65222"
         sshUser: "capture"
         srcPath: "/data/darknet"
@@ -101,7 +102,7 @@ values:
     
     config:
       runMode: "cronjob"
-      logLevel: "INFO"
+      logLevel: "DEBUG"
     
     # CronJobs run on master node
     nodeSelector:
@@ -120,6 +121,6 @@ values:
 
   # Network policy
   networkPolicy:
-    enabled: true
+    enabled: false
     allowedCidrs:
       - "10.0.0.0/8"

@@ -42,8 +42,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
-        - name: INTERFACE
-          value: {{ $nodeConfig.config.interface }}
+        - name: INTERFACES
+          value: "{{- range $int := $nodeConfig.config.interfaces }} -i {{ $int.interface }} {{- end }}"
         - name: FILTER
           value: {{ $nodeConfig.config.filter | quote }}
         - name: ROTATE_SECONDS

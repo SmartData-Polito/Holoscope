@@ -1,3 +1,6 @@
 [submodule "infrastructure/ansible/inventory/environments/prod"]
 	path = infrastructure/ansible/inventory/environments/prod
 	url = git@github.com:SmartData-Polito/cyborg-inventories.git
+[submodule "applications/l4responder/docker"]
+	path = applications/l4responder/docker
+	url = https://github.com/AndreaSordello/L4_K3S_responder
