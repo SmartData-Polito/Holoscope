@@ -11,6 +11,12 @@ spec:
   selector:
     app.kubernetes.io/name: {{ .Values.appName }}
   type: {{ .Values.service.type }}
+  {{- if .Values.service.externalIPs }}
+  externalIPs:
+    {{- range .Values.service.externalIPs }}
+    - {{ . }}
+    {{- end }}
+  {{- end }}
   ports:
     - name: https
       protocol: TCP

@@ -118,9 +118,7 @@ start_packet_capture() {
 
     FILTER=${FILTER:-ip}
     ROTATE_SECONDS=${ROTATE_SECONDS:-60}
-    INTERFACE=${INTERFACE:-eth0}
-    INTERFACES="-i $INTERFACE" 
-    
+
     echo "=== Starting Packet Capture ==="
     echo "Environment: $env"
     echo "Interface: $INTERFACES"

@@ -1,3 +1,4 @@
+# templates/service.yaml
 {{- range $nodeName, $nodeConfig := .Values.deployments }}
 {{- if $nodeConfig.enabled }}
 {{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
@@ -5,25 +6,24 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}-svc
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}
   namespace: {{ $.Values.global.namespace }}
   labels:
     {{- include "cowrie.labels" $ | nindent 4 }}
     cowrie.io/node: {{ $nodeName }}
     cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 spec:
-  type: {{ $.Values.cowrie.service.type }}
+  type: ClusterIP
   externalIPs:
     - {{ $exposedIP }}
   ports:
-  - port: {{ $.Values.cowrie.service.port }}
-    targetPort: {{ $.Values.cowrie.service.targetPort }}
-    protocol: TCP
-    name: ssh
+    - port: 22
+      targetPort: {{ $.Values.cowrie.container.port }}
+      protocol: TCP
+      name: ssh
   selector:
     {{- include "cowrie.selectorLabels" $ | nindent 4 }}
     cowrie.io/node: {{ $nodeName }}
-    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 {{- end }}
 {{- end }}
 {{- end }}

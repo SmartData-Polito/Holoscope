@@ -34,20 +34,3 @@ cowrie:
     accessMode: ReadWriteOnce
     size: 5Gi
 
-# Define which nodes and IPs to deploy to
-deployments:
-  worker-00:
-    enabled: true
-    nodeSelector: "worker-00"
-    exposedIPs:
-      - "192.168.10.10"
-      - "192.168.10.11"
-      - "192.168.10.12"
-  
-  worker-01:
-    enabled: true
-    nodeSelector: "worker-01"
-    exposedIPs:
-      - "192.168.10.20"
-      - "192.168.10.21"
-      - "192.168.10.22"

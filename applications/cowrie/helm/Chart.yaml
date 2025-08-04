@@ -3,7 +3,7 @@ name: cowrie
 description: Cowrie SSH Honeypot Helm Chart
 type: application
 version: 1.0.0
-appVersion: "2.5.0"
+appVersion: "latest"
 keywords:
   - security
   - honeypot

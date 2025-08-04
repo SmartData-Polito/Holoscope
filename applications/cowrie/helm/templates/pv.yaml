@@ -3,16 +3,14 @@
 {{- if eq .Values.cowrie.persistence.type "hostPath" }}
 {{- range $nodeName, $nodeConfig := .Values.deployments }}
 {{- if $nodeConfig.enabled }}
-{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}-pv
+  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-pv
   labels:
     {{- include "cowrie.labels" $ | nindent 4 }}
     cowrie.io/node: {{ $nodeName }}
-    cowrie.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" }}
 spec:
   capacity:
     storage: {{ $.Values.cowrie.persistence.size }}
@@ -21,7 +19,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   hostPath:
-    path: {{ $nodeConfig.storage.hostPath }}/{{ $exposedIP | replace "." "-" | replace "/" "-" }}
+    path: {{ $nodeConfig.storage.hostPath }}
     type: DirectoryOrCreate
   nodeAffinity:
     required:
@@ -31,7 +29,6 @@ spec:
           operator: In
           values:
           - {{ $nodeConfig.nodeSelector }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

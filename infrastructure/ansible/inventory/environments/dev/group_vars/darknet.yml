@@ -41,7 +41,6 @@ values:
         - interface: eth0
         rotate_seconds: 60
         filter: "ip and (net 192.168.10.0/24)"
-        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
       storage:
         hostPath: "/data/darknet/worker-00"
       arp:
@@ -56,7 +55,6 @@ values:
         - interface: eth0
        rotate_seconds: 60
        filter: "ip and (net 192.168.20.0/24)"
-       outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
      storage:
        hostPath: "/data/darknet/worker-01"
      arp:

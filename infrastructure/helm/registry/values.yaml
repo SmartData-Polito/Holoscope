@@ -12,7 +12,11 @@ nodeAffinity:
   hostname:
     values:
       - master-00
-      
+
+networkPolicy:
+  allowedCidrs:
+    - "10.0.0.0/8"
+
 volumes:
   storageClassName: manual
   capacity: 15Gi
@@ -34,7 +38,8 @@ service:
   type: ClusterIP
   port: 5000
   targetPort: 5000
-
+  externalIPs:
+    - 10.0.0.100 #FIXME: should not be hardcoded
 
 securityContext:
   runAsNonRoot: true
