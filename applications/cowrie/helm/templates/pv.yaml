@@ -17,7 +17,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
+  storageClassName: {{ $.Values.cowrie.persistence.storageClass | quote }}
   hostPath:
     path: {{ $nodeConfig.storage.hostPath }}
     type: DirectoryOrCreate

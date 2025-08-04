@@ -30,7 +30,7 @@ cowrie:
   # Storage for logs
   persistence:
     enabled: true
-    storageClass: ""
+    storageClass: "manual"
     accessMode: ReadWriteOnce
     size: 5Gi
 

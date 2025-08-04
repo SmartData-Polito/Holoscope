@@ -136,10 +136,11 @@ start_packet_capture() {
     trap cleanup SIGTERM SIGINT
 
     # Start dumpcap in background
-    su - capture -c "dumpcap $INTERFACES \
+    su - capture -c "dumpcap \
         -b duration:$ROTATE_SECONDS \
         -w \"/data/darknet/trace.pcap\" \
-        -f \"$FILTER\"" &
+        -f \"$FILTER\" \
+        $INTERFACES " &
 
     DUMPCAP_PID=$!  
     echo "Packet capture started with PID: $DUMPCAP_PID"
