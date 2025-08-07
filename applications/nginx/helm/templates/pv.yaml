@@ -1,0 +1,35 @@
+# templates/pv.yaml
+{{- if .Values.nginx.persistence.enabled }}
+{{- if eq .Values.nginx.persistence.type "hostPath" }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-pv
+  labels:
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+spec:
+  capacity:
+    storage: {{ $.Values.nginx.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ $.Values.nginx.persistence.storageClass }}
+  hostPath:
+    path: {{ $nodeConfig.storage.hostPath }}
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ $nodeConfig.nodeSelector }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

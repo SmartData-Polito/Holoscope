@@ -1,0 +1,37 @@
+# values.yaml
+global:
+  namespace: nginx
+
+nginx:
+  image:
+    repository: nginx
+    tag: "alpine"
+    pullPolicy: IfNotPresent
+  
+  # Container configuration
+  container:
+    name: nginx
+    httpPort: 80
+    httpsPort: 443
+  
+  # Service configuration
+  service:
+    type: NodePort
+    httpPort: 80
+    httpsPort: 443
+  
+  # Resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  
+  # Storage for nginx logs
+  persistence:
+    enabled: true
+    type: "hostPath"
+    storageClass: "manual"
+    size: 1Gi

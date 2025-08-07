@@ -1,0 +1,10 @@
+apiVersion: v2
+name: nginx
+description: Nginx Helm Chart
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - security
+  - honeypot
+  - nginx
