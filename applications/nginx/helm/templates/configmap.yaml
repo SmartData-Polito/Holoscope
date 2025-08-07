@@ -17,9 +17,20 @@ data:
     }
     
     http {
-        # Logging
-        access_log /var/log/nginx/access.log;
+        # Logging with real IP from Host header
+        log_format main '$http_host - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent "$http_referer" '
+                       '"$http_user_agent" (internal: $remote_addr)';
+        
+        access_log /var/log/nginx/access.log main;
         error_log /var/log/nginx/error.log;
+        
+        # Trust Kubernetes internal networks for real IP headers
+        set_real_ip_from 10.0.0.0/8;
+        set_real_ip_from 172.16.0.0/12;
+        set_real_ip_from 192.168.0.0/16;
+        real_ip_header X-Forwarded-For;
+        real_ip_recursive on;
         
         # Basic settings
         sendfile on;
@@ -41,6 +52,12 @@ data:
             location / {
                 root /usr/share/nginx/html;
                 index index.html index.htm;
+            }
+            
+            # Debug headers endpoint
+            location /debug-headers {
+                add_header Content-Type text/plain;
+                return 200 "Remote Addr: $remote_addr\nX-Forwarded-For: $http_x_forwarded_for\nX-Real-IP: $http_x_real_ip\nX-Original-Forwarded-For: $http_x_original_forwarded_for\nAll Headers: $http_host $http_user_agent";
             }
             
             # Server info endpoint (simulates forgotten debug endpoint)
