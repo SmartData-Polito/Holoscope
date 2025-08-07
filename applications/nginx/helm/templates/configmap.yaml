@@ -1,0 +1,106 @@
+# templates/configmap.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-config
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        # Logging
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        
+        # Basic settings
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        
+        # MIME types
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Default server - HTTP
+        server {
+            listen {{ $.Values.nginx.container.httpPort }};
+            server_name _;
+            
+            # Default nginx welcome page location
+            location / {
+                root /usr/share/nginx/html;
+                index index.html index.htm;
+            }
+            
+            # Server info endpoint (simulates forgotten debug endpoint)
+            location /server-info {
+                add_header Content-Type text/plain;
+                return 200 "Server: nginx/{{ $.Values.nginx.image.tag }}\nTimestamp: $time_iso8601\nRemote Address: $remote_addr\nUser Agent: $http_user_agent";
+            }
+            
+            # Nginx status (typically forgotten in production)
+            location /nginx_status {
+                stub_status on;
+                access_log off;
+            }
+        }
+        
+        # HTTPS server with self-signed certificate
+        server {
+            listen {{ $.Values.nginx.container.httpsPort }} ssl;
+            server_name _;
+            
+            # Self-signed certificate
+            ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+            ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+            
+            # Basic SSL settings (intentionally weak for honeypot)
+            ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+            ssl_ciphers HIGH:!aNULL:!MD5;
+            ssl_prefer_server_ciphers on;
+            
+            # Default nginx welcome page location
+            location / {
+                root /usr/share/nginx/html;
+                index index.html index.htm;
+            }
+            
+            # Server info endpoint
+            location /server-info {
+                add_header Content-Type text/plain;
+                return 200 "Server: nginx/{{ $.Values.nginx.image.tag }} (SSL)\nTimestamp: $time_iso8601\nRemote Address: $remote_addr\nUser Agent: $http_user_agent\nSSL Protocol: $ssl_protocol\nSSL Cipher: $ssl_cipher";
+            }
+            
+            # Nginx status
+            location /nginx_status {
+                stub_status on;
+                access_log off;
+            }
+        }
+    }
+  
+  # Script to generate self-signed certificate
+  generate-cert.sh: |
+    #!/bin/sh
+    if [ ! -f /etc/ssl/private/nginx-selfsigned.key ]; then
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+            -keyout /etc/ssl/private/nginx-selfsigned.key \
+            -out /etc/ssl/certs/nginx-selfsigned.crt \
+            -subj "/C=US/ST=State/L=City/O=Organization/OU=IT/CN=nginx-server"
+        echo "Self-signed certificate generated"
+    else
+        echo "Certificate already exists"
+    fi
+{{- end }}
+{{- end }}

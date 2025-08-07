@@ -1,0 +1,63 @@
+# values.yaml
+global:
+  namespace: nginx
+
+nginx:
+  image:
+    repository: nginx
+    tag: "alpine"
+    pullPolicy: IfNotPresent
+  
+  # Container configuration
+  container:
+    name: nginx
+    httpPort: 80
+    httpsPort: 443
+  
+  # Service configuration
+  service:
+    type: NodePort
+    httpPort: 80
+    httpsPort: 443
+  
+  # Resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  
+  # Storage for nginx logs
+  persistence:
+    enabled: true
+    type: "hostPath"
+    storageClass: "manual"
+    size: 1Gi
+
+# Multi-node deployment configuration
+deployments:
+  worker-00:
+    enabled: true
+    nodeSelector: "worker-00"
+    storage:
+      hostPath: "/data/nginx/worker-00"
+    exposedIPs:
+      - "192.168.10.100"
+      - "192.168.10.101"
+      - "192.168.10.102"
+      - "192.168.10.103"
+      - "192.168.10.104"
+  
+  worker-01:
+    enabled: true
+    nodeSelector: "worker-01"
+    storage:
+      hostPath: "/data/nginx/worker-01"
+    exposedIPs:
+      - "192.168.20.100"
+      - "192.168.20.101"
+      - "192.168.20.102"
+      - "192.168.20.103"
+      - "192.168.20.104"

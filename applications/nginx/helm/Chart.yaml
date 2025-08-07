@@ -1,0 +1,11 @@
+apiVersion: v2
+name: reverseproxy
+description: Reverse Proxy Helm Chart
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - security
+  - honeypot
+  - reverse-proxy
+  - nginx

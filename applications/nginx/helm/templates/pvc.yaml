@@ -1,0 +1,23 @@
+# templates/pvc.yaml
+{{- if .Values.nginx.persistence.enabled }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-pvc
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $.Values.nginx.persistence.size }}
+  storageClassName: {{ $.Values.nginx.persistence.storageClass }}
+{{- end }}
+{{- end }}
+{{- end }}

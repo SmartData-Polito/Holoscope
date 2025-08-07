@@ -1,0 +1,33 @@
+# templates/service.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+    nginx.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" | quote }}
+spec:
+  type: ClusterIP
+  externalIPs:
+    - {{ $exposedIP }}
+  ports:
+    - port: {{ $.Values.nginx.service.httpPort }}
+      targetPort: {{ $.Values.nginx.container.httpPort }}
+      protocol: TCP
+      name: http
+    - port: {{ $.Values.nginx.service.httpsPort }}
+      targetPort: {{ $.Values.nginx.container.httpsPort }}
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "nginx.selectorLabels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

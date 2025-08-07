@@ -1,0 +1,95 @@
+# templates/deployment.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "nginx.selectorLabels" $ | nindent 6 }}
+      nginx.io/node: {{ $nodeName | quote }}
+  template:
+    metadata:
+      labels:
+        {{- include "nginx.selectorLabels" $ | nindent 8 }}
+        nginx.io/node: {{ $nodeName | quote }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
+      
+      initContainers:
+      - name: cert-generator
+        image: alpine/openssl:latest
+        command: ["/bin/sh"]
+        args: ["/scripts/generate-cert.sh"]
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+        - name: ssl-private
+          mountPath: /etc/ssl/private
+        - name: cert-script
+          mountPath: /scripts
+      
+      containers:
+      - name: {{ $.Values.nginx.container.name }}
+        image: "{{ $.Values.nginx.image.repository }}:{{ $.Values.nginx.image.tag }}"
+        imagePullPolicy: {{ $.Values.nginx.image.pullPolicy }}
+        
+        ports:
+        - containerPort: {{ $.Values.nginx.container.httpPort }}
+          name: http
+          protocol: TCP
+        - containerPort: {{ $.Values.nginx.container.httpsPort }}
+          name: https
+          protocol: TCP
+        
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: ssl-private
+          mountPath: /etc/ssl/private
+          readOnly: true
+        {{- if $.Values.nginx.persistence.enabled }}
+        - name: nginx-logs
+          mountPath: /var/log/nginx
+        {{- end }}
+        
+        resources:
+          {{- toYaml $.Values.nginx.resources | nindent 10 }}
+      
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-config
+      - name: cert-script
+        configMap:
+          name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-config
+          defaultMode: 0755
+          items:
+          - key: generate-cert.sh
+            path: generate-cert.sh
+      - name: ssl-certs
+        emptyDir: {}
+      - name: ssl-private
+        emptyDir: {}
+      {{- if $.Values.nginx.persistence.enabled }}
+      - name: nginx-logs
+        persistentVolumeClaim:
+          claimName: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-pvc
+      {{- end }}
+{{- end }}
+{{- end }}
