@@ -141,28 +141,26 @@
         executable: /bin/bash
       register: cert_extract
 
-    - name: Create certificate directory on all nodes for ClusterIP access
-      file:
-        path: /etc/docker/certs.d/{{ local_registry }}/
-        state: directory
-        mode: '0755'
-      delegate_to: "{{ item }}"
-      loop: "{{ groups['master'] + groups['agents'] }}"
-      become: true
-
     - name: Read certificate content from registry host
       slurp:
         src: /tmp/registry.crt
       register: registry_cert_content
 
+- name: Setup registry certificates on all nodes
+  hosts: master:agents
+  become: true
+  tasks:
+    - name: Create certificate directory for registry access
+      file:
+        path: /etc/docker/certs.d/{{ local_registry }}/
+        state: directory
+        mode: '0755'
+
     - name: Copy certificate to all nodes
       copy:
-        content: "{{ registry_cert_content.content | b64decode }}"
+        content: "{{ hostvars[groups['registry'][0]]['registry_cert_content']['content'] | b64decode }}"
         dest: /etc/docker/certs.d/{{ local_registry }}/ca.crt
         mode: '0644'
-      delegate_to: "{{ item }}"
-      loop: "{{ groups['master'] + groups['agents'] }}"
-      become: true
 
 - name: Verify registry accessibility
   hosts: master:agents
