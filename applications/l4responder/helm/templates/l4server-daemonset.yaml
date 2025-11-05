@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "l4responder.fullname" $ }}-l4server-{{ $nodeName }}
+  name: l4server-{{ $nodeName }}
   namespace: {{ $.Values.global.namespace }}
   labels:
     app: {{ $.Values.l4responder_server.labels.app }}
