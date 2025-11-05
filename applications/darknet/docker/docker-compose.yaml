@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
     volumes:
       - ssh-keys:/etc/ssh-keys:ro
-      - /tmp/collector:/data/collectord
+      - /tmp/collector:/data/collector
     environment:
       - WORKER_NODE=worker-capture:65222
       - SSH_USER=capture

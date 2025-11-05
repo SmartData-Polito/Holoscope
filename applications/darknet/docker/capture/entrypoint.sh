@@ -79,21 +79,8 @@ setup_data_directory() {
     local env=$(detect_environment)
     
     echo "Setting up data directory for environment: $env"
-    mkdir -p /data/darknet/
-    chmod 777 /data/darknet 
-    
-    if [[ "$env" == "kubernetes" ]]; then
-        # In K8s, might use fsGroup for permissions, so be more permissive
-        chown capture:capture /data/darknet || {
-            echo "Warning: Could not change ownership in K8s environment (this may be normal)"
-            chmod 777 /data/darknet
-        }
-    else
-        # Docker Compose - standard ownership
-        chown capture:capture /data/darknet
-    fi
-    
-    echo "Data directory ready: /data/darknet"
+    mkdir -p /data/darknet 
+    chown capture:capture /data/darknet
 }
 
 # Start SSH daemon
@@ -131,15 +118,13 @@ start_packet_capture() {
 
     FILTER=${FILTER:-ip}
     ROTATE_SECONDS=${ROTATE_SECONDS:-60}
-    
+
     echo "=== Starting Packet Capture ==="
     echo "Environment: $env"
     echo "Interface: $INTERFACES"
     echo "Filter: $FILTER"
     echo "Rotation: $ROTATE_SECONDS seconds"
     echo "Output: /data/darknet/"
-
-
 
     # Cleanup function
     cleanup() {
@@ -149,31 +134,17 @@ start_packet_capture() {
     }
 
     trap cleanup SIGTERM SIGINT
-    # Background thread to fix permissions
-
-    fix_permissions_loop() {
-        while true; do
-            find /data/darknet -type f -exec chmod 666 {} \; 2>/dev/null
-            sleep 5
-        done
-    }
-
-    # Start permission fixer in background
-    fix_permissions_loop &
-    FIX_PID=$!
 
     # Start dumpcap in background
-    dumpcap $INTERFACES \
+    su - capture -c "dumpcap \
         -b duration:$ROTATE_SECONDS \
-        -w "/data/darknet/trace.pcap" \
-        -f "$FILTER" &
-    DUMP_PID=$!
+        -w \"/data/darknet/trace.pcap\" \
+        -f \"$FILTER\" \
+        $INTERFACES " &
 
-    # Optionally wait on either or both
-    wait $DUMP_PID
-    wait $FIX_PID
-    
-    
+    DUMPCAP_PID=$!  
+    echo "Packet capture started with PID: $DUMPCAP_PID"
+    wait $DUMPCAP_PID
 }
 
 # Main execution flow

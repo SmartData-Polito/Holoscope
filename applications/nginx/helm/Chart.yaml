@@ -1,10 +1,10 @@
 apiVersion: v2
-name: cowrie
-description: Cowrie SSH Honeypot Helm Chart
+name: nginx
+description: Nginx Helm Chart
 type: application
 version: 1.0.0
 appVersion: "latest"
 keywords:
   - security
   - honeypot
-  - ssh
+  - nginx

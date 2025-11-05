@@ -1,23 +1,23 @@
 # templates/pv.yaml
-{{- if .Values.cowrie.persistence.enabled }}
-{{- if eq .Values.cowrie.persistence.type "hostPath" }}
+{{- if .Values.nginx.persistence.enabled }}
+{{- if eq .Values.nginx.persistence.type "hostPath" }}
 {{- range $nodeName, $nodeConfig := .Values.deployments }}
 {{- if $nodeConfig.enabled }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "cowrie.fullname" $ }}-{{ $nodeName }}-pv
+  name: {{ include "nginx.fullname" $ }}-{{ $nodeName }}-pv
   labels:
-    {{- include "cowrie.labels" $ | nindent 4 }}
-    cowrie.io/node: {{ $nodeName }}
+    {{- include "nginx.labels" $ | nindent 4 }}
+    nginx.io/node: {{ $nodeName | quote }}
 spec:
   capacity:
-    storage: {{ $.Values.cowrie.persistence.size }}
+    storage: {{ $.Values.nginx.persistence.size }}
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: {{ $.Values.cowrie.persistence.storageClass | quote }}
+  storageClassName: {{ $.Values.nginx.persistence.storageClass }}
   hostPath:
     path: {{ $nodeConfig.storage.hostPath }}
     type: DirectoryOrCreate

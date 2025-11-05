@@ -39,33 +39,32 @@ values:
       config:
         interfaces: 
         - interface: eth0
-        - interface: wg0
         rotate_seconds: 60
-        filter: "ip" #and (net 192.168.10.0/24)"
-        outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
+        filter: "ip and (net 192.168.10.0/24)"
       storage:
         hostPath: "/data/darknet/worker-00"
       arp:
-        enabled: false
+        enabled: true
         subnet: 
           - "192.168.10.0/24"
 
-    #worker-01:
-    #  enabled: true
-    #  config:
-    #    interface: eth0
-    #    rotate_seconds: 60
-    #    filter: "ip and (net 192.168.20.0/24)"
-    #    outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"
-    #  storage:
-    #    hostPath: "/data/darknet/worker-01"
-    #  arp:
-    #    enabled: false
+    worker-01:
+     enabled: true
+     config:
+       interfaces: 
+        - interface: eth0
+       rotate_seconds: 60
+       filter: "ip and (net 192.168.20.0/24)"
+     storage:
+       hostPath: "/data/darknet/worker-01"
+     arp:
+       enabled: false
 
     # worker-02:
     #   enabled: true
     #   config:
-    #     interface: eth0
+    #    interfaces: 
+    #     - interface: eth0
     #     rotate_seconds: 60
     #     filter: "ip and (net 192.168.20.0/24)"
     #     outputPath: "/data/darknet/trace-%Y%m%d_%H-%M-%S_%s.pcap"

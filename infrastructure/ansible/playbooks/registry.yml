@@ -61,32 +61,10 @@
             hostname:
               values:
                 - "{{ item }}"
-          service:
-            type: ClusterIP  # Changed from NodePort to ClusterIP
-            port: 5000
           volumes:
             hostPath: "/data/registry-{{ item }}"
             capacity: "100Gi"
       with_items: "{{ groups['registry'] }}"
-
-
-- name: Get registry-master-00 service IP on master only
-  hosts: master
-  become: true
-  gather_facts: false
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-  tasks:
-    - name: Get registry-master-00 service IP
-      shell: kubectl get svc -A | grep registry-master-00 | awk '{print $4}'
-      register: registry_ip
-      changed_when: false
-
-    - name: Set fact for all hosts
-      set_fact:
-        registry_ip_global: "{{ registry_ip.stdout }}"
-      delegate_to: localhost
-      run_once: true
 
 - name: Append to /etc/hosts file on all machines
   hosts: master:agents
@@ -99,10 +77,9 @@
       lineinfile:
         path: /etc/hosts
         regexp: '^.*\sregistry\.local\s*$'
-        line: "{{ hostvars['master-00'].registry_ip_global }} registry {{ local_registry.split(':')[0] }}"
+        line: "10.0.0.100 registry {{ local_registry.split(':')[0] }}" #FIXME: should not be hardcoded
         state: present
         insertafter: EOF
-
 
 - name: Configure K3s to trust insecure registry
   hosts: master:agents

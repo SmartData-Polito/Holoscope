@@ -3,6 +3,7 @@
 enabled: true
 namespace: l4responder
 chart_path: "{{ playbook_dir }}/../../../applications/l4responder/helm"
+
 docker_images:
   - name: "l4responder_server"
     author: "public"
