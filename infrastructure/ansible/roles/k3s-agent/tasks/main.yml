@@ -17,12 +17,14 @@
     dest: /tmp/k3s-install.sh
     mode: '0755'
 
+
 - name: Install and configure K3s agent with secure settings
   shell: |
     INSTALL_K3S_VERSION="{{ k3s_version }}" \
     K3S_TOKEN="{{ hostvars[groups['master'][0]].k3s_token }}" \
     K3S_URL="{{ k3s_url }}" \
     K3S_NODE_NAME="{{ inventory_hostname }}" \
+    K3S_KUBE_PROXY_ARGS="--iptables-backend=legacy" \
     /tmp/k3s-install.sh agent \
     --flannel-iface={{ wireguard_interface }} \
     --node-ip={{ wireguard_ip }} \
@@ -31,7 +33,9 @@
     --kubelet-arg="protect-kernel-defaults=true" \
     --kubelet-arg="system-reserved=cpu=200m,memory=200Mi" \
     --kubelet-arg="kube-reserved=cpu=200m,memory=200Mi" \
+    --prefer-bundled-bin \
     --kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%"
+    
   register: k3s_agent_install
   no_log: true
   failed_when: false

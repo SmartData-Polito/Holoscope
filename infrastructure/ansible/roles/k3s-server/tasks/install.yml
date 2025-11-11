@@ -10,6 +10,8 @@
     - { name: 'kernel.panic', value: '10' }
     - { name: 'kernel.panic_on_oops', value: '1' }
 
+
+
 - name: Download K3s installation script
   get_url:
     url: https://get.k3s.io
@@ -40,11 +42,13 @@
     INSTALL_K3S_VERSION="{{ k3s_version }}" \
     K3S_KUBECONFIG_MODE="600" \
     INSTALL_K3S_EXEC="server" \
+    K3S_KUBE_PROXY_ARGS="--iptables-backend=legacy" \
     /tmp/k3s-install.sh \
     --advertise-address="{{ wireguard_ip }}" \
     --bind-address="{{ wireguard_ip }}" \
     --flannel-iface={{ wireguard_interface }} \
     --docker \
+    --prefer-bundled-bin \
     --tls-san="{{ ansible_host }}" \
     --tls-san="{{ wireguard_ip }}" \
     --tls-san="{{ inventory_hostname }}" \

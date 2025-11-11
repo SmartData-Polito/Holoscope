@@ -164,8 +164,9 @@
       loop: "{{ groups['master'] + groups['agents'] }}"
       become: true
 
-- name: Verify registry accessibility
-  hosts: master:agents
+
+- name: Popolate registry 
+  hosts: registry
   become: true
   tasks:
     - name: Pull test image
@@ -173,7 +174,6 @@
         docker pull busybox:latest
         docker tag busybox:latest {{ local_registry }}/busybox:latest
         docker push {{ local_registry }}/busybox:latest
-    
     - name: Test registry access with curl
       shell: |
         curl -k https://{{ local_registry }}/v2/_catalog
@@ -182,6 +182,12 @@
     - name: Display registry catalog
       debug:
         var: registry_catalog.stdout
+
+- name: Verify registry accessibility
+  hosts: master:agents
+  become: true
+  tasks:
+
 
     - name: Verify image can be pulled from registry
       shell: |
