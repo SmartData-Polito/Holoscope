@@ -17,6 +17,15 @@
     dest: /tmp/k3s-install.sh
     mode: '0755'
 
+- name: Force system to use xtables-nft backend
+  become: true
+  shell: |
+    update-alternatives --set iptables /usr/sbin/iptables-nft
+    update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
+    update-alternatives --set arptables /usr/sbin/arptables-nft
+    update-alternatives --set ebtables /usr/sbin/ebtables-nft
+  args:
+    executable: /bin/bash
 
 - name: Install and configure K3s agent with secure settings
   shell: |
@@ -24,8 +33,8 @@
     K3S_TOKEN="{{ hostvars[groups['master'][0]].k3s_token }}" \
     K3S_URL="{{ k3s_url }}" \
     K3S_NODE_NAME="{{ inventory_hostname }}" \
-    K3S_KUBE_PROXY_ARGS="--iptables-backend=legacy" \
     /tmp/k3s-install.sh agent \
+    --kube-proxy-arg=proxy-mode=nftables\
     --flannel-iface={{ wireguard_interface }} \
     --node-ip={{ wireguard_ip }} \
     --docker \
@@ -33,7 +42,6 @@
     --kubelet-arg="protect-kernel-defaults=true" \
     --kubelet-arg="system-reserved=cpu=200m,memory=200Mi" \
     --kubelet-arg="kube-reserved=cpu=200m,memory=200Mi" \
-    --prefer-bundled-bin \
     --kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%"
     
   register: k3s_agent_install
