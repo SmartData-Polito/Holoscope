@@ -20,6 +20,9 @@
     <host ip='10.10.0.102'>
       <hostname>worker-01.local</hostname>
     </host>
+    <host ip='10.10.0.103'>
+      <hostname>master-01.local</hostname>
+    </host>    
   </dns>
   <ip address='10.10.0.1' netmask='255.255.255.0'>
     <dhcp>
@@ -27,7 +30,7 @@
       <host mac='00:00:00:00:00:AA' name='master-00' ip='10.10.0.100'/>
       <host mac='00:00:00:00:00:BB' name='worker-00' ip='10.10.0.101'/>
       <host mac='00:00:00:00:00:CC' name='worker-01' ip='10.10.0.102'/>
-      <host mac='00:00:00:00:00:DD' name='worker-02' ip='10.10.0.103'/>
+      <host mac='00:00:00:00:00:DD' name='master-01' ip='10.10.0.103'/>
       </dhcp>
   </ip>
 </network>

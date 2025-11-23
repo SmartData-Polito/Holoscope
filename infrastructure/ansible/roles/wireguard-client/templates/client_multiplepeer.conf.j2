@@ -1,0 +1,11 @@
+[Interface]
+Address = {{ wireguard_ip }}/32
+PrivateKey = {{ wireguard_private_key }}
+{% for master in master_nodes %}
+[Peer]
+PublicKey = {{ master.value.wireguard_public_key }}
+Endpoint = {{ master.value.wireguard_endpoint }}
+AllowedIPs = {{ master.value.wireguard_ip }}/32
+PersistentKeepalive = 20
+
+{% endfor %}

@@ -1,12 +1,21 @@
 # roles/wireguard-server/templates/server.conf.j2
 [Interface]
-    Address = {{ wireguard_ip }}/24
-    ListenPort = {{ wireguard_listen_port }}
-    PrivateKey = {{ wireguard_private_key }}
+    Address = {{  master_nodes[inventory_hostname].wireguard_ip }}/24
+    ListenPort = {{ master_nodes[inventory_hostname].wireguard_listen_port }}
+    PrivateKey = {{ master_nodes[inventory_hostname].wireguard_private_key }}
 
 {% for client in vpn_peers %}
 [Peer]
     PublicKey = {{ hostvars[client]['wireguard_public_key'] }}
     AllowedIPs = {{ hostvars[client]['wireguard_ip'] }}/32
+    PersistentKeepalive = 20
+{% endfor %}
+
+{% for m in master %}
+[Peer]
+
+    PublicKey = {{ m.value.wireguard_public_key }}
+    AllowedIPs = {{ m.value.wireguard_ip }}/32
+    Endpoint = {{ m.value.wireguard_endpoint }}
     PersistentKeepalive = 20
 {% endfor %}

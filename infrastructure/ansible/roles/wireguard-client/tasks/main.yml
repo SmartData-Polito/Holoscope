@@ -39,15 +39,24 @@
     wireguard_private_key: "{{ privatekey_contents.stdout }}"
   delegate_facts: true
 
+#- name: Create WireGuard client configuration file
+#  template:
+#    src: client.conf.j2
+#    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+#  become: true
+#  vars:
+#    server_public_key: "{{ hostvars[groups['master'][0]]['wireguard_public_key'] }}"
+#    server_endpoint: "{{ hostvars[groups['master'][0]]['wireguard_endpoint'] }}"
+#    AllowedIPs: "{{ hostvars[groups['master'][0]]['wireguard_ip'] }}"
+
 - name: Create WireGuard client configuration file
   template:
-    src: client.conf.j2
+    src: client_multiplepeer.conf.j2
     dest: /etc/wireguard/{{ wireguard_interface }}.conf
   become: true
   vars:
-    server_public_key: "{{ hostvars[groups['master'][0]]['wireguard_public_key'] }}"
-    server_endpoint: "{{ hostvars[groups['master'][0]]['wireguard_endpoint'] }}"
-    AllowedIPs: "{{ hostvars[groups['master'][0]]['wireguard_ip'] }}"
+     master_nodes: "{{ hostvars[groups['master'][0]].master_nodes | dict2items }}"
+
 
 - name: Activate Wireguard at boot
   command: "{{ item }}"

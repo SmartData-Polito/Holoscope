@@ -12,19 +12,40 @@
 - name: Find all hosts with wireguard_public_key
   set_fact:
     vpn_peers: []
+    master: []
 
-- name: Collect wireguard peers
+
+- name: Collect wireguard agents
   set_fact:
     vpn_peers: "{{ vpn_peers + [item] }}"
   when: 
     - hostvars[item]['wireguard_public_key'] is defined
     - item != inventory_hostname
-  loop: "{{ groups['all'] }}"
+  loop: "{{ groups['agents'] }}"
+
+
+
+- name: Collect WireGuard peers (all masters except myself)
+  set_fact:
+    master: "{{ master + [item] }}"
+  when:
+    - item.value.wireguard_public_key is defined
+    - item.key != inventory_hostname
+  loop: "{{ master_nodes | dict2items }}"
+
+- name: Show contents of vpn_peers
+  debug:
+    msg:  "{{ vpn_peers }}"
+
+- name: Show contents of vpn_master
+  debug:
+    msg:  "{{ master }}"
 
 - name: Create WireGuard server configuration file
   template:
     src: server.conf.j2
-    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+    dest: /etc/wireguard/{{ master_nodes[inventory_hostname].wireguard_interface }}.conf
+
 
 - name: enable and persist ip forwarding
   ansible.posix.sysctl: 
@@ -37,7 +58,7 @@
 - name: Activate Wireguard at boot
   command: "{{ item }}"
   loop:
-    - systemctl enable wg-quick@{{ wireguard_interface }}.service
+    - systemctl enable wg-quick@{{ master_nodes[inventory_hostname].wireguard_interface }}.service
     - systemctl daemon-reload      
 
 - name: Include post-installation tasks
