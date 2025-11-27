@@ -15,11 +15,22 @@
   vars:
     vpn_clients: "{{ groups['agents'] + groups['management'] }}"
 
+
+
 - name: Configure master (K3s)
   hosts: master
   become: true
   roles:
     - k3s-server
+
+
+
+- name: Configure HAProxy load balancer
+  hosts: agents
+  become: true
+  roles:
+    - haproxy
+    
 - name: Configure agents (K3s)
   hosts: agents
   become: true

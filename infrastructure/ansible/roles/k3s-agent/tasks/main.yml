@@ -45,7 +45,7 @@
     --kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%"
     
   register: k3s_agent_install
-  no_log: true
+  #no_log: true
   failed_when: false
 
 - name: Check K3s agent installation result

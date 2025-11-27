@@ -49,7 +49,7 @@
     K3S_NODE_NAME="{{ inventory_hostname }}" \
     INSTALL_K3S_VERSION="{{ k3s_version }}" \
     K3S_TOKEN="{{ hostvars[groups['master'][0]].k3s_token }}" \
-    K3S_URL="{{ k3s_url }}" \
+    K3S_URL="https://{{ hostvars[groups['master'][0]].wireguard_ip }}:6443" \
     K3S_KUBECONFIG_MODE="600" \
     INSTALL_K3S_EXEC="server" \
     /tmp/k3s-install.sh  \
