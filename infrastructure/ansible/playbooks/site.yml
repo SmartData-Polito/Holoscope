@@ -20,10 +20,8 @@
   become: true
   roles:
     - k3s-server
-  
 - name: Configure agents (K3s)
   hosts: agents
   become: true
   roles:
     - k3s-agent
-  

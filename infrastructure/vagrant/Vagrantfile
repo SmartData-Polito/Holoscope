@@ -58,6 +58,7 @@ end
 def define_hardcoded_nodes
   [
     Node.new("master-00", "generic/ubuntu2204", "00:00:00:00:00:AA", "10.10.0.100"),
+    Node.new("master-01", "generic/ubuntu2204", "00:00:00:00:00:DD", "10.10.0.103"),
     Node.new("worker-00", "generic/ubuntu2204", "00:00:00:00:00:BB", "10.10.0.101"),
     Node.new("worker-01", "generic/ubuntu2204", "00:00:00:00:00:CC", "10.10.0.102"),
     # Node.new("worker-02", "generic/ubuntu2204", "00:00:00:00:00:DD", "10.10.0.103"),

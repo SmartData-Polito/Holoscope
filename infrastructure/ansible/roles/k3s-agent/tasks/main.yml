@@ -34,7 +34,7 @@
     K3S_URL="{{ k3s_url }}" \
     K3S_NODE_NAME="{{ inventory_hostname }}" \
     /tmp/k3s-install.sh agent \
-    --kube-proxy-arg=proxy-mode=nftables\
+    --kube-proxy-arg="proxy-mode=nftables" \
     --flannel-iface={{ wireguard_interface }} \
     --node-ip={{ wireguard_ip }} \
     --docker \

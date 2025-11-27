@@ -1,8 +1,18 @@
 ---
 # Main task file for k3s_server role
 
-- name: Include K3s server installation tasks
-  include_tasks: install.yml
+- name: Include Main K3s server installation tasks
+  include_tasks: main_server_install.yml
+  when: inventory_hostname == groups['master'][0]
 
-- name: Include post-installation tasks
+- name: Include Main K3s server post-installation tasks
   include_tasks: post_install.yml
+  when: inventory_hostname == groups['master'][0]
+
+- name: Include Additional K3s server installation tasks
+  include_tasks: additional_server_install.yml
+  when: inventory_hostname != groups['master'][0]
+
+- name: Include Additional K3s server post-installation tasks
+  include_tasks: post_install.yml
+  when: inventory_hostname != groups['master'][0]

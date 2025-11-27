@@ -61,7 +61,9 @@
     dest: /etc/docker/daemon.json
     content: |
       {
-        "insecure-registries" : ["{{ local_registry }}"]
+        "insecure-registries" : ["{{ local_registry }}"],
+        "firewall-backend": "nftables"
+      
       }
     mode: '0644'
 
