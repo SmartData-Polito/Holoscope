@@ -1,4 +1,4 @@
-{{- range $nodeName, $nodeConfig := .Values.captureNodes }}
+{{- range $nodeName, $nodeConfig := .Values.darknetNodes }}
 {{- if and $nodeConfig.enabled $nodeConfig.arp.enabled }}
 ---
 apiVersion: apps/v1

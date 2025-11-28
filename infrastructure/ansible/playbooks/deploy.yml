@@ -36,7 +36,7 @@
       loop: "{{ discovered_applications }}"
       when: 
         - vars['app_vars_' + item] is defined
-        - vars['app_vars_' + item].enabled | default(true) | bool
+        - (action | default('install')) == 'remove' or (vars['app_vars_' + item].enabled | default(true) | bool)
       
     - name: Set target applications
       set_fact:
@@ -45,7 +45,7 @@
     - name: Debug applications
       debug:
         msg:
-          - "Applications to deploy: {{ target_applications }}"
+          - "Applications to deploy/remove/upgrade: {{ target_applications }}"
           - "Operation: {{ operation }}"
           - "Force deploy: {{ force_deploy }}"
 

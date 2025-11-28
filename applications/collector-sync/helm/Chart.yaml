@@ -1,6 +1,7 @@
 apiVersion: v2
-name: darknet
-description: Darknet Module
+name: collector-sync
+
+description: Network capture and log collection system
 type: application
 version: 1.0.0
 appVersion: "1.0.0"

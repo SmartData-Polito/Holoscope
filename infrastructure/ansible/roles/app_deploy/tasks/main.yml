@@ -50,7 +50,7 @@
     wait: false
     timeout: "{{ app_config.timeout | default(300) }}"
   when: 
-    - app_enabled
+    #- app_enabled
     - (deploy_action | default('install')) == 'remove'
   register: helm_remove_result
 
