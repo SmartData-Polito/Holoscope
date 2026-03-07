@@ -15,16 +15,4 @@ values:
     workers:
       worker-01:
           enabled: true
-          #l4responder:
-          #  portRanges:
-          #      - start: 10000
-          #        end: 10100
-          #      - start: 30000
-          #        end: 30100
-            
-          #  ipRanges:
-          #     # - network: "99.0.0.0/24" # "10.10.0.0/24"
-          #darknet:
-          #    ipRanges:
-          #        - network: "10.10.0.99/30" # just a random IP for testing
-
+     

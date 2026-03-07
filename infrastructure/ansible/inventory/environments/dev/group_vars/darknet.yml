@@ -2,6 +2,7 @@
 # Development Darknet Application Configuration
 enabled: true
 namespace: darknet
+app: darknet
 chart_path: "{{ playbook_dir }}/../../../applications/darknet/helm"
 
 # Docker images to build
@@ -21,6 +22,6 @@ values:
       enabled: true
       config:
         addresses: 
-        - address: 10.0.0.99/30  ##sample address for development, replace with actual addresses
+        - address: 10.10.0.96/30  ##sample address for development, replace with actual addresses
       arp:
         enabled: false
