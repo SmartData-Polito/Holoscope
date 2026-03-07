@@ -24,9 +24,14 @@
     docker_os_release: "{{ ansible_distribution_release }}"
     #docker_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
 
-- name: Add Docker's official GPG key
+- name: Download Docker GPG key (usin IPv4)
+  ansible.builtin.shell: curl -4 -fsSL https://download.docker.com/linux/{{ docker_os_name }}/gpg -o /tmp/docker.gpg
+  args:
+    creates: /tmp/docker.gpg
+
+- name: Add Docker GPG key
   ansible.builtin.apt_key:
-    url: "https://download.docker.com/linux/{{ docker_os_name }}/gpg"
+    file: /tmp/docker.gpg
     state: present
 
 - name: Add Docker repository

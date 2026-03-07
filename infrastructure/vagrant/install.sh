@@ -45,7 +45,7 @@ cd ../ansible
 
 # Run the Ansible playbook to configure the VMs
 echo "Running Ansible playbook to configure VMs..."
-ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/site.yml
+ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/site.yml --ask-vault-pass
 ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/registry.yml
-ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/build.yml
-ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/deploy.yml
+#ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/build.yml
+#ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/deploy.yml

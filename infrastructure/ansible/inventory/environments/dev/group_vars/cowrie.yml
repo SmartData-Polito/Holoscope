@@ -1,6 +1,6 @@
 ---
 # Development cowrie Application Configuration
-enabled: true
+enabled: false
 namespace: cowrie
 chart_path: "{{ playbook_dir }}/../../../applications/cowrie/helm"
 

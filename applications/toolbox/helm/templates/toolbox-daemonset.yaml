@@ -1,4 +1,4 @@
-{{- range $nodeName, $nodeConfig := .Values.toolbox.workers }}
+{{- range $nodeName, $nodeConfig := .Values.workers }}
 {{- if $nodeConfig.enabled }}
 ---
 apiVersion: apps/v1
@@ -29,33 +29,34 @@ spec:
         - name: {{ $.Values.toolbox.container.name }}
           image: "{{ $.Values.toolbox.container.image.repository }}:{{ $.Values.toolbox.container.image.tag }}"
           imagePullPolicy: {{ $.Values.toolbox.container.image.pullPolicy }}
+
           securityContext:
             privileged: {{ $.Values.toolbox.securityContext.privileged }}
           env:
-            ## TODO: load these from values.yaml of the respective deployments
-
-            - name: L4_SERVER_APP_NAME
-              value: "{{ $.Values.toolbox.l4responder.labels.app }}" 
-            - name: DARKNET_APP_NAME
-              value: "{{ $.Values.toolbox.darknet.labels.app }}" 
-
-
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: CONTAINER_PORT
-              value: "{{ $.Values.toolbox.l4responder.container.hostPort }}"
+          {{- $l4w := index $.Values.extra_app_configs.l4responder.values.workers $nodeName }}
+          {{- if $l4w.enabled }}
+    
 
-              {{- range $index, $ip := $nodeConfig.l4responder.ipRanges }}
-            - name: IP_RANGE_{{ $index }}
+            - name: L4_SERVER_APP_NAME
+              value: "{{ $.Values.extra_app_configs.l4responder.app }}"
+            - name: CONTAINER_PORT_RESPONDER
+              value: "{{ $.Values.extra_app_configs.l4responder.values.host_port }}"
+     
+          {{- range $index, $ip := $l4w.ipRanges }}
+            - name: IP_RANGE_RESPONDER_{{ $index }}
               value: "{{ $ip.network }}"
-              {{- end }}
-             
-              {{- range $index, $range := $nodeConfig.l4responder.portRanges }}
-            - name: PORT_RANGE_{{ $index }}
+          {{- end }}
+          {{- range $index, $range := $l4w.portRanges }}
+            - name: PORT_RANGE_RESPONDER_{{ $index }}
               value: "{{ $range.start }}-{{ $range.end }}"
               {{- end }}
-            
+          {{- end }}
+       
+
+             
 {{- end }}
 {{- end }}

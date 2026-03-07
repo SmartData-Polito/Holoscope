@@ -4,7 +4,7 @@ global:
 
 l4responder_server:
   labels:
-     app: l4responder-server
+     app: l4responder
   terminationGracePeriodSeconds: 0
   container:
     name: responder
@@ -12,5 +12,3 @@ l4responder_server:
       repository: registry.local:5000/public/l4responder_server 
       tag: latest
       pullPolicy: Always
-    containerPort: 60000
-    hostPort: 60000 

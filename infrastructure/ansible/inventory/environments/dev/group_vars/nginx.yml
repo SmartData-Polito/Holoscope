@@ -1,6 +1,6 @@
 ---
 # Development nginx Application Configuration
-enabled: true
+enabled: false
 namespace: nginx
 chart_path: "{{ playbook_dir }}/../../../applications/nginx/helm"
 

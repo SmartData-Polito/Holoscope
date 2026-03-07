@@ -21,6 +21,6 @@ values:
       enabled: true
       config:
         addresses: 
-        - address: 10.0.0.99/30
+        - address: 10.0.0.99/30  ##sample address for development, replace with actual addresses
       arp:
         enabled: false

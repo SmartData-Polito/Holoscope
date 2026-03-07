@@ -6,7 +6,7 @@ import logging
 import tempfile
 import subprocess
 
-from utility import run_nft, cleanup, init_table, ensure_masquerade, add_forward, remove_forward
+from utility import  cleanup, init_tables, add_forward, remove_forward,add_block, remove_block
 
 
 
@@ -36,43 +36,68 @@ handler.setFormatter(formatter)
 logging.basicConfig(level=logging.DEBUG, handlers=[handler])
 
 
+################################################################################################## Extract environment variables
 
-node_name = os.getenv("NODE_NAME")
-KUBECONFIG = os.getenv("KUBECONFIG")
-CONTAINER_PORT = os.getenv("CONTAINER_PORT")
 
-# Extract all port ranges
-port_ranges = []
+
+
+
+
+# Extract all port ranges of the responder
+port_ranges_responder = []
 i = 0
 while True:
-    port_range = os.getenv(f"PORT_RANGE_{i}")
+    port_range = os.getenv(f"PORT_RANGE_RESPONDER_{i}")
     if port_range is None:
         break
     start, end = map(int, port_range.split('-'))
-    port_ranges.append((start, end))
+    port_ranges_responder.append((start, end))
     i += 1
-logging.info("Port Ranges: %s", port_ranges)
 
-# Extract all ip 
-ip_list = []
+# Extract all ip ranges of the responder
+ip_list_responder = []
 i = 0
 while True:
-    ip = os.getenv(f"IP_RANGE_{i}")
+    ip = os.getenv(f"IP_RANGE_RESPONDER_{i}")
     if ip is None:
         break
-    ip_list.append((ip))
+    ip_list_responder.append((ip))
     i += 1
-logging.info("ip list: %s", ip_list)
 
 
+# Extract all ip ranges of theresponder
+ip_list_darknet = []
+i = 0
+while True:
+    ip = os.getenv(f"IP_RANGE_DARKNET_{i}")
+    if ip is None:
+        break
+    ip_list_darknet.append((ip))
+    i += 1
 
-if KUBECONFIG == None and node_name == None:
+NODE_NAME = os.getenv("NODE_NAME")
+KUBECONFIG = os.getenv("KUBECONFIG")
+
+CONTAINER_PORT = os.getenv("CONTAINER_PORT_RESPONDER")
+L4_SERVER_APP_NAME = os.getenv("L4_SERVER_APP_NAME")
+DARKNET_APP_NAME = os.getenv("DARKNET_APP_NAME")
+
+
+if KUBECONFIG == None and NODE_NAME == None:
     #MANUAL MODE
-    node_name ="poli-master-00" 
+    
 
-    with open("../development/kubeconfig.yaml", "r") as f:
+    with open("./kubeconfig.yaml", "r") as f:
         KUBECONFIG = f.read()
-    logging.info(f"I am running LOCALLY on node: {node_name} with kubeconfig: {KUBECONFIG}")
+    logging.info(f"I am running LOCALLY on node: {NODE_NAME} with loaded kubeconfig")
+    
+    NODE_NAME ="worker-01" 
+    port_ranges_responder = [(44, 48), (12000, 12005)]
+    ip_list_responder = ["10.10.0.102/32"]
+    ip_list_darknet = ["10.10.0.111/32"]
+    CONTAINER_PORT= "80"
+    L4_SERVER_APP_NAME = "netshoot"
+    DARKNET_APP_NAME = "darknet"
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as tmpfile:
         tmpfile.write(KUBECONFIG)
         tmpfile.flush()
@@ -84,18 +109,30 @@ if KUBECONFIG == None and node_name == None:
 else:
     #DEVELOPMENT/PRODUCTION MODE
     config.load_incluster_config()
-    logging.info(f"I am running on node: {node_name} with kubeconfig 'incluster_config'")
+    logging.info(f"I am running on node: {NODE_NAME} with kubeconfig 'incluster_config'")
 
-logging.info(f"Node name: {node_name}")
+
+
+
+
+
+logging.info(f"Node name: {NODE_NAME}")
 logging.info(f"Kubeconfig: {KUBECONFIG}")
 logging.info(f"Container port: {CONTAINER_PORT}")
-logging.info("L4 Server App Name: %s", os.getenv("L4_SERVER_APP_NAME"))
-logging.info("Darknet App Name: %s", os.getenv("DARKNET_APP_NAME"))
+
+logging.info("L4 App Name: %s", L4_SERVER_APP_NAME)
+logging.info("L4 Port Ranges : %s", port_ranges_responder)
+logging.info("L4 IP list: %s", ip_list_responder)
+logging.info("Darknet App Name: %s", DARKNET_APP_NAME)
+logging.info("Darknet IP list: %s", ip_list_darknet)
 
 
+
+######################################################################################################################################
 # Initialize the NAT table and CYBORG chain
-cleanup()
-init_table() 
+#cleanup()
+init_tables() 
+
 
 #Listen to cluster events
 
@@ -119,48 +156,52 @@ def handle_pod_event(event):
         ####
         #    L4-RESPONDER POD EVENT HANDLER
         ####
+        if node_name != NODE_NAME:
+            return
+        
+        logging.info(f"[{pod.metadata.name}] - {pod.metadata.labels.get('app')}- {event_type} - {pod.status.phase} - {pod.status.pod_ip} ")
+        if pod.metadata.labels is None:
+            return
+        if  pod.spec.node_name is None:
+            return
 
-        if  pod.metadata.labels.get("app") == os.getenv("L4_SERVER_APP_NAME") and pod.metadata.labels.get("l4responderserver.io/node") == os.getenv("NODE_NAME") and event_type == "ADDED":
-            logging.debug(f"[{event_type}] Pod '{pod_name}' scheduled on node {node_name} in namespace '{pod.metadata.namespace}'")
+        if  pod.metadata.labels.get("app") == L4_SERVER_APP_NAME \
+            and pod.spec.node_name == NODE_NAME  \
+            and (event_type == "ADDED" or event_type == "MODIFIED")\
+            and pod.status.pod_ip is not None:
 
-            while pod.status.pod_ip == None:
-                pod = v1.read_namespaced_pod(name=pod.metadata.name,namespace=pod.metadata.namespace)
-                logging.debug(f"---[{pod.metadata.name}] Waiting for pod to get an IP address...")
-                sleep(2)
+            logging.debug(f"[{event_type}] Pod '{pod_name}' added/modified on node {node_name} in namespace '{pod.metadata.namespace}'")
+
+            #while pod.status.pod_ip == None:
+            #    pod = v1.read_namespaced_pod(name=pod.metadata.name,namespace=pod.metadata.namespace)
+            #    logging.debug(f"---[{pod.metadata.name}] Waiting for pod to get an IP address...")
+            #    sleep(2)
             logging.info(F"---[{pod.metadata.name}] Modifying iptables rules to redirect traffic to  pod IP {pod.status.pod_ip}...")
-
-            for ip in ip_list:
-                for start, end in port_ranges:
+            remove_forward(pod.metadata.name)  # Remove any existing rules for this pod 
+            for ip in ip_list_responder:
+                for start, end in port_ranges_responder:
                     from_ports = f"{start}-{end}"
-                    add_forward("CYBORG",ip, from_ports, CONTAINER_PORT, pod.status.pod_ip,pod.metadata.name)
+                    add_forward(ip, from_ports, pod.status.pod_ip, CONTAINER_PORT,pod.metadata.name)
 
-        if pod.metadata.labels.get("app") == os.getenv("L4_SERVER_APP_NAME") and pod.metadata.labels.get("l4responderserver.io/node") == os.getenv("NODE_NAME") and event_type == "DELETED":
-            logging.info(f"---[{pod.metadata.name}]Modifying iptables rules to STOP traffic...")
-            remove_forward("CYBORG",pod.metadata.name)
+        if pod.metadata.labels.get("app") == L4_SERVER_APP_NAME and pod.spec.node_name == NODE_NAME and event_type == "DELETED":
+          #  logging.info(f"---[{pod.metadata.name}]Modifying iptables rules to REMOVE the traffic redirect...")
+            remove_forward(pod.metadata.name)
 
         ####
         #    DARKNET POD EVENT HANDLER
         ####
-        '''
-        if  pod.metadata.labels.get("app") == os.getenv("L4_SERVER_APP_NAME") and pod.metadata.labels.get("l4responderserver.io/node") == os.getenv("NODE_NAME") and event_type == "ADDED":
-            logging.debug(f"[{event_type}] Pod '{pod_name}' scheduled on node {node_name} in namespace '{pod.metadata.namespace}'")
+        
+        if  pod.metadata.labels.get("app") == DARKNET_APP_NAME and  pod.spec.node_name == NODE_NAME and event_type == "ADDED":
+            #logging.debug(f"[{event_type}] Pod '{pod_name}' scheduled on node {node_name} in namespace '{pod.metadata.namespace}'")
+            #logging.info(F"---[{pod.metadata.name}] Modifying iptables rules to block any egress traffic from IP {ip_list_darknet}...")
+            for ip in ip_list_darknet:
+                add_block(ip,pod.metadata.name)
 
-            while pod.status.pod_ip == None:
-                pod = v1.read_namespaced_pod(name=pod.metadata.name,namespace=pod.metadata.namespace)
-                logging.debug(f"---[{pod.metadata.name}] Waiting for pod to get an IP address...")
-                sleep(2)
-            logging.info(F"---[{pod.metadata.name}] Modifying iptables rules to redirect traffic to  pod IP {pod.status.pod_ip}...")
-
-            for ip in ip_list:
-                for start, end in port_ranges:
-                    from_ports = f"{start}-{end}"
-                    add_forward("CYBORG",ip, from_ports, CONTAINER_PORT, pod.status.pod_ip,pod.metadata.name)
-
-        if pod.metadata.labels.get("app") == os.getenv("L4_SERVER_APP_NAME") and pod.metadata.labels.get("l4responderserver.io/node") == os.getenv("NODE_NAME") and event_type == "DELETED":
-            logging.info(f"---[{pod.metadata.name}]Modifying iptables rules to STOP traffic...")
-            remove_forward("CYBORG",pod.metadata.name)
-
-        '''
+        if pod.metadata.labels.get("app") == DARKNET_APP_NAME and  pod.spec.node_name == NODE_NAME and event_type == "DELETED":
+            #logging.info(F"---[{pod.metadata.name}] Modifying iptables rules to REMOVE the block of egress traffic from IP {ip_list_darknet}...")
+            remove_block(pod.metadata.name)
+     
+       
 
 while True: # Continuously listen for events
     stream_type, stream = next(stream_cycle)
@@ -174,6 +215,7 @@ while True: # Continuously listen for events
         continue
     if stream_type == "pod":
         handle_pod_event(event)
+    sleep(1)  # Sleep to avoid overwhelming the output
     '''
     elif stream_type == "config":
         config_map = event['object']
@@ -191,7 +233,7 @@ while True: # Continuously listen for events
 
         logging.debug(f"[{event_type}] Service '{svc_name}' in namespace '{svc_namespace}'")
     '''
-    sleep(1)  # Sleep to avoid overwhelming the output
+      
 
 # for each event involving a pod, we will handle it with this function
 # we are interested in pod events like ADDED and DELETED on l4-server pod

@@ -1,4 +1,4 @@
-{{- range $nodeName, $nodeConfig := .Values.l4responder_server.workers }}
+{{- range $nodeName, $nodeConfig := .Values.workers }}
 {{- if $nodeConfig.enabled }}
 ---
 apiVersion: apps/v1
@@ -28,8 +28,10 @@ spec:
           image: "{{ $.Values.l4responder_server.container.image.repository }}:{{ $.Values.l4responder_server.container.image.tag }}"
           imagePullPolicy: {{ $.Values.l4responder_server.container.image.pullPolicy }}
           ports:
-            - containerPort: {{ $.Values.l4responder_server.container.containerPort }}
-              hostPort: {{ $.Values.l4responder_server.container.hostPort }}
-          
+            - containerPort: {{ $.Values.container_port }}
+              hostPort: {{ $.Values.host_port }}
+          env:
+            - name: CONTAINER_PORT
+              value: "{{ $.Values.container_port}}"
 {{- end }}
 {{- end }}
