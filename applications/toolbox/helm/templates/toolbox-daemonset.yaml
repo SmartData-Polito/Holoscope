@@ -1,0 +1,83 @@
+{{- range $nodeName, $nodeConfig := .Values.workers }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: toolbox-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: {{ $.Values.toolbox.labels.app }}
+    l4respondertoolbox.io/node: {{ $nodeName }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $.Values.toolbox.labels.app }}
+      l4respondertoolbox.io/node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $.Values.toolbox.labels.app }}
+        l4respondertoolbox.io/node: {{ $nodeName }}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName }}
+      serviceAccountName: {{ $.Values.toolbox.serviceAccount.name }}
+      hostNetwork: {{ $.Values.toolbox.network.hostNetwork }}
+
+      containers:
+        - name: {{ $.Values.toolbox.container.name }}
+          image: "{{ $.Values.toolbox.container.image.repository }}:{{ $.Values.toolbox.container.image.tag }}"
+          imagePullPolicy: {{ $.Values.toolbox.container.image.pullPolicy }}
+
+          securityContext:
+            privileged: {{ $.Values.toolbox.securityContext.privileged }}
+
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            {{- /* L4 Section */}}
+            {{- $l4 := $.Values.extra_app_configs.l4responder }}
+            {{- if and $l4 $l4.enabled }}
+            {{- $l4w := index $l4.values.workers $nodeName | default dict }}
+            {{- if $l4w.enabled }}
+
+            - name: L4_SERVER_APP_NAME
+              value: "{{ $l4.app }}"
+            - name: CONTAINER_PORT_RESPONDER
+              value: "{{ $.Values.extra_app_configs.l4responder.values.host_port }}"
+
+            {{- range $index, $ip := $l4w.ipRanges }}
+            - name: IP_RANGE_RESPONDER_{{ $index }}
+              value: "{{ $ip.network }}"
+            {{- end }}
+            {{- range $index, $range := $l4w.portRanges }}
+            - name: PORT_RANGE_RESPONDER_{{ $index }}
+              value: "{{ $range.start }}-{{ $range.end }}"
+            {{- end }}
+
+            {{- end }}
+            {{- end }}
+
+            {{- /* Darknet Section */}}
+            {{- $darknet := $.Values.extra_app_configs.darknet }}
+            {{- if and $darknet $darknet.enabled }}
+            {{- $darknet_worker := index $darknet.values.darknetNodes $nodeName | default dict }}
+            {{- if $darknet_worker.enabled }}
+
+            - name: DARKNET_APP_NAME
+              value: "{{ $darknet.app }}"
+
+            {{- range $index, $addr := $darknet_worker.config.addresses }}
+            - name: IP_RANGE_DARKNET_{{ $index }}
+              value: "{{ $addr.address }}"
+            {{- end }}
+
+            {{- end }}
+            {{- end }}
+
+{{- end }}
+{{- end }}

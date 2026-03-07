@@ -4,6 +4,16 @@
     app_config: "{{ vars['app_vars_' + application] }}"
   when: vars['app_vars_' + application] is defined
 
+
+
+- name: DEBUG – Loaded configs for all enabled applications
+  debug:
+    msg: >
+      Application: {{ item }}
+      Config: {{ vars['app_vars_' + item] | default('NOT FOUND') }}
+  loop: "{{ enabled_applications }}"
+
+  when: app_config is defined
 - name: Fail if application config not found
   fail:
     msg: "No configuration found for application '{{ application }}'. Check that group_vars/{{ application }}.yml exists."
@@ -17,6 +27,39 @@
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
     helm_values: "{{ app_config['values'] | default({}) }}"
 
+- name: Initialize extra_app_configs
+  set_fact:
+    extra_app_configs: {}
+
+# Always initialize the dictionary before combining
+- name: Init extra_app_configs
+  set_fact:
+    extra_app_configs: {}
+
+# Build the dictionary for all apps except toolbox itself
+- name: Build extra_app_configs (all apps except toolbox)
+  set_fact:
+    extra_app_configs: "{{ extra_app_configs | combine({ clean_name: vars[item] }, recursive=True) }}"
+  loop: "{{ vars | dict2items | selectattr('key', 'match', '^app_vars_') | map(attribute='key') }}"
+  vars:
+    clean_name: "{{ item | regex_replace('^app_vars_', '') }}"
+  when:
+    - application == 'toolbox'
+    - item != 'app_vars_' + application
+
+# Inject extra configs only for toolbox
+- name: Inject extra app configs if application == toolbox
+  set_fact:
+    helm_values: "{{ helm_values | combine({'extra_app_configs': extra_app_configs}, recursive=True) }}"
+  when: application == 'toolbox'
+
+
+- name: DEBUG – Loaded configs for all enabled applications
+  debug:
+    msg: >
+      Application: {{ app_name }}
+      Config: {{ helm_values }}
+  when: application == 'toolbox'
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     name: "{{ app_namespace }}"
@@ -34,10 +77,13 @@
     state: present
     wait: false
     values: "{{ helm_values }}"
+
   when: 
     - app_enabled
     - (deploy_action | default('install')) in ['install', 'upgrade']
   register: helm_result
+
+
 
 - name: Remove Helm chart for {{ app_name }}
   kubernetes.core.helm:
@@ -47,7 +93,7 @@
     wait: false
     timeout: "{{ app_config.timeout | default(300) }}"
   when: 
-    - app_enabled
+    #- app_enabled
     - (deploy_action | default('install')) == 'remove'
   register: helm_remove_result
 

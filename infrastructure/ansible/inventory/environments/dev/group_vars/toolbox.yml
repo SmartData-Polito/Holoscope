@@ -1,0 +1,18 @@
+---
+# Development l4responder Application Configuration
+enabled: true
+namespace: toolbox
+app: toolbox
+chart_path: "{{ playbook_dir }}/../../../applications/toolbox/helm"
+docker_images:
+  - name: "toolbox"
+    author: "public"
+    path: "applications/toolbox/docker/"
+    dockerfile: "Dockerfile"
+    tag: "latest"
+values:
+
+    workers:
+      worker-01:
+          enabled: true
+     

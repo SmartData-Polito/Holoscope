@@ -1,0 +1,45 @@
+## Simple placeholder DaemonSet for Darknet
+{{- range $nodeName, $nodeConfig := .Values.darknetNodes }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "darknet.fullname" $ }}-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: darknet
+    darknet.io/node: {{ $nodeName }}
+spec:
+  selector:
+    matchLabels:
+      app: darknet
+      darknet.io/node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        app: darknet
+        darknet.io/node: {{ $nodeName }}
+    spec:
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
+      
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName }}
+
+      containers:
+        - name: darknet
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "I'm a darknet running on node: {{ $nodeName }}";
+              while true; do sleep 3600; done
+
+          env:
+            - name: NODE_NAME
+              value: "{{ $nodeName }}"
+      restartPolicy: Always
+{{- end }}
+{{- end }}

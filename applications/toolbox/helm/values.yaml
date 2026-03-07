@@ -1,0 +1,33 @@
+global:
+  namespace: toolbox
+  storageClass: manual
+
+
+toolbox:
+  name: toolbox
+  labels:
+     app: toolbox
+  container:
+    name: toolbox
+    image:
+      repository: registry.local:5000/public/toolbox
+      tag: latest
+      pullPolicy: Always
+  serviceAccount:
+    name: toolbox-sa
+  securityContext:
+    privileged: true
+  network:
+    hostNetwork: true
+  
+  
+  rbac:
+    clusterRole:
+      name: pod-reader
+      rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch"]
+          
+    clusterRoleBinding:
+        name: toolbox-sa-binding

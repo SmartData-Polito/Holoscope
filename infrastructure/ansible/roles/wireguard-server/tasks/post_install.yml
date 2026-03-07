@@ -1,7 +1,7 @@
 ---
 - name: Reload WireGuard 
   block:
-    - command: wg-quick  {{ item }} {{ wireguard_interface }} 
+    - command: wg-quick  {{ item }} {{ master_nodes[inventory_hostname].wireguard_interface  }} 
       with_items:
         - down
         - up

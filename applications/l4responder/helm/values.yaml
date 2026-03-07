@@ -2,37 +2,9 @@ global:
   namespace: l4responder
   storageClass: manual
 
-l4responder_toolbox:
-  name: l4responder-toolbox
-  labels:
-     app: l4responder-toolbox
-  container:
-    name: toolbox
-    image:
-      repository: registry.local:5000/public/l4responder_toolbox
-      tag: latest
-      pullPolicy: Always
-  serviceAccount:
-    name: toolbox-sa
-  securityContext:
-    privileged: true
-  network:
-    hostNetwork: true
-  
-  rbac:
-    clusterRole:
-      name: pod-reader
-      rules:
-      - apiGroups: [""]
-        resources: ["pods"]
-        verbs: ["get", "list", "watch"]
-          
-    clusterRoleBinding:
-        name: toolbox-sa-binding
-
 l4responder_server:
   labels:
-     app: l4responder-server
+     app: l4responder
   terminationGracePeriodSeconds: 0
   container:
     name: responder
@@ -40,5 +12,3 @@ l4responder_server:
       repository: registry.local:5000/public/l4responder_server 
       tag: latest
       pullPolicy: Always
-    containerPort: 60000
-    hostPort: 60000 
