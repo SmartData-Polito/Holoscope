@@ -1,6 +1,6 @@
 ---
 # Development l4responder Application Configuration
-enabled: true
+enabled: false
 namespace: toolbox
 app: toolbox
 chart_path: "{{ playbook_dir }}/../../../applications/toolbox/helm"

@@ -1,6 +1,6 @@
 ---
 # Development Darknet Application Configuration
-enabled: true
+enabled: false
 namespace: darknet
 app: darknet
 chart_path: "{{ playbook_dir }}/../../../applications/darknet/helm"

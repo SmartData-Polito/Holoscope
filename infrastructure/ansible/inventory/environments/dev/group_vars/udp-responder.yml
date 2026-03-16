@@ -1,0 +1,32 @@
+---
+# Development udp-responder Application Configuration
+enabled: true
+namespace: udp-responder
+chart_path: "{{ playbook_dir }}/../../../applications/udp-responder/helm"
+
+docker_images:
+  - name: "udp-responder"
+    author: "public"
+    local_path: "applications/udp-responder/docker/"
+    path: "applications/udp-responder/docker/"
+    dockerfile: "docker/Dockerfile.udpspoofer"
+    tag: "latest"
+
+values:
+  global:
+    namespace: udp-responder
+
+  udpresponder:
+    image:
+      repository: udp-responder
+      pullPolicy: IfNotPresent
+      tag: latest
+    
+  udpResponderNodes:
+    master-00:
+      enabled: true
+      nodeSelector: "master-00"
+      config:
+        interface: "eth1"
+        protocols: "udp"
+        subnet: "192.168.1.1/32"
