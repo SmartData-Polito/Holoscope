@@ -21,12 +21,15 @@ spec:
         udp-responder.io/node: {{ $nodeName }}
     spec:
       hostNetwork: true
+
       nodeSelector:
         kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
       containers:
         - name: udp-responder
           image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.containers.udpresponder.tag | default "latest" }}"
           imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
+          securityContext:
+            privileged: true
           args:
              - --interface 
              - {{ $nodeConfig.config.interface | quote }}
@@ -34,5 +37,15 @@ spec:
              - {{ $nodeConfig.config.subnet | quote }}
              - --protocols
              - {{ $nodeConfig.config.protocols | quote }}
+          volumeMounts:
+            - name: env-file
+              mountPath: /app/.env
+              subPath: .env
+      volumes:
+        - name: env-file
+          configMap:
+            name: {{ include "udpresponder.fullname" $ }}-env
+      
+      
 {{- end }}
 {{- end }}

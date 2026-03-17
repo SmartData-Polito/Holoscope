@@ -7,9 +7,9 @@ chart_path: "{{ playbook_dir }}/../../../applications/udp-responder/helm"
 docker_images:
   - name: "udp-responder"
     author: "public"
-    local_path: "applications/udp-responder/docker/"
+   # local_path: "applications/udp-responder/docker/"
     path: "applications/udp-responder/docker/"
-    dockerfile: "docker/Dockerfile.udpspoofer"
+    dockerfile: "docker/Dockerfile.holoscope.udpspoofer"
     tag: "latest"
 
 values:
@@ -23,10 +23,10 @@ values:
       tag: latest
     
   udpResponderNodes:
-    master-00:
+    worker-01:
       enabled: true
-      nodeSelector: "master-00"
+      nodeSelector: "worker-01"
       config:
-        interface: "eth1"
+        interface: "eth0"
         protocols: "udp"
-        subnet: "192.168.1.1/32"
+        subnet: "10.10.0.110/32"
