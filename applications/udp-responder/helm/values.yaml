@@ -1,8 +1,7 @@
 # applications/darknet/helm/values.yaml
 global:
   namespace: udp-responder
-# Default per-node capture configurations (empty - populated by Ansible)
-captureNodes: {}
+
 
 # Image configurations
 

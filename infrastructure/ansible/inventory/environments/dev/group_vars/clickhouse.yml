@@ -1,0 +1,10 @@
+---
+# Development clickhouse Application Configuration
+
+namespace: clickhouse
+chart_path: "{{ playbook_dir }}/../../../applications/clickhouse/helm"
+
+values:
+  global:
+    namespace: clickhouse
+    enabled: true
