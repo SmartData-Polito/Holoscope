@@ -15,18 +15,14 @@ docker_images:
 values:
   global:
     namespace: udp-responder
-
-  udpresponder:
-    image:
-      repository: udp-responder
-      pullPolicy: IfNotPresent
-      tag: latest
-    
   udpResponderNodes:
     worker-01:
       enabled: true
       nodeSelector: "worker-01"
       config:
-        interface: "eth0"
-        protocols: "udp"
-        subnet: "10.10.0.110/32"
+      -  interface: "eth0"
+         protocols: "udp"
+         subnet: "10.10.0.110/32"
+      -  interface: "eth0"
+         protocols: "tcp"
+         subnet: "10.10.0.111/32"

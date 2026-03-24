@@ -1,10 +1,11 @@
 {{- range $nodeName, $nodeConfig := .Values.udpResponderNodes }}
 {{- if $nodeConfig.enabled }}
+{{- range $index, $cfg := $nodeConfig.config }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "udpresponder.fullname" $ }}-{{ $nodeName }}
+  name: {{ include "udpresponder.fullname" $ }}-{{ $nodeName }}-{{ $index }}
   namespace: {{ $.Values.global.namespace }}
   labels:
     app: udp-responder
@@ -30,13 +31,8 @@ spec:
           imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
           securityContext:
             privileged: true
-          args:
-             - --interface 
-             - {{ $nodeConfig.config.interface | quote }}
-             - --subnet
-             - {{ $nodeConfig.config.subnet | quote }}
-             - --protocols
-             - {{ $nodeConfig.config.protocols | quote }}
+          
+          args: ["--interface", {{ $cfg.interface }}, "--subnet", {{ $cfg.subnet }}, "--protocols", {{ $cfg.protocols }}]
           volumeMounts:
             - name: env-file
               mountPath: /app/.env
@@ -47,5 +43,6 @@ spec:
             name: {{ include "udpresponder.fullname" $ }}-env
       
       
+{{- end }}
 {{- end }}
 {{- end }}
