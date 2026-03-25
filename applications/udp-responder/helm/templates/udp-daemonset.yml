@@ -1,0 +1,53 @@
+{{- range $nodeName, $nodeConfig := .Values.udpResponderNodes }}
+{{- if $nodeConfig.enabled }}
+{{- range $index, $cfg := $nodeConfig.config }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "udpresponder.fullname" $ }}-{{ $nodeName }}-{{ $index }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: udp-responder
+    udp-responder.io/node: {{ $nodeName }}
+spec:
+  selector:
+    matchLabels:
+      app: udp-responder
+      udp-responder.io/node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        app: udp-responder
+        udp-responder.io/node: {{ $nodeName }}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
+      containers:
+        - name: udp-responder
+          image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.containers.udpresponder.tag | default "latest" }}"
+          imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
+          securityContext:
+            privileged: true
+          args: [
+            "--interface", {{ $cfg.interface  }},
+            "--subnet", {{ $cfg.subnet  }},
+            "--protocols", {{ $cfg.protocols  }},
+            "--save-clickhouse-db", {{ $cfg.saveclickhousedb | quote}},
+            "--save-blocked-udp", {{ $cfg.saveblockedudp | quote }}
+          ]
+          volumeMounts:
+            - name: env-file
+              mountPath: /app/.env
+              subPath: .env
+      volumes:
+        - name: env-file
+          configMap:
+            name: {{ include "udpresponder.fullname" $ }}-env
+      
+      
+{{- end }}
+{{- end }}
+{{- end }}

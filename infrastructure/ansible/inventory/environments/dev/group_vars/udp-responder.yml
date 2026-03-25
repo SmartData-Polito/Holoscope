@@ -1,0 +1,32 @@
+---
+# Development udp-responder Application Configuration
+enabled: true
+namespace: udp-responder
+chart_path: "{{ playbook_dir }}/../../../applications/udp-responder/helm"
+
+docker_images:
+  - name: "udp-responder"
+    author: "public"
+   # local_path: "applications/udp-responder/docker/"
+    path: "applications/udp-responder/docker/"
+    dockerfile: "docker/Dockerfile.holoscope.udpspoofer"
+    tag: "latest"
+
+values:
+  global:
+    namespace: udp-responder
+  udpResponderNodes:
+    worker-01:
+      enabled: true
+      nodeSelector: "worker-01"
+      config:
+      -  interface: "eth0"
+         protocols: "udp"
+         subnet: "10.10.0.110/32"
+         saveclickhousedb: "true"
+         saveblockedudp: "true"
+      -  interface: "eth0"
+         protocols: "tcp"
+         subnet: "10.10.0.111/32"
+         saveclickhousedb: "true"
+         saveblockedudp: "true"

@@ -1,0 +1,12 @@
+# applications/darknet/helm/values.yaml
+global:
+  namespace: udp-responder
+
+
+# Image configurations
+
+containers:
+  udpresponder:
+    repository: registry.local:5000/public/udp-responder
+    tag: latest
+    pullPolicy: Always

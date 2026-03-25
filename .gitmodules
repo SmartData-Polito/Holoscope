@@ -4,3 +4,6 @@
 [submodule "applications/l4responder/docker"]
 	path = applications/l4responder/docker
 	url = https://github.com/AndreaSordello/L4_K3S_responder
+[submodule "applications/udp-responder/docker"]
+	path = applications/udp-responder/docker
+	url = https://github.com/dari1wastaken/udpspoofer
