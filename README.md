@@ -1,28 +1,22 @@
-# CyBorg – Distributed Edge Platform for Cybersecurity Data Collection and Machine Learning
+# Holoscope – Distributed Edge Platform for Cybersecurity Data Collection and Machine Learning
 
 ## Overview
 
-**CyBorg** is a distributed edge platform designed for cybersecurity data collection and machine learning applications. The platform operates with multiple capabilities:
+**Holoscope** is a distributed edge platform designed for cybersecurity data collection and machine learning applications. The platform operates with multiple capabilities:
 
-1. **Passive Measurement Probes**: CyBorg enables the deployment of passive network probes for performance measurements, including darknet monitoring, to track ongoing network scanning activities.
+1. **Passive Measurement Probes**: Deployment of passive network probes for performance measurements, including darknet monitoring, to track ongoing network scanning activities.
 
-2. **Active Cybersecurity Probes**: CyBorg supports the deployment of a honeynet - a distributed network of honeypots at the edge that monitors ongoing network attacks. It includes the deployment of some classic low-interaction honeypot such as Cowrie.
+2. **Active Cybersecurity Probes**: Deployment of a honeynet - a distributed network of honeypots at the edge that monitors ongoing network attacks. It includes some classic low-interaction honeypots such as Cowrie.
 
-3. **Testbed for Vulnerabilities**: CyBorg helps the deployment of vulnerable applications that can be exploited by internal nodes or serve as high-interaction honeypots.
+3. **Testbed for Vulnerabilities**: Deployment of vulnerable applications that can be exploited by internal nodes or serve as high-interaction honeypots.
 
-4. **Data Collection Platform**: CyBorg manages the deployment of crawlers for distributed data collection across various sources.
+4. **Data Collection Platform**: Deployment of crawlers for distributed data collection across various sources.
 
-5. **Federated Learning**: CyBorg implements distributed training of ML tasks using data collected by the above probes. This federated learning approach allows the development of ML models on distributed data without requiring direct data exchange between nodes.
+5. **Federated Learning**: Distributed training of ML tasks using data collected by the above probes. This federated learning approach allows the development of ML models on distributed data without requiring direct data exchange between nodes.
 
 This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automated deployment and configuration.
 
 **If you are interested in joining the network contact the maintainers**
-
----
-
-## Why the Name **CyBorg**?
-
-The name **CyBorg** is inspired by the **Borg**, a collective race from the _Star Trek_ universe. The Borg are known for their interconnected, hive-mind system where each individual unit contributes to the greater whole. Similarly, **CyBorg** reflects the idea of multiple distributed nodes working together to form a powerful, collective platform for cybersecurity.
 
 ---
 
