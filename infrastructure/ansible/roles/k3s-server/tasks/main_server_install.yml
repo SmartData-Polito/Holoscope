@@ -62,8 +62,8 @@
     --tls-san="localhost" \
     --tls-san="127.0.0.1" \
     --node-ip="{{ wireguard_ip }}" \
-    --cluster-cidr="10.42.0.0/16" \
-    --service-cidr="10.43.0.0/16" \
+    --cluster-cidr="{{ cluster_cidr }}" \
+    --service-cidr="{{ service_cidr }}" \
     --write-kubeconfig-mode="600" \
     --protect-kernel-defaults \
     --secrets-encryption \

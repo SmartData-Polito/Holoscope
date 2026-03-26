@@ -8,41 +8,41 @@ data:
     VERSION="0.3"
 
     # ClickHouse (optional)
-    DATABASE_HOST="clickhouse.clickhouse.svc.cluster.local"
-    DATABASE_PORT="9000"
-    DATABASE="test"
-    DATABASE_USER="test"
-    DATABASE_PASSWORD="test"
-    DATABASE_CLIENT_NAME="udpspoofer-client"
+    DATABASE_HOST="{{ .Values.clickhouse.host }}"
+    DATABASE_PORT="{{ .Values.clickhouse.port }}"
+    DATABASE="{{ .Values.clickhouse.database }}"
+    DATABASE_USER="{{ .Values.clickhouse.user }}"
+    DATABASE_PASSWORD="{{ .Values.clickhouse.password }}"
+    DATABASE_CLIENT_NAME="{{ .Values.clickhouse.clientName }}"
 
     # Channel buffer size for packet channels (TCP/UDP database queues and outbound traffic)
-    CHANNEL_SIZE="100000"
+    CHANNEL_SIZE="{{ .Values.env.channelSize }}"
 
     # ClickHouse insert batch size for TCP and UDP
-    TCP_PASSIVE_INSERT_BATCH_SIZE="5000"
-    TCP_REACTIVE_INSERT_BATCH_SIZE="50000"
-    UDP_PASSIVE_INSERT_BATCH_SIZE="5000"
-    UDP_REACTIVE_INSERT_BATCH_SIZE="25000"
+    TCP_PASSIVE_INSERT_BATCH_SIZE="{{ .Values.env.tcpPassiveInsertBatchSize }}"
+    TCP_REACTIVE_INSERT_BATCH_SIZE="{{ .Values.env.tcpReactiveInsertBatchSize }}"
+    UDP_PASSIVE_INSERT_BATCH_SIZE="{{ .Values.env.udpPassiveInsertBatchSize }}"
+    UDP_REACTIVE_INSERT_BATCH_SIZE="{{ .Values.env.udpReactiveInsertBatchSize }}"
 
     # Packet Rate limits per different Entries (Source IP, Source /24, Endpoint (dst_ip, dst_port))
     # Defaults based on UDP traffic baselines observed
-    UDP_IP_LIMIT="300"
-    UDP_SUBNET_LIMIT="900"
-    UDP_ENDPOINT_LIMIT="1000"
+    UDP_IP_LIMIT="{{ .Values.env.udpIpLimit }}"
+    UDP_SUBNET_LIMIT="{{ .Values.env.udpSubnetLimit }}"
+    UDP_ENDPOINT_LIMIT="{{ .Values.env.udpEndpointLimit }}"
 
     # Time window within which packet rates are applied. Increase at your own risk
-    UDP_RL_WINDOW_MINUTES="1"
+    UDP_RL_WINDOW_MINUTES="{{ .Values.env.udpRlWindowMinutes }}"
 
     # Blocking time applied on passing an Entry rate within UDP_RL_WINDOW_MINUTES
-    UDP_RL_BLOCK_TTL_MINUTES="60"
+    UDP_RL_BLOCK_TTL_MINUTES="{{ .Values.env.udpRlBlockTtlMinutes }}"
 
     # Interval in minutes to check for entries to unblock
-    UDP_RL_CLEANUP_INTERVAL_MINUTES="10"
+    UDP_RL_CLEANUP_INTERVAL_MINUTES="{{ .Values.env.udpRlCleanupIntervalMinutes }}"
 
     # Every N cleanup ticks, also prune expired rate entries (ipRates/subRates/epRates)
     # Cleanup frequency: UDP_RL_CLEANUP_INTERVAL_MINUTES * UDP_ENTRY_CLEANUP_INTERVALS
-    UDP_ENTRY_CLEANUP_INTERVALS="12"
+    UDP_ENTRY_CLEANUP_INTERVALS="{{ .Values.env.udpEntryCleanupIntervals }}"
 
-    LOG_LEVEL="debug"
+    LOG_LEVEL="{{ .Values.env.logLevel }}"
     # Interval in seconds to log potential packet drops by database channels
-    STATIC_DROP_LOG_SECS="30"
+    STATIC_DROP_LOG_SECS="{{ .Values.env.staticDropLogSecs }}"

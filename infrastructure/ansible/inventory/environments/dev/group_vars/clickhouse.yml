@@ -6,5 +6,7 @@ chart_path: "{{ playbook_dir }}/../../../applications/clickhouse/helm"
 
 values:
   global:
-    namespace: clickhouse
     enabled: true
+  clickhouse:
+    node:
+      hostname: master-00

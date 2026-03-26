@@ -1,4 +1,9 @@
----      
+---
+- name: Gather facts from master nodes (loads group_vars for cross-host lookups)
+  hosts: master
+  become: true
+  gather_facts: true
+
 - name: Configure agents first to collect WireGuard facts
   hosts: agents
   become: true

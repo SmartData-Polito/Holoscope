@@ -24,7 +24,6 @@
         file: "{{ inventory_dir }}/group_vars/{{ item }}.yml"
         name: "app_vars_{{ item }}"
       loop: "{{ discovered_applications }}"
-      ignore_errors: true
     
     - name: Initialize enabled applications list
       set_fact:

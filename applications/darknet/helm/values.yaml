@@ -4,6 +4,29 @@ global:
 # Default per-node capture configurations (empty - populated by Ansible)
 captureNodes: {}
 
+# Network configuration
+network:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Security context for ARP daemon
+securityContext:
+  privileged: false
+  capabilities:
+    add:
+      - NET_ADMIN
+      - NET_RAW
+
+# Resource limits
+resources:
+  arp:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
 # Image configurations
 arpImages:
   ipv4:

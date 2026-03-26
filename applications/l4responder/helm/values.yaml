@@ -2,6 +2,9 @@ global:
   namespace: l4responder
   storageClass: manual
 
+container_port: 30000
+host_port: 30000
+
 l4responder_server:
   labels:
      app: l4responder

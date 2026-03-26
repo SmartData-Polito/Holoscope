@@ -32,7 +32,8 @@ collector:
     srcPath: "/data/darknet"
     dstPath: "/data/collector"
     collectionInterval: "3600"
-    runMode: "deployment" 
+    logLevel: "INFO"
+    runMode: "deployment"
   storage:
     hostPath: "/data/collector"
     size: "50Gi"

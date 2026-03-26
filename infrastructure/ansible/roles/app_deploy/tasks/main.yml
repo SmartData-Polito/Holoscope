@@ -6,14 +6,6 @@
 
 
 
-- name: DEBUG – Loaded configs for all enabled applications
-  debug:
-    msg: >
-      Application: {{ item }}
-      Config: {{ vars['app_vars_' + item] | default('NOT FOUND') }}
-  loop: "{{ enabled_applications }}"
-
-  when: app_config is defined
 - name: Fail if application config not found
   fail:
     msg: "No configuration found for application '{{ application }}'. Check that group_vars/{{ application }}.yml exists."
@@ -28,11 +20,6 @@
     helm_values: "{{ app_config['values'] | default({}) }}"
 
 - name: Initialize extra_app_configs
-  set_fact:
-    extra_app_configs: {}
-
-# Always initialize the dictionary before combining
-- name: Init extra_app_configs
   set_fact:
     extra_app_configs: {}
 
@@ -54,12 +41,6 @@
   when: application == 'toolbox'
 
 
-- name: DEBUG – Loaded configs for all enabled applications
-  debug:
-    msg: >
-      Application: {{ app_name }}
-      Config: {{ helm_values }}
-  when: application == 'toolbox'
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     name: "{{ app_namespace }}"

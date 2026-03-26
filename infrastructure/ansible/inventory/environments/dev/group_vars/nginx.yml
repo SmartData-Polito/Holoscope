@@ -7,39 +7,6 @@ chart_path: "{{ playbook_dir }}/../../../applications/nginx/helm"
 docker_images: []
 
 values:
-  global:
-    namespace: nginx
-
-  nginx:
-    image:
-      repository: nginx
-      tag: "alpine"
-      pullPolicy: IfNotPresent
-    
-    container:
-      name: nginx
-      httpPort: 80
-      httpsPort: 443
-    
-    service:
-      type: NodePort
-      httpPort: 80
-      httpsPort: 443
-    
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 128Mi
-    
-    persistence:
-      enabled: true
-      type: "hostPath"
-      storageClass: "manual"
-      size: 1Gi
-
   deployments:
     worker-00:
       enabled: true
@@ -52,7 +19,7 @@ values:
         - "192.168.10.102"
         - "192.168.10.103"
         - "192.168.10.104"
-    
+
     worker-01:
       enabled: true
       nodeSelector: "worker-01"

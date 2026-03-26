@@ -23,7 +23,6 @@
         file: "{{ inventory_dir }}/group_vars/{{ item }}.yml"
         name: "app_vars_{{ item }}"
       loop: "{{ discovered_applications }}"
-      ignore_errors: true
     
     - name: Initialize enabled applications list
       set_fact:
@@ -49,7 +48,9 @@
           - "Enabled applications: {{ enabled_applications }}"
           - "Applications to build: {{ target_build_applications }}"
     - name: Remove old host key to avoid conflicts
-      shell: ssh-keygen -f ~/.ssh/known_hosts -R {{ ansible_host }} || true
+      known_hosts:
+        name: "{{ ansible_host }}"
+        state: absent
       delegate_to: localhost
       run_once: true
       when: target_build_applications | length > 0
@@ -63,18 +64,6 @@
       loop_control:
         loop_var: app_item
       when: target_build_applications | length > 0
-    - name: Debug target applications and their docker images
-      debug:
-        msg:
-          - "App item: {{ app_item }}"
-          - "App vars key: app_vars_{{ app_item }}"
-          - "App vars defined: {{ vars['app_vars_' + app_item] is defined }}"
-          - "App vars: {{ vars['app_vars_' + app_item] | default('NOT FOUND') }}"
-          - "Docker images: {{ vars['app_vars_' + app_item].docker_images | default('NOT FOUND') }}"
-      loop: "{{ target_build_applications }}"
-      loop_control:
-        loop_var: app_item
-
     - name: Collect all docker images from target applications
       set_fact:
         target_docker_images: >-
@@ -87,15 +76,10 @@
             | flatten
           }}
 
-    - name: Debug collected docker images
-      debug:
-        msg:
-          - "Total images: {{ target_docker_images | length }}"
-          - "Images: {{ target_docker_images }}"
     - name: Sync only Docker contexts for target applications using rsync
       synchronize:
-        src: "{{ playbook_dir }}/../../../{{  image_item.path }}"
-        dest: "/tmp/{{ image_item.path }}"
+        src: "{{ playbook_dir }}/../../../{{ image_item.path }}/"
+        dest: "/tmp/{{ image_item.path }}/"
         delete: yes
         recursive: yes
         private_key: "{{ ansible_ssh_private_key_file | realpath }}"

@@ -1,12 +1,36 @@
-# applications/darknet/helm/values.yaml
+# applications/udp-responder/helm/values.yaml
 global:
   namespace: udp-responder
 
-
 # Image configurations
-
 containers:
   udpresponder:
     repository: registry.local:5000/public/udp-responder
     tag: latest
     pullPolicy: Always
+
+# ClickHouse connection
+clickhouse:
+  host: "clickhouse.clickhouse.svc.cluster.local"
+  port: "9000"
+  database: "test"
+  user: "test"
+  password: "test"
+  clientName: "udpspoofer-client"
+
+# Application tuning
+env:
+  channelSize: "100000"
+  tcpPassiveInsertBatchSize: "5000"
+  tcpReactiveInsertBatchSize: "50000"
+  udpPassiveInsertBatchSize: "5000"
+  udpReactiveInsertBatchSize: "25000"
+  udpIpLimit: "300"
+  udpSubnetLimit: "900"
+  udpEndpointLimit: "1000"
+  udpRlWindowMinutes: "1"
+  udpRlBlockTtlMinutes: "60"
+  udpRlCleanupIntervalMinutes: "10"
+  udpEntryCleanupIntervals: "12"
+  logLevel: "debug"
+  staticDropLogSecs: "30"

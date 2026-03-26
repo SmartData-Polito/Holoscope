@@ -4,7 +4,7 @@
   apt:
     name:
       - haproxy
-      - keepalived      
+      - keepalived
     state: present
 
 - name: Deploy haproxy.cfg
@@ -14,9 +14,10 @@
     mode: 0644
   vars:
     master: "{{  hostvars[groups['master'][0]].master_nodes }}"
+  notify: restart haproxy
 
 - name: Ensure haproxy is enabled and running
   service:
     name: haproxy
     enabled: yes
-    state: restarted   
+    state: started

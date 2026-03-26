@@ -3,93 +3,78 @@
   hosts: all
   become: true
   tasks:
-    - name: Stop WireGuard 
-      command: wg-quick  down wg0 
+    - name: Stop WireGuard
+      command: wg-quick down {{ wireguard_interface | default('wg0') }}
+      register: wg_result
       failed_when: false
-      
-    - name: Remove previous installation of Wireguard
-      shell: apt remove -y wireguard
+      changed_when: wg_result.rc == 0
+
+    - name: Remove WireGuard package
+      apt:
+        name: wireguard
+        state: absent
       failed_when: false
-      
-    - name: Remove wg0.conf file - if exist
-      shell: rm /etc/wireguard/ -r
-      failed_when: false
+
+    - name: Remove WireGuard configuration directory
+      file:
+        path: /etc/wireguard
+        state: absent
 
     - name: Run K3s Uninstall script [server]
+      command: k3s-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s
       when: "'master' in group_names"
-      ansible.builtin.command:
-        cmd: k3s-uninstall.sh
-        removes: /var/lib/rancher/k3s/*
 
     - name: Run K3s Uninstall script [agent]
-      when: "'agent' in group_names"
-      ansible.builtin.command:
-        cmd: k3s-agent-uninstall.sh
-        removes: /var/lib/rancher/k3s/*
+      command: k3s-agent-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s-agent-uninstall.sh
+      when: "'agents' in group_names"
 
     - name: Remove k3s install script
-      ansible.builtin.file:
+      file:
         path: /usr/local/bin/k3s-install.sh
         state: absent
 
-    - name: Stop the Docker service
-      ignore_errors: true
-      service:
-        name: docker
-        state: stopped
-    
-    - name: Remove the docker-ee package (enterprise)
-      ignore_errors: true
-      ansible.builtin.apt:
-        name: docker-ee
-        state: absent
-
-    - name: Remove the docker-ce package (community edition)
-      ignore_errors: true
-      ansible.builtin.apt:
-        name: docker-ce
-        state: absent
-
-    - name: Remove the base docker package
-      ignore_errors: true
-      ansible.builtin.apt:
-        name: docker
-        state: absent
-
-    - name: Delete the /var/lib/docker directory
-      ignore_errors: true
-      file: 
-        path: /var/lib/docker
-        state: absent
-
     - name: Stop Docker service
-      ansible.builtin.service:
+      systemd:
         name: docker
         state: stopped
+      failed_when: false
 
-    - name: Disable Docker service
-      ansible.builtin.systemd:
+    - name: Disable and mask Docker service
+      systemd:
         name: docker
         enabled: no
         masked: yes
+      failed_when: false
 
-    - name: Remove Docker package
-      ansible.builtin.package:
-        name: docker-ce
+    - name: Remove Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - docker-ee
+          - containerd.io
+        state: absent
+      failed_when: false
+
+    - name: Delete Docker data directory
+      file:
+        path: /var/lib/docker
         state: absent
 
-    - name: Remove Docker systemd unit file (if exists)
-      ansible.builtin.file:
+    - name: Remove Docker systemd unit file
+      file:
         path: /etc/systemd/system/docker.service
         state: absent
 
-    - name: Remove Docker systemd drop-in directory (if exists)
-      ansible.builtin.file:
+    - name: Remove Docker systemd drop-in directory
+      file:
         path: /etc/systemd/system/docker.service.d
         state: absent
-        recurse: yes
-      ignore_errors: true
 
     - name: Reload systemd to apply changes
-      ansible.builtin.systemd:
+      systemd:
         daemon_reload: yes

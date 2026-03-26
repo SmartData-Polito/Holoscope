@@ -8,38 +8,6 @@ chart_path: "{{ playbook_dir }}/../../../applications/cowrie/helm"
 docker_images: []
 
 values:
-  global:
-    namespace: cowrie
-
-  cowrie:
-    image:
-      repository: cowrie/cowrie
-      tag: "latest"
-      pullPolicy: IfNotPresent
-    
-    container:
-      name: cowrie
-      port: 2222  # Cowrie internal port
-    
-    service:
-      type: NodePort
-      port: 22    # External SSH port
-      targetPort: 2222
-    
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    
-    persistence:
-      enabled: true
-      type: "hostPath" 
-      size: 5Gi
-
-  # Configure deployments per node with specific IPs
   deployments:
     worker-00:
       enabled: true
@@ -52,7 +20,7 @@ values:
         - "192.168.10.12"
         - "192.168.10.13"
         - "192.168.10.14"
-    
+
     worker-01:
       enabled: true
       nodeSelector: "worker-01"
@@ -64,4 +32,3 @@ values:
         - "192.168.20.22"
         - "192.168.20.23"
         - "192.168.20.24"
-    

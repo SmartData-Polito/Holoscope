@@ -9,12 +9,10 @@ docker_images:
     author: "public"
    # local_path: "applications/udp-responder/docker/"
     path: "applications/udp-responder/docker/"
-    dockerfile: "docker/Dockerfile.holoscope.udpspoofer"
+    dockerfile: "Dockerfile.holoscope.udpspoofer"
     tag: "latest"
 
 values:
-  global:
-    namespace: udp-responder
   udpResponderNodes:
     worker-01:
       enabled: true

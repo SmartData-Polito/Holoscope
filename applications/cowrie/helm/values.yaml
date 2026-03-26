@@ -30,6 +30,7 @@ cowrie:
   # Storage for logs
   persistence:
     enabled: true
+    type: "hostPath"
     storageClass: "manual"
     accessMode: ReadWriteOnce
     size: 5Gi

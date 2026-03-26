@@ -12,7 +12,7 @@
 
     - name: Ensure .kube directory exists
       file:
-        path: ~/.kube
+        path: "{{ ansible_env.HOME }}/.kube"
         state: directory
         mode: '0755'
 
@@ -31,29 +31,29 @@
     - name: Write modified kubeconfig to registry hosts
       copy:
         content: "{{ modified_kubeconfig }}"
-        dest: ~/.kube/kubeconfig.yaml
+        dest: "{{ ansible_env.HOME }}/.kube/kubeconfig.yaml"
         mode: '0600'
       become: false
 
     - name: Create helm charts directory
       file:
-        path: ~/helm-charts
+        path: "{{ ansible_env.HOME }}/helm-charts"
         state: directory
         mode: '0755'
 
     - name: Copy Helm chart to registry host
       copy:
         src: "{{ project_root }}/infrastructure/helm/registry/"
-        dest: ~/helm-charts/registry/
+        dest: "{{ ansible_env.HOME }}/helm-charts/registry/"
         mode: '0644'
 
     - name: Deploy registry with Helm module
       kubernetes.core.helm:
         name: "registry-{{ item }}"
-        chart_ref: "~/helm-charts/registry"
+        chart_ref: "{{ ansible_env.HOME }}/helm-charts/registry"
         release_namespace: registry
         create_namespace: true
-        kubeconfig: "~/.kube/kubeconfig.yaml"
+        kubeconfig: "{{ ansible_env.HOME }}/.kube/kubeconfig.yaml"
         values:
           name: "registry-{{ item }}"
           appName: "registry-{{ item }}"
@@ -77,7 +77,7 @@
       lineinfile:
         path: /etc/hosts
         regexp: '^.*\sregistry\.local\s*$'
-        line: "10.0.0.100 registry {{ local_registry.split(':')[0] }}" #FIXME: should not be hardcoded
+        line: "{{ hostvars[groups['master'][0]].wireguard_ip }} registry {{ local_registry.split(':')[0] }}"
         state: present
         insertafter: EOF
 

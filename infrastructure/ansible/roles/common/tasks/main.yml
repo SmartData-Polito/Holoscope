@@ -88,9 +88,7 @@
     dest: /etc/docker/daemon.json
     content: |
       {
-        "insecure-registries" : ["{{ local_registry }}"],
-        "firewall-backend": "nftables"
-      
+        "insecure-registries" : ["{{ local_registry }}"]
       }
     mode: '0644'
   notify: restart docker
