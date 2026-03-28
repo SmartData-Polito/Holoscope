@@ -190,7 +190,7 @@ collect_files() {
         
         set +e
         local rsync_output
-        rsync_output=$(rsync -azP --timeout=300 -e "ssh -p $SSH_PORT" "$SSH_USER@$SSH_HOST:$file" "$temp_file" 2>&1)
+        rsync_output=$(rsync -azP --no-perms --timeout=300 -e "ssh -p $SSH_PORT" "$SSH_USER@$SSH_HOST:$file" "$temp_file" 2>&1)
 
         local exit_code=$?
         set -e
