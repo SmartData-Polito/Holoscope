@@ -16,7 +16,7 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: {{ .Values.collector.storage.hostPath }}
-    type: DirectoryOrCreate
+    type: Directory
   nodeAffinity:
     required:
       nodeSelectorTerms:

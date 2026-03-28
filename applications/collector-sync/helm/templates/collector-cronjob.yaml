@@ -82,7 +82,7 @@ spec:
           - name: collector-storage
             hostPath:
               path: {{ $.Values.collector.storage.hostPath }}
-              type: DirectoryOrCreate
+              type: Directory
 {{- end }}
 {{- end }}
 {{- end }}
