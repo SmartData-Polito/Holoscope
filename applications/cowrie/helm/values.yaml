@@ -1,10 +1,13 @@
 global:
   namespace: cowrie
 
+networkPolicy:
+  enabled: true
+
 cowrie:
   image:
     repository: cowrie/cowrie
-    tag: "latest"
+    tag: "latest"  # TODO: pin to a specific version for production
     pullPolicy: IfNotPresent
   
   # Container configuration

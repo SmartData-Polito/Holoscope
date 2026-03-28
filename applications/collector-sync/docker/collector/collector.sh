@@ -284,7 +284,7 @@ shutdown() {
 daemon_mode() {
     trap 'shutdown' SIGTERM SIGINT
     
-    log "INFO" "Starting Darknet PCAP Collector (Daemon mode)"
+    log "INFO" "Starting PCAP Collector (Daemon mode)"
     log "INFO" "Target: $SSH_USER@$WORKER_NODE"
     log "INFO" "Source: $SOURCE_PATH -> Destination: $DEST_PATH"
     log "INFO" "Collection interval: ${COLLECTION_INTERVAL}s"
@@ -308,7 +308,7 @@ daemon_mode() {
 
 # CronJob mode (for kubernetes)
 cronjob_mode() {
-    log "INFO" "Starting Darknet PCAP Collector (CronJob mode)"
+    log "INFO" "Starting PCAP Collector (CronJob mode)"
     log "INFO" "Target: $SSH_USER@$WORKER_NODE"
     log "INFO" "Source: $SOURCE_PATH -> Destination: $DEST_PATH"
     

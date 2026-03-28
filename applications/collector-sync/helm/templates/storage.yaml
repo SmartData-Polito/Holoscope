@@ -4,9 +4,9 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "darknet.fullname" . }}-collector-pv
+  name: {{ include "collector-sync.fullname" . }}-collector-pv
   labels:
-    {{- include "darknet.collector.labels" . | nindent 4 }}
+    {{- include "collector-sync.collector.labels" . | nindent 4 }}
     type: local
 spec:
   storageClassName: {{ .Values.global.storageClass }}
@@ -21,7 +21,7 @@ spec:
     required:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: node-role.kubernetes.io/master
+        - key: node-role.kubernetes.io/control-plane
           operator: Exists
 
 ---
@@ -29,10 +29,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "darknet.fullname" . }}-collector-pvc
+  name: {{ include "collector-sync.fullname" . }}-collector-pvc
   namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "darknet.collector.labels" . | nindent 4 }}
+    {{- include "collector-sync.collector.labels" . | nindent 4 }}
 spec:
   storageClassName: {{ .Values.global.storageClass }}
   accessModes:

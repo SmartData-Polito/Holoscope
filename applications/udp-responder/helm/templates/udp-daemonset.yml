@@ -27,7 +27,7 @@ spec:
         kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
       containers:
         - name: udp-responder
-          image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.containers.udpresponder.tag | default "latest" }}"
+          image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.image_tag }}"
           imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
           securityContext:
             privileged: true

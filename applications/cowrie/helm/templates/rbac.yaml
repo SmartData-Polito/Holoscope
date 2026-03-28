@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "cowrie.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "cowrie.labels" . | nindent 4 }}
+automountServiceAccountToken: false

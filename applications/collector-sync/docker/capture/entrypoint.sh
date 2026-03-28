@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Darknet Capture Service Starting ==="
+echo "=== Collector-Sync Capture Service Starting ==="
 
 # Detect environment
 detect_environment() {

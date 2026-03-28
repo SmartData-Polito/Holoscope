@@ -2,6 +2,12 @@ global:
   namespace: l4responder
   storageClass: manual
 
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
+
+networkPolicy:
+  enabled: true
+
 container_port: 30000
 host_port: 30000
 
@@ -12,6 +18,5 @@ l4responder_server:
   container:
     name: responder
     image:
-      repository: registry.local:5000/public/l4responder_server 
-      tag: latest
-      pullPolicy: Always
+      repository: registry.local:5000/public/l4responder_server
+      pullPolicy: IfNotPresent

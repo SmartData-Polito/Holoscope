@@ -1,20 +1,22 @@
-# applications/darknet/helm/values.yaml
+# applications/collector-sync/helm/values.yaml
 global:
   namespace: collector-sync
   storageClass: manual
+
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
 
 # Default per-node capture configurations (empty - populated by Ansible)
 captureNodes: {}
 
 captureImage:
-  repository: registry.local:5000/public/capture 
-  tag: latest
-  pullPolicy: Always
+  repository: registry.local:5000/public/capture
+  pullPolicy: IfNotPresent
 
 sshKeygenImage:
   repository: registry.local:5000/public/ssh-keygen
-  tag: latest
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
+
 # Collector defaults
 collector:
   enabled: true
@@ -22,10 +24,9 @@ collector:
   schedule: "*/5 * * * *"  # default schedule
   image:
     repository: registry.local:5000/public/collector
-    tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   nodeSelector:
-    node-role.kubernetes.io/master: "true"
+    node-role.kubernetes.io/control-plane: "true"
   config:
     workerNodes: []  # Populated by Ansible
     sshUsers: []     # Populated by Ansible
@@ -68,7 +69,7 @@ networkPolicy:
   allowedCidrs:
     - "10.0.0.0/24"
     
-# Resource limits (shared)
+# Resource limits
 resources:
   capture:
     requests:
@@ -77,10 +78,3 @@ resources:
     limits:
       memory: "256Mi"
       cpu: "200m"
-  arp:
-    requests:
-      memory: "64Mi"
-      cpu: "50m"
-    limits:
-      memory: "128Mi"
-      cpu: "100m"

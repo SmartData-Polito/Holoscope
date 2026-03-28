@@ -5,23 +5,23 @@ services:
     build:
       context: ./ssh-keygen
       dockerfile: Dockerfile
-    image: darknet-ssh-keygen:latest
-    container_name: darknet-keygen
+    image: collector-sync-ssh-keygen:latest
+    container_name: collector-sync-keygen
     volumes:
       - ssh-keys:/tmp/ssh-keys
     environment:
       - K8S_MODE=false
       - KEY_PATH=/tmp/ssh-keys
       - KEY_NAME=id_rsa
-      - KEY_COMMENT=darknet-collector-compose
+      - KEY_COMMENT=collector-sync-compose
         
   # PCAP capture service with SSH server (custom image)
   pcap-capture:
     build:
       context: ./capture
       dockerfile: Dockerfile
-    image: darknet-capture:latest
-    container_name: darknet-capture
+    image: collector-sync-capture:latest
+    container_name: collector-sync-capture
     hostname: worker-capture
     restart: unless-stopped
     cap_add:
@@ -36,7 +36,7 @@ services:
       - ROTATE_SECONDS=60
       - NODE_NAME=worker
     networks:
-      darknet-net:
+      collector-sync-net:
         aliases:
           - worker-capture
     depends_on:
@@ -50,7 +50,7 @@ services:
       context: ./collector
       dockerfile: Dockerfile
     image: pcap-collector:latest
-    container_name: darknet-collector
+    container_name: collector-sync-collector
     hostname: collector
     restart: unless-stopped
     volumes:
@@ -63,7 +63,7 @@ services:
       - LOG_LEVEL=INFO
       - RUN_MODE=daemon  
     networks:
-      - darknet-net
+      - collector-sync-net
     depends_on:
       ssh-keygen:
         condition: service_completed_successfully
@@ -81,5 +81,5 @@ volumes:
     driver: local
     
 networks:
-  darknet-net:
+  collector-sync-net:
     driver: bridge

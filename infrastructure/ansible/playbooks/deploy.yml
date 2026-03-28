@@ -74,10 +74,24 @@
   hosts: registry
   vars:
     operation: "{{ action | default('install') }}"
-    force_deploy: "{{ force | default(false) | bool }}"  
+    force_deploy: "{{ force | default(false) | bool }}"
   environment:
     KUBECONFIG: "{{ ansible_env.HOME }}/.kube/kubeconfig.yaml"
   tasks:
+    - name: Get git short SHA for image tag
+      command: git rev-parse --short HEAD
+      register: git_sha_result
+      delegate_to: localhost
+      changed_when: false
+
+    - name: Set image tag from git SHA
+      set_fact:
+        image_tag: "{{ image_tag | default(git_sha_result.stdout) }}"
+
+    - name: Display deploy image tag
+      debug:
+        msg: "Deploying with image tag: {{ image_tag }}"
+
     - name: Deploy each application
       include_role:
         name: app_deploy
@@ -85,22 +99,12 @@
         application: "{{ app_item }}"
         deploy_action: "{{ operation }}"
         force_deploy: "{{ force_deploy }}"
+        deploy_image_tag: "{{ image_tag }}"
       loop: "{{ target_applications }}"
       loop_control:
         loop_var: app_item
       when: target_applications | length > 0
 
-    - name: Force restart DaemonSets if upgrading
-      shell: |
-        kubectl rollout restart daemonset -n {{ item }} || true
-      loop: "{{ target_applications }}"
-      environment:
-        KUBECONFIG: "{{ ansible_env.HOME }}/.kube/kubeconfig.yaml"
-      when: 
-        - target_applications | length > 0
-        - operation in ['upgrade', 'restart']
-      ignore_errors: true    
-    
     - name: Display deployment summary
       debug:
         msg: "Successfully processed applications: {{ target_applications | join(', ') }}"

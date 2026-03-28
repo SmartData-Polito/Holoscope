@@ -29,7 +29,7 @@ spec:
       
       containers:
       - name: arp4
-        image: "{{ $.Values.arpImages.ipv4.repository }}:{{ $.Values.arpImages.ipv4.tag }}"
+        image: "{{ $.Values.arpImages.ipv4.repository }}:{{ $.Values.image_tag }}"
         imagePullPolicy: Always
         
         securityContext:

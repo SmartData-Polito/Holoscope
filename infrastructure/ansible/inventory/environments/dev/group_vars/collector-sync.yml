@@ -50,6 +50,7 @@ values:
     enabled: true
     mode: "cronjob"
     schedule: "*/1 * * * *"  # Every minute for testing
+    hostAliases: []  # Populate with worker IPs if needed
     workers:
       worker-00:
         enabled: true

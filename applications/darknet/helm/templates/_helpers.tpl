@@ -51,17 +51,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/*
 Component-specific labels
 */}}
-{{- define "darknet.capture.labels" -}}
-{{ include "darknet.labels" . }}
-app.kubernetes.io/component: capture
-{{- end }}
-
 {{- define "darknet.arp.labels" -}}
 {{ include "darknet.labels" . }}
 app.kubernetes.io/component: arp
-{{- end }}
-
-{{- define "darknet.collector.labels" -}}
-{{ include "darknet.labels" . }}
-app.kubernetes.io/component: collector
 {{- end }}

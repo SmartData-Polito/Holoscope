@@ -27,11 +27,11 @@ spec:
 
       containers:
         - name: {{ $.Values.toolbox.container.name }}
-          image: "{{ $.Values.toolbox.container.image.repository }}:{{ $.Values.toolbox.container.image.tag }}"
+          image: "{{ $.Values.toolbox.container.image.repository }}:{{ $.Values.image_tag }}"
           imagePullPolicy: {{ $.Values.toolbox.container.image.pullPolicy }}
 
           securityContext:
-            privileged: {{ $.Values.toolbox.securityContext.privileged }}
+            {{- toYaml $.Values.toolbox.securityContext | nindent 12 }}
 
           env:
             - name: NODE_NAME

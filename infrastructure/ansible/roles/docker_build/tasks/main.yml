@@ -5,7 +5,8 @@
     that:
       - application is defined
       - local_registry is defined
-    fail_msg: "Missing required variables: application or local_registry"
+      - build_tag is defined
+    fail_msg: "Missing required variables: application, local_registry, or build_tag"
 
 - name: Use pre-loaded application configuration
   set_fact:
@@ -94,30 +95,30 @@
 
 - name: Build Docker images
   command: |
-    docker build -t {{ item.author }}/{{ item.name }}:{{ item.tag }} 
-    -f /tmp/docker-build/{{ item.name }}/{{ item.dockerfile }} 
+    docker build -t {{ item.author }}/{{ item.name }}:{{ build_tag }}
+    -f /tmp/docker-build/{{ item.name }}/{{ item.dockerfile }}
     /tmp/docker-build/{{ item.name }}
   loop: "{{ docker_images }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.name }}:{{ build_tag }}"
   when: docker_images | length > 0
   register: build_result
 
 - name: Tag images for local registry
   command: |
-    docker tag {{ item.author }}/{{ item.name }}:{{ item.tag }} 
-    {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+    docker tag {{ item.author }}/{{ item.name }}:{{ build_tag }}
+    {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ build_tag }}
   loop: "{{ docker_images }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.name }}:{{ build_tag }}"
   when: docker_images | length > 0
 
 - name: Push images to local registry
   command: |
-    docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ item.tag }}
+    docker push {{ local_registry }}/{{ item.author }}/{{ item.name }}:{{ build_tag }}
   loop: "{{ docker_images }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.name }}:{{ build_tag }}"
   when: docker_images | length > 0
   register: push_result
 

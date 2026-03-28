@@ -2,6 +2,8 @@ global:
   namespace: toolbox
   storageClass: manual
 
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
 
 toolbox:
   name: toolbox
@@ -11,12 +13,14 @@ toolbox:
     name: toolbox
     image:
       repository: registry.local:5000/public/toolbox
-      tag: latest
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
   serviceAccount:
     name: toolbox-sa
   securityContext:
-    privileged: true
+    privileged: false
+    capabilities:
+      add: ["NET_ADMIN", "NET_RAW"]
+      drop: ["ALL"]
   network:
     hostNetwork: true
   

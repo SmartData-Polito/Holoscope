@@ -2,12 +2,14 @@
 global:
   namespace: udp-responder
 
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
+
 # Image configurations
 containers:
   udpresponder:
     repository: registry.local:5000/public/udp-responder
-    tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
 # ClickHouse connection
 clickhouse:

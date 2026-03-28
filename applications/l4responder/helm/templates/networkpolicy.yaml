@@ -1,0 +1,26 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "l4responder.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "l4responder.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "l4responder.selectorLabels" . | nindent 6 }}
+
+  policyTypes:
+  - Ingress
+  - Egress
+
+  # Allow inbound traffic on the responder port (honeypot must be reachable)
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: {{ .Values.container_port }}
+
+  # Deny all egress — responder only receives, never initiates connections
+  egress: []
+{{- end }}

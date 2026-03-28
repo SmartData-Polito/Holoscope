@@ -1,6 +1,10 @@
 # applications/darknet/helm/values.yaml
 global:
   namespace: darknet
+
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
+
 # Default per-node capture configurations (empty - populated by Ansible)
 captureNodes: {}
 
@@ -31,5 +35,4 @@ resources:
 arpImages:
   ipv4:
     repository: registry.local:5000/public/ipv4
-    tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent

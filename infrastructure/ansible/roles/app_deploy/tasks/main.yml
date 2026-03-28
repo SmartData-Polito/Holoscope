@@ -19,6 +19,12 @@
     app_enabled: "{{ app_config.enabled | default(true) | bool }}"
     helm_values: "{{ app_config['values'] | default({}) }}"
 
+# Inject the git-SHA image tag into helm values so Kubernetes sees a spec change
+- name: Set image tag in helm values
+  set_fact:
+    helm_values: "{{ helm_values | combine({'image_tag': deploy_image_tag}, recursive=True) }}"
+  when: deploy_image_tag is defined
+
 - name: Initialize extra_app_configs
   set_fact:
     extra_app_configs: {}

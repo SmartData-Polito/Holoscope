@@ -8,7 +8,7 @@ KEY_PATH="${KEY_PATH:-/tmp/ssh-keys}"
 KEY_NAME="${KEY_NAME:-id_rsa}"
 KEY_TYPE="${KEY_TYPE:-rsa}"
 KEY_BITS="${KEY_BITS:-2048}"
-KEY_COMMENT="${KEY_COMMENT:-darknet-collector}"
+KEY_COMMENT="${KEY_COMMENT:-collector-sync}"
 
 # For Kubernetes mode
 K8S_MODE="${K8S_MODE:-false}"

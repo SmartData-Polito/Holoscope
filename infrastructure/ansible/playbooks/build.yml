@@ -6,7 +6,21 @@
     # Which applications to build (default: all enabled)
     build_applications: "{{ applications | default([]) }}"
     
-  tasks:    
+  tasks:
+    - name: Get git short SHA for image tagging
+      command: git rev-parse --short HEAD
+      register: git_sha_result
+      delegate_to: localhost
+      changed_when: false
+
+    - name: Set image tag from git SHA
+      set_fact:
+        image_tag: "{{ git_sha_result.stdout }}"
+
+    - name: Display image tag
+      debug:
+        msg: "Image tag for this build: {{ image_tag }}"
+
     - name: Discover applications from group_vars files
       find:
         paths: "{{ inventory_dir }}/group_vars/"
@@ -93,6 +107,7 @@
         name: docker_build
       vars:
         application: "{{ app_item }}"
+        build_tag: "{{ image_tag }}"
       loop: "{{ target_build_applications }}"
       loop_control:
         loop_var: app_item

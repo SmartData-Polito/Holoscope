@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "l4responder.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "l4responder.labels" . | nindent 4 }}
+automountServiceAccountToken: false

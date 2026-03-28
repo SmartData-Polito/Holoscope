@@ -1,0 +1,42 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cowrie.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "cowrie.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "cowrie.selectorLabels" . | nindent 6 }}
+
+  policyTypes:
+  - Ingress
+  - Egress
+
+  # Allow inbound SSH from any source (honeypot must be reachable)
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: {{ .Values.cowrie.container.port }}
+
+  egress:
+  # Allow DNS resolution
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+  # Allow egress to public internet, but block cluster-internal networks
+  # to prevent lateral movement if cowrie is compromised.
+  # Cowrie needs outbound access because attackers trigger binary downloads.
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+{{- end }}

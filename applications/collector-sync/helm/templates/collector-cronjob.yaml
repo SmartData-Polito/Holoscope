@@ -6,11 +6,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "darknet.fullname" $ }}-collector-{{ $workerName }}-config
+  name: {{ include "collector-sync.fullname" $ }}-collector-{{ $workerName }}-config
   namespace: {{ $.Values.global.namespace }}
   labels:
-    {{- include "darknet.collector.labels" $ | nindent 4 }}
-    darknet.io/worker: {{ $workerName }}
+    {{- include "collector-sync.collector.labels" $ | nindent 4 }}
+    collector-sync.io/worker: {{ $workerName }}
 data:
   # Single worker configuration for {{ $workerName }}
   WORKER_NODE: {{ $workerConfig.target | quote }}
@@ -24,11 +24,11 @@ data:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "darknet.fullname" $ }}-collector-{{ $workerName }}
+  name: {{ include "collector-sync.fullname" $ }}-collector-{{ $workerName }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    {{- include "darknet.collector.labels" $ | nindent 4 }}
-    darknet.io/worker: {{ $workerName }}
+    {{- include "collector-sync.collector.labels" $ | nindent 4 }}
+    collector-sync.io/worker: {{ $workerName }}
 spec:
   schedule: {{ $.Values.collector.schedule | quote }}
   concurrencyPolicy: Forbid
@@ -41,23 +41,28 @@ spec:
       template:
         metadata:
           labels:
-            {{- include "darknet.collector.labels" $ | nindent 12 }}
-            darknet.io/worker: {{ $workerName }}
+            {{- include "collector-sync.collector.labels" $ | nindent 12 }}
+            collector-sync.io/worker: {{ $workerName }}
         spec:
           restartPolicy: Never
-          
+
+          {{- if $.Values.collector.hostAliases }}
+          hostAliases:
+            {{- toYaml $.Values.collector.hostAliases | nindent 10 }}
+          {{- end }}
+
           # Run on master node
           nodeSelector:
             {{- toYaml $.Values.collector.nodeSelector | nindent 12 }}
           
           containers:
           - name: collector
-            image: "{{ $.Values.collector.image.repository }}:{{ $.Values.collector.image.tag }}"
+            image: "{{ $.Values.collector.image.repository }}:{{ $.Values.image_tag }}"
             imagePullPolicy: {{ $.Values.collector.image.pullPolicy }}
             
             envFrom:
             - configMapRef:
-                name: {{ include "darknet.fullname" $ }}-collector-{{ $workerName }}-config
+                name: {{ include "collector-sync.fullname" $ }}-collector-{{ $workerName }}-config
             
             volumeMounts:
             - name: ssh-keys

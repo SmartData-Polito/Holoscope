@@ -4,3 +4,7 @@ k3s-ansible/.python-version
 .python-version
 .python-version
 infrastructure/vagrant/dev_admin_pub_ssh_key/*
+
+# Credentials — never commit
+**/kubeconfig.yaml
+**/kubeconfig.yml

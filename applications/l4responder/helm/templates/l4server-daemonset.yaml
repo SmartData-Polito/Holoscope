@@ -20,18 +20,36 @@ spec:
         app: {{ $.Values.l4responder_server.labels.app }}
         l4responderserver.io/node: {{ $nodeName }}
     spec:
+      serviceAccountName: {{ include "l4responder.fullname" $ }}
       nodeSelector:
         kubernetes.io/hostname: {{ $nodeName }}
       terminationGracePeriodSeconds: 0
       containers:
         - name: {{ $.Values.l4responder_server.container.name }}
-          image: "{{ $.Values.l4responder_server.container.image.repository }}:{{ $.Values.l4responder_server.container.image.tag }}"
+          image: "{{ $.Values.l4responder_server.container.image.repository }}:{{ $.Values.image_tag }}"
           imagePullPolicy: {{ $.Values.l4responder_server.container.image.pullPolicy }}
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+
           ports:
             - containerPort: {{ $.Values.container_port }}
               hostPort: {{ $.Values.host_port }}
           env:
             - name: CONTAINER_PORT
               value: "{{ $.Values.container_port}}"
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
 {{- end }}
 {{- end }}

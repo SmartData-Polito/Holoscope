@@ -1,4 +1,4 @@
-# SSH daemon configuration for darknet capture container
+# SSH daemon configuration for collector-sync capture container
 Port 65222
 Protocol 2
 

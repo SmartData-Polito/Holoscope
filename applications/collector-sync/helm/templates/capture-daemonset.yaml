@@ -4,22 +4,22 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "darknet.fullname" $ }}-capture-{{ $nodeName }}
+  name: {{ include "collector-sync.fullname" $ }}-capture-{{ $nodeName }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    {{- include "darknet.capture.labels" $ | nindent 4 }}
-    darknet.io/node: {{ $nodeName }}
+    {{- include "collector-sync.capture.labels" $ | nindent 4 }}
+    collector-sync.io/node: {{ $nodeName }}
 spec:
   selector:
     matchLabels:
-      {{- include "darknet.selectorLabels" $ | nindent 6 }}
+      {{- include "collector-sync.selectorLabels" $ | nindent 6 }}
       app.kubernetes.io/component: capture
-      darknet.io/node: {{ $nodeName }}
+      collector-sync.io/node: {{ $nodeName }}
   template:
     metadata:
       labels:
-        {{- include "darknet.capture.labels" $ | nindent 8 }}
-        darknet.io/node: {{ $nodeName }}
+        {{- include "collector-sync.capture.labels" $ | nindent 8 }}
+        collector-sync.io/node: {{ $nodeName }}
     spec:
       hostNetwork: {{ $.Values.network.hostNetwork }}
       dnsPolicy: {{ $.Values.network.dnsPolicy }}
@@ -29,7 +29,7 @@ spec:
       
       containers:
       - name: capture
-        image: "{{ $.Values.captureImage.repository }}:{{ $.Values.captureImage.tag }}"
+        image: "{{ $.Values.captureImage.repository }}:{{ $.Values.image_tag }}"
         imagePullPolicy: {{ $.Values.captureImage.pullPolicy }}
         
         securityContext:
