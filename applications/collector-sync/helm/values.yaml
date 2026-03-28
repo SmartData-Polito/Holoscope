@@ -34,7 +34,7 @@ collector:
     dstPath: "/data/collector"
     collectionInterval: "3600"
     logLevel: "INFO"
-    runMode: "deployment"
+    runMode: "cronjob"
   storage:
     hostPath: "/data/collector"
     size: "50Gi"
