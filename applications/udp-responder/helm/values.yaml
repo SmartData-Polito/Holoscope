@@ -1,9 +1,13 @@
 # applications/udp-responder/helm/values.yaml
 global:
   namespace: udp-responder
+  storageClass: local-path
 
 # Image tag — overridden at deploy time with git SHA
 image_tag: latest
+
+# Per-node configurations (populated by Ansible)
+udpResponderNodes: {}
 
 # Image configurations
 containers:
@@ -11,14 +15,42 @@ containers:
     repository: registry.local:5000/public/udp-responder
     pullPolicy: IfNotPresent
 
-# ClickHouse connection
+# Network configuration
+network:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Security context — capabilities-based, not privileged
+securityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+    add:
+      - NET_ADMIN
+      - NET_RAW
+
+# Resource limits
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+# ClickHouse connection (credentials overridden by Ansible)
 clickhouse:
   host: "clickhouse.clickhouse.svc.cluster.local"
   port: "9000"
-  database: "test"
-  user: "test"
-  password: "test"
+  database: ""
+  user: ""
+  password: ""
   clientName: "udpspoofer-client"
+
+# Network policy
+networkPolicy:
+  enabled: true
 
 # Application tuning
 env:
@@ -34,5 +66,5 @@ env:
   udpRlBlockTtlMinutes: "60"
   udpRlCleanupIntervalMinutes: "10"
   udpEntryCleanupIntervals: "12"
-  logLevel: "debug"
+  logLevel: "info"
   staticDropLogSecs: "30"

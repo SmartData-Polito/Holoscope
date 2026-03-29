@@ -1,0 +1,42 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "clickhouse.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "clickhouse.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "clickhouse.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+
+  policyTypes:
+  - Ingress
+  - Egress
+
+  ingress:
+  # Allow connections from udp-responder pods (hostNetwork bypasses namespace selectors,
+  # so we also allow from the WireGuard CIDR where worker nodes live)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: udp-responder
+    - ipBlock:
+        cidr: {{ .Values.networkPolicy.allowedCidr }}
+    ports:
+    - protocol: TCP
+      port: {{ .Values.clickhouse.service.nativePort }}
+    - protocol: TCP
+      port: {{ .Values.clickhouse.service.httpPort }}
+
+  egress:
+  # DNS only
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+{{- end }}

@@ -5,8 +5,9 @@ namespace: clickhouse
 chart_path: "{{ playbook_dir }}/../../../applications/clickhouse/helm"
 
 values:
-  global:
-    enabled: true
   clickhouse:
     node:
       hostname: master-00
+    database: "holoscope"
+    user: "holoscope"
+    password: "dev-holoscope-changeme"

@@ -86,7 +86,7 @@
 
     - name: Set image tag from git SHA
       set_fact:
-        deploy_tag: "{{ git_sha_result.stdout }}"
+        deploy_tag: "sha-{{ git_sha_result.stdout }}"
 
     - name: Display deploy image tag
       debug:

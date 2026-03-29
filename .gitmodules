@@ -6,4 +6,4 @@
 	url = https://github.com/AndreaSordello/L4_K3S_responder
 [submodule "applications/udp-responder/docker"]
 	path = applications/udp-responder/docker
-	url = https://github.com/dari1wastaken/udpspoofer
+	url = git@github.com:SmartData-Polito/udp-responder.git

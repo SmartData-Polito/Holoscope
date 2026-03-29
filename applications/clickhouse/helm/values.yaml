@@ -1,5 +1,6 @@
 global:
   namespace: clickhouse
+  storageClass: local-path
 
 clickhouse:
   image:
@@ -24,7 +25,25 @@ clickhouse:
       effect: "NoSchedule"
 
   persistence:
-    enabled: true
     hostPath: /data/clickhouse
+    size: "200Gi"
 
-  resources: {}
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Database credentials (overridden by Ansible per env)
+  database: "holoscope"
+  user: ""
+  password: ""
+
+  # IP allowlist for the database user (ClickHouse-level restriction)
+  allowedNetworks: []
+
+networkPolicy:
+  enabled: false
+  allowedCidr: "10.0.0.0/8"

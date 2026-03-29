@@ -8,46 +8,93 @@ metadata:
   name: {{ include "udpresponder.fullname" $ }}-{{ $nodeName }}-{{ $index }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    app: udp-responder
+    {{- include "udpresponder.labels" $ | nindent 4 }}
     udp-responder.io/node: {{ $nodeName }}
 spec:
   selector:
     matchLabels:
-      app: udp-responder
+      {{- include "udpresponder.selectorLabels" $ | nindent 6 }}
       udp-responder.io/node: {{ $nodeName }}
+      udp-responder.io/config-index: {{ $index | quote }}
   template:
     metadata:
       labels:
-        app: udp-responder
+        {{- include "udpresponder.labels" $ | nindent 8 }}
         udp-responder.io/node: {{ $nodeName }}
+        udp-responder.io/config-index: {{ $index | quote }}
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: {{ $.Values.network.hostNetwork }}
+      dnsPolicy: {{ $.Values.network.dnsPolicy }}
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: {{ include "udpresponder.fullname" $ }}
+
       nodeSelector:
-        kubernetes.io/hostname: {{ $nodeConfig.nodeSelector }}
+        kubernetes.io/hostname: {{ $nodeName }}
+
+      # Set iptables rules to suppress kernel RST/FIN/ICMP responses
+      # before the main container starts capturing packets.
+      # Uses -C (check) before -I (insert) to avoid duplicates on restart.
+      initContainers:
+      - name: iptables-setup
+        image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.image_tag }}"
+        securityContext:
+          capabilities:
+            drop: ["ALL"]
+            add: ["NET_ADMIN"]
+        command: ["sh", "-c"]
+        args:
+          - |
+            IFACE="{{ $cfg.interface }}"
+            SUBNET="{{ $cfg.subnet }}"
+            iptables -C OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP 2>/dev/null || \
+              iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP
+            iptables -C OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP 2>/dev/null || \
+              iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP
+            iptables -C OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP 2>/dev/null || \
+              iptables -I OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP
+            echo "iptables rules set for $SUBNET on $IFACE"
+
       containers:
-        - name: udp-responder
-          image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.image_tag }}"
-          imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
-          securityContext:
-            privileged: true
-          args: [
-            "--interface", {{ $cfg.interface  }},
-            "--subnet", {{ $cfg.subnet  }},
-            "--protocols", {{ $cfg.protocols  }},
-            "--save-clickhouse-db", {{ $cfg.saveclickhousedb | quote}},
-            "--save-blocked-udp", {{ $cfg.saveblockedudp | quote }}
-          ]
-          volumeMounts:
-            - name: env-file
-              mountPath: /app/.env
-              subPath: .env
-      volumes:
+      - name: udp-responder
+        image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.image_tag }}"
+        imagePullPolicy: {{ $.Values.containers.udpresponder.pullPolicy }}
+
+        securityContext:
+          {{- toYaml $.Values.securityContext | nindent 10 }}
+
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh", "-c", "iptables -D OUTPUT -o {{ $cfg.interface }} -p tcp -s {{ $cfg.subnet }} --tcp-flags RST RST -j DROP 2>/dev/null; iptables -D OUTPUT -o {{ $cfg.interface }} -p tcp -s {{ $cfg.subnet }} --tcp-flags FIN FIN -j DROP 2>/dev/null; iptables -D OUTPUT -o {{ $cfg.interface }} -p icmp -s {{ $cfg.subnet }} -j DROP 2>/dev/null; echo 'iptables rules removed'"]
+
+        args:
+          - "--interface"
+          - {{ $cfg.interface | quote }}
+          - "--subnet"
+          - {{ $cfg.subnet | quote }}
+          - "--protocols"
+          - {{ $cfg.protocols | quote }}
+          - "--save-clickhouse-db"
+          - {{ $cfg.saveclickhousedb | quote }}
+          - "--save-blocked-udp"
+          - {{ $cfg.saveblockedudp | quote }}
+          - "--node-name"
+          - {{ $nodeName | quote }}
+
+        volumeMounts:
         - name: env-file
-          configMap:
-            name: {{ include "udpresponder.fullname" $ }}-env
-      
-      
+          mountPath: /app/.env
+          subPath: .env
+
+        resources:
+          {{- toYaml $.Values.resources | nindent 10 }}
+
+      volumes:
+      - name: env-file
+        configMap:
+          name: {{ include "udpresponder.fullname" $ }}-env
+
+      restartPolicy: Always
 {{- end }}
 {{- end }}
 {{- end }}

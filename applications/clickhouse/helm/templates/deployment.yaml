@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickhouse.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "clickhouse.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "clickhouse.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "clickhouse.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "clickhouse.fullname" . }}
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.clickhouse.node.hostname | quote }}
+      {{- with .Values.clickhouse.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: clickhouse
+        image: "{{ .Values.clickhouse.image.repository }}:{{ .Values.clickhouse.image.tag }}"
+        imagePullPolicy: {{ .Values.clickhouse.image.pullPolicy }}
+        envFrom:
+        - secretRef:
+            name: {{ include "clickhouse.fullname" . }}-credentials
+        env:
+        - name: CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS
+          value: "true"
+        ports:
+        - name: http
+          containerPort: {{ .Values.clickhouse.service.httpPort }}
+        - name: native
+          containerPort: {{ .Values.clickhouse.service.nativePort }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/clickhouse
+        - name: initdb
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          {{- toYaml .Values.clickhouse.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "clickhouse.fullname" . }}-pvc
+      - name: initdb
+        configMap:
+          name: {{ include "clickhouse.fullname" . }}-initdb

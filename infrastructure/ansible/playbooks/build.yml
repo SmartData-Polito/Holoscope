@@ -15,7 +15,7 @@
 
     - name: Set image tag from git SHA
       set_fact:
-        image_tag: "{{ git_sha_result.stdout }}"
+        image_tag: "sha-{{ git_sha_result.stdout }}"
 
     - name: Display image tag
       debug:

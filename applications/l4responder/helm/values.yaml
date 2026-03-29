@@ -1,6 +1,6 @@
 global:
   namespace: l4responder
-  storageClass: manual
+  storageClass: local-path
 
 # Image tag — overridden at deploy time with git SHA
 image_tag: latest
