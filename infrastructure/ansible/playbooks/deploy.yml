@@ -86,11 +86,11 @@
 
     - name: Set image tag from git SHA
       set_fact:
-        image_tag: "{{ image_tag | default(git_sha_result.stdout) }}"
+        deploy_tag: "{{ git_sha_result.stdout }}"
 
     - name: Display deploy image tag
       debug:
-        msg: "Deploying with image tag: {{ image_tag }}"
+        msg: "Deploying with image tag: {{ deploy_tag }}"
 
     - name: Deploy each application
       include_role:
@@ -99,7 +99,7 @@
         application: "{{ app_item }}"
         deploy_action: "{{ operation }}"
         force_deploy: "{{ force_deploy }}"
-        deploy_image_tag: "{{ image_tag }}"
+        deploy_image_tag: "{{ deploy_tag }}"
       loop: "{{ target_applications }}"
       loop_control:
         loop_var: app_item
