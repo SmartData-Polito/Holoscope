@@ -38,7 +38,7 @@ data:
     PARTITION BY toYYYYMM(Timestamp)
     PRIMARY KEY (DstPort, toStartOfDay(Timestamp), SrcIP)
     ORDER BY (DstPort, toStartOfDay(Timestamp), SrcIP, DstIP)
-    SETTINGS index_granularity = 8192
+    SETTINGS index_granularity = 8192{{- if .Values.clickhouse.s3.enabled }}, storage_policy = 's3_main'{{- end }}
     COMMENT 'UDP packet metadata from responder nodes';
 
     -- TCP packets table
@@ -79,7 +79,7 @@ data:
     PARTITION BY toYYYYMM(Timestamp)
     PRIMARY KEY (DstPort, toStartOfDay(Timestamp), SrcIP)
     ORDER BY (DstPort, toStartOfDay(Timestamp), SrcIP, DstIP)
-    SETTINGS index_granularity = 8192
+    SETTINGS index_granularity = 8192{{- if .Values.clickhouse.s3.enabled }}, storage_policy = 's3_main'{{- end }}
     COMMENT 'TCP packet metadata from responder nodes';
 
     -- ICMP packets table
@@ -107,4 +107,7 @@ data:
     PARTITION BY toYYYYMM(Timestamp)
     PRIMARY KEY (SrcIP, toStartOfDay(Timestamp))
     ORDER BY (SrcIP, toStartOfDay(Timestamp), DstIP)
+    {{- if .Values.clickhouse.s3.enabled }}
+    SETTINGS storage_policy = 's3_main'
+    {{- end }}
     COMMENT 'ICMP packet metadata from responder nodes';
