@@ -33,7 +33,8 @@ spec:
 
       # Set iptables rules to suppress kernel RST/FIN/ICMP responses
       # before the main container starts capturing packets.
-      # Uses -C (check) before -I (insert) to avoid duplicates on restart.
+      # Deletes any stale rules first (preStop doesn't run on SIGKILL/crash),
+      # then inserts exactly one copy of each rule.
       initContainers:
       - name: iptables-setup
         image: "{{ $.Values.containers.udpresponder.repository }}:{{ $.Values.image_tag }}"
@@ -46,12 +47,14 @@ spec:
           - |
             IFACE="{{ $cfg.interface }}"
             SUBNET="{{ $cfg.subnet }}"
-            iptables -C OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP 2>/dev/null || \
-              iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP
-            iptables -C OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP 2>/dev/null || \
-              iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP
-            iptables -C OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP 2>/dev/null || \
-              iptables -I OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP
+            # Remove ALL existing copies of each rule (loop until -D fails)
+            while iptables -D OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP 2>/dev/null; do :; done
+            while iptables -D OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP 2>/dev/null; do :; done
+            while iptables -D OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP 2>/dev/null; do :; done
+            # Insert one copy of each rule
+            iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags RST RST -j DROP
+            iptables -I OUTPUT -o "$IFACE" -p tcp -s "$SUBNET" --tcp-flags FIN FIN -j DROP
+            iptables -I OUTPUT -o "$IFACE" -p icmp -s "$SUBNET" -j DROP
             echo "iptables rules set for $SUBNET on $IFACE"
 
       containers:

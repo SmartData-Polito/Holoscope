@@ -10,7 +10,11 @@ metadata:
 spec:
   storageClassName: {{ .Values.global.storageClass }}
   capacity:
+    {{- if .Values.clickhouse.s3.enabled }}
+    storage: "10Gi"
+    {{- else }}
     storage: {{ .Values.clickhouse.persistence.size }}
+    {{- end }}
   persistentVolumeReclaimPolicy: Retain
   accessModes:
     - ReadWriteOnce
@@ -39,4 +43,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
+      {{- if .Values.clickhouse.s3.enabled }}
+      storage: "10Gi"
+      {{- else }}
       storage: {{ .Values.clickhouse.persistence.size }}
+      {{- end }}

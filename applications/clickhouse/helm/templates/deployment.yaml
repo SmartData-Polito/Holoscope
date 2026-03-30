@@ -47,6 +47,12 @@ spec:
           mountPath: /var/lib/clickhouse
         - name: initdb
           mountPath: /docker-entrypoint-initdb.d
+        {{- if .Values.clickhouse.s3.enabled }}
+        - name: s3-storage-config
+          mountPath: /etc/clickhouse-server/config.d/storage.xml
+          subPath: storage.xml
+          readOnly: true
+        {{- end }}
         resources:
           {{- toYaml .Values.clickhouse.resources | nindent 10 }}
         livenessProbe:
@@ -68,3 +74,8 @@ spec:
       - name: initdb
         configMap:
           name: {{ include "clickhouse.fullname" . }}-initdb
+      {{- if .Values.clickhouse.s3.enabled }}
+      - name: s3-storage-config
+        secret:
+          secretName: {{ include "clickhouse.fullname" . }}-s3-storage
+      {{- end }}

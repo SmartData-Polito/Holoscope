@@ -28,6 +28,14 @@ clickhouse:
     hostPath: /data/clickhouse
     size: "200Gi"
 
+  # S3 storage backend (Ceph RGW)
+  # When enabled, MergeTree data is stored in S3; local volume is metadata/cache only.
+  s3:
+    enabled: false
+    endpoint: ""
+    accessKeyId: ""
+    secretAccessKey: ""
+
   resources:
     requests:
       memory: "512Mi"
