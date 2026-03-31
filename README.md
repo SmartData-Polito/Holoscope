@@ -6,17 +6,15 @@
 
 1. **Passive Measurement Probes**: Deployment of passive network probes for performance measurements, including darknet monitoring, to track ongoing network scanning activities.
 
-2. **Active Cybersecurity Probes**: Deployment of a honeynet - a distributed network of honeypots at the edge that monitors ongoing network attacks. It includes some classic low-interaction honeypots such as Cowrie.
+2. **Active Cybersecurity Probes**: Deployment of a honeynet - a distributed network of honeypots at the edge that monitors ongoing network attacks. It includes low-interaction honeypots (Cowrie, Nginx) and a reactive network telescope (UDP Responder) that crafts stateless replies to incoming traffic.
 
 3. **Testbed for Vulnerabilities**: Deployment of vulnerable applications that can be exploited by internal nodes or serve as high-interaction honeypots.
 
-4. **Data Collection Platform**: Deployment of crawlers for distributed data collection across various sources.
-
-5. **Federated Learning**: Distributed training of ML tasks using data collected by the above probes. This federated learning approach allows the development of ML models on distributed data without requiring direct data exchange between nodes.
+4. **Federated Learning**: Distributed training of ML tasks using data collected by the above probes. This federated learning approach allows the development of ML models on distributed data without requiring direct data exchange between nodes.
 
 This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.io/) for Kubernetes management and [Ansible](https://www.ansible.com/) for automated deployment and configuration.
 
-**If you are interested in joining the network contact the maintainers**
+**If you are interested in joining the network, open an issue or contact us.**
 
 ---
 
@@ -24,10 +22,15 @@ This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.i
 
 ```
 ├── applications/             # Containerized applications
+│   ├── clickhouse/           # ClickHouse database for network event storage
+│   ├── collector-sync/       # Packet capture and log synchronization
 │   ├── cowrie/               # SSH/Telnet honeypot
 │   ├── darknet/              # Darknet monitoring probes
 │   ├── idarkvec/             # Federated learning IP reputation application
-│   └── l4responder/          # Layer 4 response simulator
+│   ├── l4responder/          # Layer 4 response simulator
+│   ├── nginx/                # Honeypot web server
+│   ├── toolbox/              # Network management DaemonSet (iptables, forwarding)
+│   └── udp-responder/        # Reactive network telescope (UDP/TCP responder)
 ├── infrastructure/           # Platform infrastructure
 │   ├── ansible/              # Ansible automation
 │   │   ├── inventory/        # Environment configurations
@@ -51,10 +54,17 @@ This platform is lightweight, stable, and scalable, built on [K3s](https://k3s.i
 ### Security Monitoring
 - **Darknet**: Passive network monitoring and scanning detection
 - **L4Responder**: Layer 4 protocol response simulation
-- **honeypots**: External honeypots included as modules (see Cowrie)
+- **UDP Responder**: Reactive network telescope that listens for incoming UDP/TCP packets, crafts stateless replies, and logs traffic to ClickHouse
+- **Cowrie**: SSH/Telnet honeypot
+- **Nginx**: Honeypot web server logging HTTP/HTTPS reconnaissance activity
+
+### Data Infrastructure
+- **ClickHouse**: Columnar database for storing and querying network event data
+- **Collector-Sync**: Packet capture on worker nodes with centralized log synchronization
+- **Toolbox**: Privileged DaemonSet for managing iptables rules and network forwarding on each node
 
 ### Machine Learning
-- **IDarkVec**: Federated learning platform with flower server/client architecture
+- **IDarkVec**: Federated learning platform for IP reputation with Flower server/client architecture
 
 ## Prerequisites
 
@@ -158,10 +168,4 @@ ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/add_node.yml
 ```bash
 ansible-playbook -i inventory/environments/dev/hosts.yml playbooks/reset.yml
 ```
-
-## Maintainers
-
-- Idilio Drago
-- Andrea Sordello  
-- Rodolfo Vieira Valentim
 
