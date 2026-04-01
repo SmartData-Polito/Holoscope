@@ -77,10 +77,12 @@ spec:
           - {{ $cfg.subnet | quote }}
           - "--protocols"
           - {{ $cfg.protocols | quote }}
+          {{- if $cfg.saveclickhousedb }}
           - "--save-clickhouse-db"
-          - {{ $cfg.saveclickhousedb | quote }}
+          {{- end }}
+          {{- if $cfg.saveblockedudp }}
           - "--save-blocked-udp"
-          - {{ $cfg.saveblockedudp | quote }}
+          {{- end }}
           - "--node-name"
           - {{ $nodeName | quote }}
 
