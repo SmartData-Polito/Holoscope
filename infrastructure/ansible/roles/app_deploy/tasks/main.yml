@@ -55,7 +55,23 @@
     state: present
   when: app_enabled
 
-- name: Deploy Helm chart for {{ app_name }}
+
+#- name: Deploy Helm chart for {{ app_name }}
+#  kubernetes.core.helm:
+#    name: "{{ app_name }}"
+#    chart_ref: "{{ chart_path }}"
+#    namespace: "{{ app_namespace }}"
+#    create_namespace: false
+#    state: present
+#    wait: false
+#    values: "{{ helm_values }}"
+#
+#  when: 
+#    - app_enabled
+#    - (deploy_action | default('install')) in ['install', 'upgrade']
+#  register: helm_result
+
+- name: Install Helm chart for {{ app_name }}
   kubernetes.core.helm:
     name: "{{ app_name }}"
     chart_ref: "{{ chart_path }}"
@@ -64,12 +80,26 @@
     state: present
     wait: false
     values: "{{ helm_values }}"
-
-  when: 
+  when:
     - app_enabled
-    - (deploy_action | default('install')) in ['install', 'upgrade']
+    - (deploy_action | default('install')) == 'install'
   register: helm_result
 
+- name: Upgrade Helm chart for {{ app_name }}
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    chart_ref: "{{ chart_path }}"
+    namespace: "{{ app_namespace }}"
+    create_namespace: false
+    state: present
+    force: true
+
+    wait: false
+    values: "{{ helm_values }}"
+  when:
+    - app_enabled
+    - (deploy_action | default('install')) == 'upgrade'
+  register: helm_result
 
 
 - name: Remove Helm chart for {{ app_name }}
