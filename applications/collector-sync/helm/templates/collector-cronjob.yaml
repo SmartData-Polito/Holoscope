@@ -44,6 +44,10 @@ spec:
             {{- include "collector-sync.collector.labels" $ | nindent 12 }}
             collector-sync.io/worker: {{ $workerName }}
         spec:
+          tolerations:
+          - key: "node.kubernetes.io/disk-pressure"
+            operator: "Exists"
+            effect: "NoSchedule"
           restartPolicy: Never
 
           {{- if $.Values.collector.hostAliases }}
