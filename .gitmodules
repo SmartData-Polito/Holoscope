@@ -1,9 +1,9 @@
 [submodule "infrastructure/ansible/inventory/environments/prod"]
 	path = infrastructure/ansible/inventory/environments/prod
-	url =	https://github.com/SmartData-Polito/cyborg-inventories
+	url = git@github.com:SmartData-Polito/cyborg-inventories.git
 [submodule "applications/l4responder/docker"]
 	path = applications/l4responder/docker
-	url = https://github.com/AndreaSordello/L4_K3S_responder
-[submodule "applications/udp-responder/docker"]
+	url = git@github.com:AndreaSordello/L4_K3S_responder.git
+ [submodule "applications/udp-responder/docker"]
 	path = applications/udp-responder/docker
-	url = git@github.com:SmartData-Polito/udp-responder.git
+	url = git@github.com:dari1wastaken/udpspoofer.git
