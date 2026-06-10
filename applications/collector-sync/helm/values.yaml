@@ -37,7 +37,7 @@ collector:
     runMode: "cronjob"
   storage:
     hostPath: "/data/collector"
-    size: "50Gi"
+    size: "1Ti"
   sshKeySecret: collector-ssh-key
   resources: 
     requests:
