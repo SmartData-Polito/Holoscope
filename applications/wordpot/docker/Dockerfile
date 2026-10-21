@@ -1,18 +1,15 @@
-FROM python:2.7-slim
+FROM python:3.11-slim
 
 WORKDIR /opt/wordpot
 
+COPY app/requirements.txt ./
+
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY app/ .
 
-RUN mkdir -p logs \
-    && pip install --no-cache-dir \
-       "Flask==0.10.1" \
-       "Jinja2<3" \
-       "Werkzeug<1" \
-       "itsdangerous<2" \
-       "MarkupSafe<2" \
-       hpfeeds
+RUN mkdir -p logs
 
 EXPOSE 8080
 
-CMD ["python", "wordpot.py", "--host=0.0.0.0", "--port=8080"]
+CMD ["python", "-u", "wordpot2.py", "--host=0.0.0.0", "--port=8080"]

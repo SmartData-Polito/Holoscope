@@ -35,12 +35,12 @@ spec:
 
       containers:
         - name: {{ $.Values.wordpot.container.name }}
-          image: "{{ $.Values.wordpot.image.repository }}:{{ $.Values.wordpot.image.tag }}"
+          image: "{{ $.Values.wordpot.image.repository }}:{{ $.Values.image_tag }}"
           imagePullPolicy: {{ $.Values.wordpot.image.pullPolicy }}
           workingDir: /opt/wordpot
 
           # Override Dockerfile CMD to use the Helm-configured port.
-          command: ["python", "-u", "wordpot.py"]
+          command: ["python", "-u", "wordpot2.py"]
           args:
             - "--host=0.0.0.0"
             - "--port={{ $.Values.wordpot.container.httpPort }}"

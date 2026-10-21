@@ -2,10 +2,11 @@
 global:
   namespace: wordpot
 
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
 wordpot:
   image:
     repository: registry.local:5000/public/wordpot
-    tag: "latest"
     pullPolicy: IfNotPresent
   
   # Container configuration
