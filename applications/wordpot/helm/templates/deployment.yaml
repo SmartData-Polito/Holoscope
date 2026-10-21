@@ -1,0 +1,81 @@
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "wordpot.labels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+spec:
+  replicas: 1
+
+  # Avoid two instances writing and rotating the same log files.
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      {{- include "wordpot.selectorLabels" $ | nindent 6 }}
+      wordpot.io/node: {{ $nodeName | quote }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "wordpot.selectorLabels" $ | nindent 8 }}
+        wordpot.io/node: {{ $nodeName | quote }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeConfig.nodeSelector | quote }}
+
+      containers:
+        - name: {{ $.Values.wordpot.container.name }}
+          image: "{{ $.Values.wordpot.image.repository }}:{{ $.Values.wordpot.image.tag }}"
+          imagePullPolicy: {{ $.Values.wordpot.image.pullPolicy }}
+          workingDir: /opt/wordpot
+
+          # Override Dockerfile CMD to use the Helm-configured port.
+          command: ["python", "-u", "wordpot.py"]
+          args:
+            - "--host=0.0.0.0"
+            - "--port={{ $.Values.wordpot.container.httpPort }}"
+
+          ports:
+            - name: http
+              containerPort: {{ $.Values.wordpot.container.httpPort }}
+              protocol: TCP
+
+          volumeMounts:
+            - name: wordpot-config
+              mountPath: /opt/wordpot/wordpot.conf
+              subPath: wordpot.conf
+              readOnly: true
+
+            - name: wordpot-logs
+              mountPath: /opt/wordpot/logs
+
+          resources:
+            {{- toYaml $.Values.wordpot.resources | nindent 12 }}
+
+      volumes:
+        - name: wordpot-config
+          configMap:
+            name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-config
+            items:
+              - key: wordpot.conf
+                path: wordpot.conf
+
+        - name: wordpot-logs
+          {{- if $.Values.wordpot.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-pvc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}
+{{- end }}

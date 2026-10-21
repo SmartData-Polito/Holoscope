@@ -7,3 +7,6 @@
  [submodule "applications/udp-responder/docker"]
 	path = applications/udp-responder/docker
 	url = git@github.com:dari1wastaken/udpspoofer.git
+[submodule "applications/wordpot/app"]
+	path = applications/wordpot/app
+	url = https://github.com/gbrindisi/wordpot.git

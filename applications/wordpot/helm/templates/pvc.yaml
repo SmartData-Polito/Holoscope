@@ -1,0 +1,23 @@
+# templates/pvc.yaml
+{{- if .Values.wordpot.persistence.enabled }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-pvc
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "wordpot.labels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $.Values.wordpot.persistence.size }}
+  storageClassName: {{ $.Values.wordpot.persistence.storageClass }}
+{{- end }}
+{{- end }}
+{{- end }}

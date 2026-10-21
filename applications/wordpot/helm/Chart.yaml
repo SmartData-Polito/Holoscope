@@ -1,0 +1,10 @@
+apiVersion: v2
+name: wordpot
+description: Wordpot Helm Chart
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - security
+  - honeypot
+  - wordpot

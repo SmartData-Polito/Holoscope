@@ -1,0 +1,36 @@
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-config
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "wordpot.labels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+data:
+  wordpot.conf: |
+    # Listener
+    HOST = '0.0.0.0'
+    PORT = {{ $.Values.wordpot.container.httpPort | toString | quote }}
+    DEBUG = False
+
+    # Simulated WordPress installation
+    THEME = 'twentyeleven'
+    SERVER = 'Apache/2.2.22 (Ubuntu)'
+    BLOGTITLE = 'Random Ramblings'
+    VERSION = '2.8'
+    AUTHORS = ['admin']
+
+    # Leave PLUGINS and THEMES undefined to allow all probes.
+
+    # Optional event forwarding
+    HPFEEDS_ENABLED = False
+    HPFEEDS_HOST = '127.0.0.1'
+    HPFEEDS_PORT = 10000
+    HPFEEDS_IDENT = 'wordpot'
+    HPFEEDS_SECRET = ''
+    HPFEEDS_TOPIC = 'wordpot.events'
+{{- end }}
+{{- end }}

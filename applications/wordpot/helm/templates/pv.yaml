@@ -1,0 +1,35 @@
+# templates/pv.yaml
+{{- if .Values.wordpot.persistence.enabled }}
+{{- if eq .Values.wordpot.persistence.type "hostPath" }}
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-pv
+  labels:
+    {{- include "wordpot.labels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+spec:
+  capacity:
+    storage: {{ $.Values.wordpot.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ $.Values.wordpot.persistence.storageClass }}
+  hostPath:
+    path: {{ $nodeConfig.storage.hostPath }}
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ $nodeConfig.nodeSelector }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

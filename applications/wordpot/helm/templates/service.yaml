@@ -1,0 +1,54 @@
+# templates/service.yaml
+{{- range $nodeName, $nodeConfig := .Values.deployments }}
+{{- if $nodeConfig.enabled }}
+{{- range $ipIndex, $exposedIP := $nodeConfig.exposedIPs }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wordpot.fullname" $ }}-{{ $nodeName }}-{{ $ipIndex }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "wordpot.labels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+    wordpot.io/ip: {{ $exposedIP | replace "." "-" | replace "/" "-" | quote }}
+spec:
+  type: ClusterIP
+  externalIPs:
+    - {{ $exposedIP }}
+  ports:
+    - port: {{ $.Values.wordpot.service.httpPort }}
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: http
+
+    - port: {{ $.Values.wordpot.service.httpsPort }}
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: https
+
+    - port: 8080
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: http-8080
+
+    - port: 8443
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: http-8443
+
+    - port: 8000
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: http-8000
+
+    - port: 8888
+      targetPort: {{ $.Values.wordpot.container.httpPort }}
+      protocol: TCP
+      name: http-8888
+  selector:
+    {{- include "wordpot.selectorLabels" $ | nindent 4 }}
+    wordpot.io/node: {{ $nodeName | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
