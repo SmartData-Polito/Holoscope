@@ -71,6 +71,9 @@
     --secrets-encryption \
     --kube-apiserver-arg="audit-log-path=/var/log/k3s-audit.log" \
     --kube-apiserver-arg="audit-policy-file=/etc/k3s-audit-policy.yaml" \
+    --kube-apiserver-arg="audit-log-maxsize=100" \
+    --kube-apiserver-arg="audit-log-maxbackup=10" \
+    --kube-apiserver-arg="audit-log-maxage=7" \
     --kube-apiserver-arg="enable-admission-plugins=NodeRestriction" \
     --kubelet-arg="protect-kernel-defaults=true" \
     --disable="traefik" 
