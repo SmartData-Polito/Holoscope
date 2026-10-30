@@ -1,6 +1,6 @@
 # Vagrant Environment for Honeynet Network Setup
 
-This project sets up a virtualized environment using Vagrant, creating virtual nodes for a honeynet development environment. The configuration supports multiple operating systems (Linux, macOS, and Windows) and uses Ansible for provisioning.
+This project sets up a virtualized environment using Vagrant, creating virtual nodes for a honeynet development environment. The configuration supports Linux  operating system and uses Ansible for provisioning.
 
 ## Default Node Configuration
 
@@ -16,9 +16,8 @@ Each node defaults to 2 CPUs and 2048 MB RAM.
 Before running this setup, ensure the following software is installed on your machine:
 
 1. **Vagrant** - Tool for building and managing virtual machine environments
-2. **Libvirt** (for Linux) - Virtualization toolkit for Linux systems
-3. **VirtualBox** (for macOS and Windows) - Cross-platform hypervisor
-4. **Ansible** (Linux/macOS only) - IT automation engine for provisioning
+2. **Libvirt** - Virtualization toolkit for Linux systems
+4. **Ansible**  - IT automation engine for provisioning
 
 ### Installing Prerequisites
 
@@ -31,8 +30,6 @@ Before running this setup, ensure the following software is installed on your ma
    sudo apt-get install vagrant-libvirt
    ```
 
-3. **Install VirtualBox (macOS/Windows)**:
-   - [VirtualBox Installation Instructions](https://www.virtualbox.org/wiki/Downloads)
 
 4. **Quick Setup with Included Script (Linux)**:
    ```bash
@@ -83,10 +80,7 @@ Set any desired environment variables as shown above.
 ```bash
 vagrant up
 ```
-The Vagrantfile automatically detects your host OS and configures appropriately:
-- **Linux**: Uses Libvirt with custom honeynet network
-- **macOS**: Uses VirtualBox with MAC address assignment
-- **Windows**: Uses VirtualBox with IP assignment (Ansible disabled)
+
 
 #### Step 3: Verify the Setup
 ```bash
@@ -107,18 +101,6 @@ vagrant ssh worker-00
 - Requires `honeynet.xml` file for network definition
 - Full Ansible provisioning support
 - Creates custom "honeynet" network
-
-### macOS
-- Uses VirtualBox provider
-- Assigns MAC addresses to VMs
-- Full Ansible provisioning support
-- VMs may launch with GUI (can be disabled)
-
-### Windows
-- Uses VirtualBox provider  
-- Assigns static IP addresses
-- Ansible provisioning is disabled
-- VMs launch with GUI enabled
 
 ## Custom XML Configuration
 
@@ -165,7 +147,7 @@ vagrant provision
 vagrant destroy -f
 ```
 
-### Clean Up Network (Linux with Libvirt)
+### Clean Up Network 
 ```bash
 virsh net-destroy honeynet
 virsh net-undefine honeynet
