@@ -26,28 +26,58 @@
     - name: Print Vagrant password to log
       ansible.builtin.debug:
         msg: "Vagrant Password: {{ random_vagrant_password }}"
-
-    - name: Clean the network configuration
-      ansible.builtin.shell:
-        cmd: rm -f /etc/netplan/*
+    - name: Create resolver configuration directory
       become: true
+      ansible.builtin.file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        mode: "0755"
 
-    - name: Create network configuration file with dynamic IP address
+    - name: Configure DNS resolver
+      become: true
       ansible.builtin.copy:
-        dest: /etc/netplan/01-netcfg.yaml
+        dest: /etc/systemd/resolved.conf.d/99-dns.conf
+        mode: "0644"
         content: |
-          network:
-            version: 2
-            ethernets:
-              eth0:
-                dhcp4: true
-                dhcp6: false
-      become: true
+          [Resolve]
+          DNS=
+          DNS=10.10.0.1
+          Domains=~.
+          DNSSEC=no
+      register: resolver_config
 
-    - name: Apply the new network configuration
-      ansible.builtin.command:
-        cmd: netplan apply
+    - name: Apply resolver configuration
       become: true
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        enabled: true
+        state: "{{ 'restarted' if resolver_config.changed else 'started' }}"
+
+    - name: Test DNS resolution
+      ansible.builtin.command: getent ahostsv4 www.google.com
+      register: dns_test
+      changed_when: false
+      retries: 3
+      delay: 5
+      until: dns_test.rc == 0
+
+    - name: Test HTTPS connectivity
+      ansible.builtin.uri:
+        url: https://www.google.com
+        method: GET
+        status_code: 200
+        timeout: 20
+      register: connectivity_test
+      retries: 3
+      delay: 5
+      until: connectivity_test is succeeded
+
+    - name: Show connectivity results
+      ansible.builtin.debug:
+        msg:
+          - "DNS: {{ dns_test.stdout_lines }}"
+          - "HTTPS status: {{ connectivity_test.status }}"
+
 
     - name: Update APT package cache
       ansible.builtin.apt:

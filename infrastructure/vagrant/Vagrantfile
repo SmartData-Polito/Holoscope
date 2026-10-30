@@ -1,7 +1,8 @@
 require 'rexml/document'
 
 # Disable parallel execution of Vagrant commands
-ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+ENV['VAGRANT_NO_PARALLEL'] = 'no'
+ENV["VAGRANT_DEFAULT_PROVIDER"] = "libvirt"
 
 # Fetch the configuration file path from the environment variable
 CONFIG_FILE = ENV['CONFIG_FILE']
