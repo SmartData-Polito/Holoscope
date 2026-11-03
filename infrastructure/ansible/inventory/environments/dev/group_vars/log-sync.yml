@@ -1,0 +1,66 @@
+---
+# Development Log-Sync Application Configuration
+enabled: true
+namespace: log-sync
+chart_path: "{{ playbook_dir }}/../../../applications/log-sync/helm"
+
+# Docker images to build
+docker_images:
+  - name: collector
+    author: public
+    path: applications/log-sync/docker/collector
+    dockerfile: Dockerfile
+    tag: latest
+
+  - name: sshd
+    author: public
+    path: applications/log-sync/docker/worker_sshd
+    dockerfile: Dockerfile
+    tag: latest
+
+  - name: ssh-keygen
+    author: public
+    path: applications/log-sync/docker/ssh-keygen
+    dockerfile: Dockerfile
+    tag: latest
+
+# Helm chart overrides for development
+values:
+  collector:
+    enabled: true
+    mode: cronjob
+    schedule: "*/1 * * * *"
+
+    hostAliases:
+      - ip: "10.0.0.102"
+        hostnames:
+          - worker-01
+
+    workers:
+      worker-01:
+        enabled: true
+        target: "worker-01:65222"
+        sshUser: capture
+        srcPath: /data/darknet
+        dstPath: /data/collector/worker-01
+
+    config:
+      runMode: cronjob
+      logLevel: DEBUG
+
+    storage:
+      hostPath: /data/collector
+      size: 10Gi
+
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+  networkPolicy:
+    enabled: true
+    allowedCidrs:
+      - "0.0.0.0/0"

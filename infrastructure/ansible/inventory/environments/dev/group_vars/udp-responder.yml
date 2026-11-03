@@ -1,6 +1,6 @@
 ---
 # Development udp-responder Application Configuration
-enabled: true
+enabled: false
 namespace: udp-responder
 chart_path: "{{ playbook_dir }}/../../../applications/udp-responder/helm"
 

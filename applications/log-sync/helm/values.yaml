@@ -1,0 +1,82 @@
+# Default Helm chart values
+global:
+  namespace: log-sync
+  storageClass: manual
+
+# Overridden at deployment time with the Git SHA
+image_tag: latest
+
+sshKeygenImage:
+  repository: registry.local:5000/public/ssh-keygen
+  pullPolicy: Always
+
+sshdImage:
+  repository: registry.local:5000/public/sshd
+  pullPolicy: Always
+
+sshd:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+collector:
+  enabled: true
+  mode: deployment
+  schedule: "*/5 * * * *"
+
+  image:
+    repository: registry.local:5000/public/collector
+    pullPolicy: IfNotPresent
+
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+
+  hostAliases: []
+
+  # Worker definitions supplied by environment overrides
+  workers: {}
+
+  config:
+    workerNodes: []
+    sshUsers: []
+    srcPath: /data/darknet
+    dstPath: /data/collector
+    collectionInterval: "3600"
+    logLevel: INFO
+    runMode: deployment
+
+  storage:
+    hostPath: /data/collector
+    size: 1Ti
+
+  sshKeySecret: collector-ssh-key
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 200m
+    limits:
+      memory: 512Mi
+      cpu: 400m
+
+# Worker SSH pods bind to the node network
+network:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Container security context for worker SSH pods
+securityContext:
+  privileged: false
+  capabilities:
+    add:
+      - NET_ADMIN
+      - NET_RAW
+
+networkPolicy:
+  enabled: false
+  allowedCidrs:
+    - "0.0.0.0/0"

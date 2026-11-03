@@ -1,0 +1,75 @@
+{{- range $nodeName, $nodeConfig := .Values.collector.workers }}
+{{- if $nodeConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "log-sync.fullname" $ }}-sshd-{{ $nodeName }}
+  namespace: {{ $.Values.global.namespace | quote }}
+  labels:
+    {{- include "log-sync.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: sshd
+    log-sync.io/node: {{ $nodeName | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "log-sync.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: sshd
+      log-sync.io/node: {{ $nodeName | quote }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "log-sync.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: sshd
+        log-sync.io/node: {{ $nodeName | quote }}
+
+    spec:
+      hostNetwork: {{ $.Values.network.hostNetwork }}
+      dnsPolicy: {{ $.Values.network.dnsPolicy }}
+
+      nodeSelector:
+        kubernetes.io/hostname: {{ $nodeName | quote }}
+
+      containers:
+        - name: sshd
+          image: "{{ $.Values.sshdImage.repository }}:{{ $.Values.image_tag }}"
+          imagePullPolicy: {{ $.Values.sshdImage.pullPolicy }}
+
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+
+          env:
+            - name: NODE_NAME
+              value: {{ $nodeName | quote }}
+
+            - name: SSH_LISTEN_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+
+          volumeMounts:
+            - name: capture-data
+              mountPath: /data/darknet
+
+            - name: ssh-keys
+              mountPath: /etc/ssh-keys
+              readOnly: true
+
+          resources:
+            {{- toYaml $.Values.sshd.resources | nindent 12 }}
+
+      volumes:
+        - name: capture-data
+          hostPath:
+            path: {{ required (printf "collector.workers.%s.srcPath is required" $nodeName) $nodeConfig.srcPath | quote }}
+            type: Directory
+
+        - name: ssh-keys
+          secret:
+            secretName: {{ $.Values.collector.sshKeySecret | quote }}
+            defaultMode: 0600
+
+      restartPolicy: Always
+{{- end }}
+{{- end }}

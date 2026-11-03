@@ -1,6 +1,6 @@
 ---
 # Development clickhouse Application Configuration
-
+enabled: false
 namespace: clickhouse
 chart_path: "{{ playbook_dir }}/../../../applications/clickhouse/helm"
 
