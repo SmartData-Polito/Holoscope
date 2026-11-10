@@ -1,6 +1,6 @@
 ---
 # Production Traffic-Capture Application Configuration
-enabled: false
+enabled: true
 namespace: traffic-capture
 chart_path: "{{ playbook_dir }}/../../../applications/traffic-capture/helm"
 
@@ -14,16 +14,18 @@ docker_images:
 
 # Helm chart values — only env-specific overrides
 values:
+  enabled: true
   captureNodes:
+    
     worker-01:
       enabled: true
       config:
         interfaces:
           - interface: eth0
-        rotate_seconds: 60
+        rotate_seconds: 30
         filter: "ip and (net 192.168.10.0/24)"
       storage:
-        hostPath: "/data/darknet/worker-00"
+        hostPath: "/data/darknet"
   resources:
     requests:
       memory: "128Mi"
@@ -31,6 +33,24 @@ values:
     limits:
       memory: "512Mi"
       cpu: "500m"
+  collector:
+    enabled: true
+    mode: cronjob
+    schedule: "*/1 * * * *"
+
+    hostAliases:
+      - ip: "10.0.0.102"
+        hostnames:
+          - worker-01
+
+    workers:
+      worker-01:
+        enabled: true
+        target: "worker-01:65222"
+        sshUser: capture
+        srcPath: /data/darknet
+        dstPath: /data/collector/worker-01
+
 
   networkPolicy:
     enabled: true

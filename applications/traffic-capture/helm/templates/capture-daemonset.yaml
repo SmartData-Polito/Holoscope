@@ -4,22 +4,22 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "collector-sync.fullname" $ }}-capture-{{ $nodeName }}
+  name: {{ include "traffic-capture.fullname" $ }}-capture-{{ $nodeName }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    {{- include "collector-sync.capture.labels" $ | nindent 4 }}
-    collector-sync.io/node: {{ $nodeName }}
+    {{- include "traffic-capture.capture.labels" $ | nindent 4 }}
+    traffic-capture.io/node: {{ $nodeName }}
 spec:
   selector:
     matchLabels:
-      {{- include "collector-sync.selectorLabels" $ | nindent 6 }}
+      {{- include "traffic-capture.selectorLabels" $ | nindent 6 }}
       app.kubernetes.io/component: capture
-      collector-sync.io/node: {{ $nodeName }}
+      traffic-capture.io/node: {{ $nodeName }}
   template:
     metadata:
       labels:
-        {{- include "collector-sync.capture.labels" $ | nindent 8 }}
-        collector-sync.io/node: {{ $nodeName }}
+        {{- include "traffic-capture.capture.labels" $ | nindent 8 }}
+        traffic-capture.io/node: {{ $nodeName }}
     spec:
       hostNetwork: {{ $.Values.network.hostNetwork }}
       dnsPolicy: {{ $.Values.network.dnsPolicy }}
@@ -38,10 +38,7 @@ spec:
         env:
         - name: NODE_NAME
           value: {{ $nodeName }}
-        - name: SSH_LISTEN_ADDRESS
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
+
         - name: INTERFACES
           value: "{{- range $int := $nodeConfig.config.interfaces }} -i {{ $int.interface }} {{- end }}"
         - name: FILTER
@@ -52,10 +49,7 @@ spec:
         volumeMounts:
         - name: capture-data
           mountPath: /data/darknet
-        - name: ssh-keys
-          mountPath: /etc/ssh-keys
-          readOnly: true
-        
+
         resources:
           {{- toYaml $.Values.resources.capture | nindent 10 }}
       
@@ -64,11 +58,6 @@ spec:
         hostPath:
           path: {{ $nodeConfig.storage.hostPath }}
           type: Directory
-      - name: ssh-keys
-        secret:
-          secretName: {{ $.Values.collector.sshKeySecret }}
-          defaultMode: 0600
-      
       restartPolicy: Always
 {{- end }}
 {{- end }}

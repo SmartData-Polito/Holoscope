@@ -1,0 +1,46 @@
+# applications/traffic-capture/helm/values.yaml
+global:
+  namespace: traffic-capture
+  storageClass: manual
+
+# Image tag — overridden at deploy time with git SHA
+image_tag: latest
+
+# Default per-node capture configurations (empty - populated by Ansible)
+captureNodes: {}
+
+captureImage:
+  repository: registry.local:5000/public/capture
+  pullPolicy: IfNotPresent
+
+# Network configuration
+network:
+  # Use host network for packet capture
+  hostNetwork: true
+  # DNS policy when using host network
+  dnsPolicy: ClusterFirstWithHostNet
+
+# Security context (container-level)
+securityContext:
+  # Required for packet capture
+  privileged: false
+  capabilities:
+    add:
+      - NET_ADMIN
+      - NET_RAW
+  
+# Network policy 
+networkPolicy:
+  enabled: false
+  allowedCidrs:
+    - "10.0.0.0/24"
+    
+# Resource limits
+resources:
+  capture:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"

@@ -10,7 +10,9 @@ RUN apk add --no-cache \
     libcap
 
 # Create capture user with proper settings
-RUN adduser -D -s /bin/bash -h /home/capture capture && \
+RUN addgroup -g 2000 capture && \
+    adduser -D -u 2000 -G capture \
+      -s /bin/bash -h /home/capture capture && \
     echo "capture:*" | chpasswd -e
 
 # Create group and add capture user to it
